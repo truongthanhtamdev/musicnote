@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Học Nốt Nhạc Piano</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0e0c;--surf:#1a1916;--surf2:#222018;
+  --bdr:rgba(255,255,255,0.09);--bdr2:rgba(255,255,255,0.18);
+  --tx:#f0ede6;--tx2:#9e9a91;--tx3:#56524a;
+  --gold:#d4a853;--gold2:rgba(212,168,83,0.12);
+  --ok2:rgba(74,140,92,0.15);--ok:#4a8c5c;
+  --err2:rgba(184,82,82,0.15);--err:#b85252;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.75rem;border-bottom:.5px solid var(--bdr);position:sticky;top:0;z-index:99;background:rgba(15,14,12,.95);backdrop-filter:blur(14px)}
+.logo{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold)}
+.logo span{color:var(--tx);font-weight:400}
+nav{display:flex;gap:4px}
+nav button{background:transparent;border:none;color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:.82rem;padding:6px 14px;border-radius:999px;cursor:pointer;transition:all .18s}
+nav button:hover{color:var(--tx);background:rgba(255,255,255,0.06)}
+nav button.on{background:var(--gold);color:#0f0e0c;font-weight:500}
+main{max-width:860px;margin:0 auto;padding:1.75rem 1.25rem 5rem}
+.panel{display:none;animation:fu .25s ease}
+.panel.on{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.clef-row{display:flex;gap:10px;margin-bottom:1.5rem}
+.clef-btn{flex:1;padding:10px 16px;border:.5px solid var(--bdr2);background:var(--surf);border-radius:12px;cursor:pointer;color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:.88rem;transition:all .18s;display:flex;align-items:center;gap:10px}
+.clef-btn .sym{font-size:1.4rem;line-height:1}
+.clef-btn:hover{color:var(--tx);background:var(--surf2)}
+.clef-btn.on{border-color:var(--gold);color:var(--gold);background:var(--gold2)}
+.staff-card{background:var(--surf);border:.5px solid var(--bdr2);border-radius:18px;padding:0;margin-bottom:1rem;overflow:hidden;position:relative}
+svg.staff{width:100%;display:block}
+.note-display{text-align:center;padding:.75rem 0 .5rem;display:flex;flex-direction:column;align-items:center;gap:5px}
+.note-big{font-family:'Playfair Display',serif;font-size:2.6rem;font-weight:700;color:var(--gold);line-height:1}
+.note-en{font-size:.78rem;color:var(--tx3);letter-spacing:.08em;text-transform:uppercase}
+.note-pos{font-size:.85rem;color:var(--tx2)}
+.note-tip{font-size:.76rem;color:var(--tx2);background:var(--surf2);border:.5px solid var(--bdr);padding:4px 12px;border-radius:999px;max-width:400px;text-align:center}
+.prog-bar{height:2px;background:var(--surf2);border-radius:999px;overflow:hidden;margin-bottom:1rem}
+.prog-fill{height:100%;background:var(--gold);border-radius:999px;transition:width .3s ease}
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.4rem}
+.nav-btn{padding:8px 22px;border-radius:999px;border:.5px solid var(--bdr2);background:transparent;color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:.86rem;cursor:pointer;transition:all .18s}
+.nav-btn:hover{color:var(--tx);background:var(--surf2)}
+.counter{font-size:.8rem;color:var(--tx3)}
+.play-btn{padding:8px 22px;border-radius:999px;border:.5px solid var(--gold);background:var(--gold2);color:var(--gold);font-family:'DM Sans',sans-serif;font-size:.86rem;cursor:pointer;transition:all .18s}
+.play-btn:hover{background:var(--gold);color:#0f0e0c}
+.piano-wrap{background:var(--surf);border:.5px solid var(--bdr2);border-radius:18px;padding:1rem;margin-bottom:1.2rem;overflow-x:auto}
+.piano-label{font-size:.7rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.8rem}
+.keyboard{display:flex;height:110px;user-select:none;position:relative}
+.key-wrap{position:relative;flex-shrink:0}
+.wk{width:32px;height:100px;background:#f0ead8;border:1px solid #c0b8a5;border-radius:0 0 4px 4px;cursor:pointer;transition:background .1s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.wk .lbl{font-size:7px;color:#999;font-weight:500;pointer-events:none;text-align:center;line-height:1.3}
+.wk.hl{background:#d4a853!important}
+.wk:active{background:#c89740}
+.bk{width:20px;height:60px;background:#1a1714;border-radius:0 0 3px 3px;cursor:pointer;position:absolute;top:0;z-index:2;transition:background .1s}
+.bk:active{background:#444}
+.bk.hl{background:#b8853a!important}
+.score-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem}
+.score-val{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--gold)}
+.score-val small{font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--tx3)}
+.streak{display:none;align-items:center;gap:6px;background:var(--gold2);border:.5px solid var(--gold);border-radius:999px;padding:3px 12px;font-size:.76rem;color:var(--gold)}
+.streak.show{display:flex}
+.choices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:1rem 0}
+.ch{padding:14px 6px;border-radius:12px;border:.5px solid var(--bdr2);background:var(--surf);color:var(--tx);font-family:'Playfair Display',serif;font-size:1.3rem;cursor:pointer;transition:all .15s;text-align:center}
+.ch:hover:not(:disabled){border-color:var(--gold);background:var(--gold2);color:var(--gold)}
+.ch.ok{background:var(--ok2);border-color:var(--ok);color:#6dba85}
+.ch.bad{background:var(--err2);border-color:var(--err);color:#e07070}
+.feedback{text-align:center;font-size:.9rem;min-height:24px;color:var(--tx2);padding:3px 0}
+.feedback.ok{color:#6dba85}
+.feedback.bad{color:#e07070}
+.next-btn{width:100%;padding:11px;border:.5px solid var(--bdr2);background:var(--surf2);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:.88rem;border-radius:12px;cursor:pointer;transition:all .18s;display:none;margin-top:8px}
+.next-btn.show{display:block}
+.next-btn:hover{background:var(--gold);color:#0f0e0c;border-color:var(--gold)}
+.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.ref-card{background:var(--surf);border:.5px solid var(--bdr2);border-radius:18px;padding:1.1rem}
+.ref-title{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--gold);border-bottom:.5px solid var(--bdr);padding-bottom:8px;margin-bottom:.8rem}
+.ref-sect{font-size:.66rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin:8px 0 3px;padding:0 6px}
+.ref-row{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:7px;cursor:pointer;transition:background .14s}
+.ref-row:hover{background:var(--surf2)}
+.ref-note{font-size:.92rem;color:var(--tx);font-weight:500}
+.ref-pos{font-size:.7rem;color:var(--tx3)}
+.memo{background:var(--surf2);border:.5px solid var(--bdr);border-radius:10px;padding:.8rem 1rem;margin-top:1.1rem;font-size:.78rem;color:var(--tx2);line-height:1.9}
+.memo strong{color:var(--gold);font-weight:500}
+@media(max-width:560px){
+  header{padding:.8rem 1rem}
+  nav button{padding:5px 9px;font-size:.75rem}
+  .choices{grid-template-columns:repeat(2,1fr)}
+  .ref-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🎵 Piano<span>Notes</span></div>
+  <nav>
+    <button class="on" onclick="switchTab(this,'learn')">Học nốt</button>
+    <button onclick="switchTab(this,'quiz')">Luyện tập</button>
+    <button onclick="switchTab(this,'ref')">Bảng tra</button>
+  </nav>
+</header>
+<main>
+
+<!-- LEARN -->
+<div class="panel on" id="panel-learn">
+  <div class="clef-row">
+    <button class="clef-btn on" onclick="setLClef('sol',this)">
+      <span class="sym">𝄞</span>
+      <span><strong>Khóa Sol</strong><br><small style="color:var(--tx3)">Tay phải</small></span>
+    </button>
+    <button class="clef-btn" onclick="setLClef('fa',this)">
+      <span class="sym">𝄢</span>
+      <span><strong>Khóa Fa</strong><br><small style="color:var(--tx3)">Tay trái</small></span>
+    </button>
+  </div>
+  <div class="prog-bar"><div class="prog-fill" id="lprog" style="width:0%"></div></div>
+  <div class="staff-card">
+    <svg class="staff" id="lsvg" viewBox="0 0 600 190" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+  <div class="note-display">
+    <div class="note-big" id="lname">—</div>
+    <div class="note-en"  id="len"></div>
+    <div class="note-pos" id="lpos"></div>
+    <div class="note-tip" id="ltip"></div>
+  </div>
+  <div class="nav-row">
+    <button class="nav-btn" onclick="lnav(-1)">← Trước</button>
+    <span class="counter" id="lcnt">1 / 1</span>
+    <button class="nav-btn" onclick="lnav(1)">Tiếp →</button>
+  </div>
+  <div class="piano-wrap">
+    <div class="piano-label">Vị trí trên đàn — nhấn phím để nghe</div>
+    <div class="keyboard" id="kb"></div>
+  </div>
+  <div style="text-align:center;margin-top:.5rem">
+    <button class="play-btn" onclick="playN(curN().midi)">▶ Nghe âm thanh</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="panel" id="panel-quiz">
+  <div class="clef-row">
+    <button class="clef-btn on" onclick="setQClef('sol',this)"><span class="sym">𝄞</span><span><strong>Khóa Sol</strong></span></button>
+    <button class="clef-btn" onclick="setQClef('fa',this)"><span class="sym">𝄢</span><span><strong>Khóa Fa</strong></span></button>
+  </div>
+  <div class="score-bar">
+    <div>
+      <div style="font-size:.8rem;color:var(--tx2)">Điểm số</div>
+      <div class="score-val" id="qscore">0 <small>/ 0</small></div>
+    </div>
+    <div class="streak" id="streak">🔥 <span id="snum">0</span> liên tiếp</div>
+  </div>
+  <div class="staff-card">
+    <svg class="staff" id="qsvg" viewBox="0 0 600 190" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+  <div class="feedback" id="qfb"></div>
+  <div class="choices" id="qch"></div>
+  <button class="next-btn" id="qnext" onclick="nextQ()">Câu tiếp theo →</button>
+</div>
+
+<!-- REF -->
+<div class="panel" id="panel-ref">
+  <div class="ref-grid">
+    <div class="ref-card">
+      <div class="ref-title">𝄞 Khóa Sol — tay phải</div>
+      <div id="ref-sol"></div>
+      <div class="memo">
+        <strong>5 dòng:</strong> Mi · Sol · Si · Rê · Fa<br>
+        <strong>4 khe:</strong> Fa · La · Đô · Mi<br>
+        <strong>Dòng phụ dưới:</strong> Đô (Middle C)<br>
+        <strong>Điểm neo:</strong> Dòng 2 = Sol
+      </div>
+    </div>
+    <div class="ref-card">
+      <div class="ref-title">𝄢 Khóa Fa — tay trái</div>
+      <div id="ref-fa"></div>
+      <div class="memo">
+        <strong>5 dòng:</strong> Sol · Si · Rê · Fa · La<br>
+        <strong>4 khe:</strong> La · Đô · Mi · Sol<br>
+        <strong>Dòng phụ trên:</strong> Đô4 (Middle C)<br>
+        <strong>Điểm neo:</strong> Dòng 4 = Fa
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA — xác nhận đúng từ sơ đồ ảnh
+//
+// Cả 2 khóa có CÙNG cấu trúc vị trí dòng/khe, chỉ khác tên nốt:
+//
+// Khóa Sol (treble): bắt đầu từ Đô4 (dòng phụ dưới), đi lên:
+//   dp = Đô4, kp = Rê4
+//   d1 = Mi4, k1 = Fa4, d2 = Sol4★, k2 = La4
+//   d3 = Si4, k3 = Đô5, d4 = Rê5,  k4 = Mi5, d5 = Fa5
+//
+// Khóa Fa (bass): bắt đầu từ Đô (dòng phụ dưới), đi lên:
+//   dp = Đô2, kp = Rê2
+//   d1 = Mi2, k1 = Fa2, d2 = Sol2, k2 = La2
+//   d3 = Si2, k3 = Đô3, d4 = Rê3★(neo Fa), k4 = Mi3, d5 = Fa3
+// ═══════════════════════════════════════════════════════
+
+const DATA = {
+  sol: [
+    {vn:'Đô', en:'C4', step:-1,   pos:'Dòng phụ dưới', midi:60, tip:'Đô trung (Middle C) — nốt nối 2 khóa'},
+    {vn:'Rê', en:'D4', step:-0.5, pos:'Khe phụ dưới',  midi:62, tip:'Rê4 — khe phụ dưới'},
+    {vn:'Mi', en:'E4', step:0,    pos:'Dòng kẻ 1',     midi:64, tip:'Mi4 — dòng 1, dưới cùng'},
+    {vn:'Fa', en:'F4', step:0.5,  pos:'Khe 1',         midi:65, tip:'Fa4 — khe 1'},
+    {vn:'Sol',en:'G4', step:1,    pos:'Dòng kẻ 2 ★',  midi:67, tip:'Sol4 — điểm neo, vòng xoắn 𝄞 quấn quanh dòng này'},
+    {vn:'La', en:'A4', step:1.5,  pos:'Khe 2',         midi:69, tip:'La4 — khe 2'},
+    {vn:'Si', en:'B4', step:2,    pos:'Dòng kẻ 3',     midi:71, tip:'Si4 — dòng 3, giữa khuông'},
+    {vn:'Đô', en:'C5', step:2.5,  pos:'Khe 3',         midi:72, tip:'Đô5 — khe 3'},
+    {vn:'Rê', en:'D5', step:3,    pos:'Dòng kẻ 4',     midi:74, tip:'Rê5 — dòng 4'},
+    {vn:'Mi', en:'E5', step:3.5,  pos:'Khe 4',         midi:76, tip:'Mi5 — khe 4'},
+    {vn:'Fa', en:'F5', step:4,    pos:'Dòng kẻ 5',     midi:77, tip:'Fa5 — dòng 5, trên cùng'},
+  ],
+  fa: [
+    // KHÓA FA — Bass Clef
+    // 5 dòng từ dưới lên: Sol(G) · Si(B) · Rê(D) · Fa(F) · La(A)
+    // 4 khe từ dưới lên:  La(A)  · Đô(C) · Mi(E) · Sol(G)
+    // Điểm NEO: dòng 4 = Fa3 (F3) — hai chấm 𝄢 nằm hai bên dòng này
+    // Dòng phụ trên = Đô4 (Middle C)
+    {vn:'Sol',en:'G2', step:0,    pos:'Dòng kẻ 1',        midi:43, tip:'Sol2 (G2) — dòng 1, dưới cùng · Mẹo 5 dòng: Sol·Si·Rê·Fa·La'},
+    {vn:'La', en:'A2', step:0.5,  pos:'Khe 1',            midi:45, tip:'La2 (A2) — khe 1 · Mẹo 4 khe: La·Đô·Mi·Sol'},
+    {vn:'Si', en:'B2', step:1,    pos:'Dòng kẻ 2',        midi:47, tip:'Si2 (B2) — dòng 2'},
+    {vn:'Đô', en:'C3', step:1.5,  pos:'Khe 2',            midi:48, tip:'Đô3 (C3) — khe 2'},
+    {vn:'Rê', en:'D3', step:2,    pos:'Dòng kẻ 3',        midi:50, tip:'Rê3 (D3) — dòng 3, giữa khuông'},
+    {vn:'Mi', en:'E3', step:2.5,  pos:'Khe 3',            midi:52, tip:'Mi3 (E3) — khe 3'},
+    {vn:'Fa', en:'F3', step:3,    pos:'Dòng kẻ 4 ★',     midi:53, tip:'Fa3 (F3) — ĐIỂM NEO! Hai chấm 𝄢 nằm hai bên dòng này'},
+    {vn:'Sol',en:'G3', step:3.5,  pos:'Khe 4',            midi:55, tip:'Sol3 (G3) — khe 4'},
+    {vn:'La', en:'A3', step:4,    pos:'Dòng kẻ 5',        midi:57, tip:'La3 (A3) — dòng 5, trên cùng'},
+    {vn:'Si', en:'B3', step:4.5,  pos:'Khe phụ trên',     midi:59, tip:'Si3 (B3) — khe phụ trên'},
+    {vn:'Đô', en:'C4', step:5,    pos:'Dòng phụ trên ★',  midi:60, tip:'Đô4 (C4) — Đô trung (Middle C), nối 2 khóa'},
+  ]
+};
+
+// ═══ STATE ═══
+let lClef='sol', lIdx=0;
+let qClef='sol', qR=0, qT=0, qS=0, qDone=false, qN=null;
+let AC=null;
+
+const notes = c => DATA[c];
+const curN  = () => notes(lClef)[lIdx];
+
+// ═══ AUDIO ═══
+function ensureAC(){ if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)(); }
+function midiHz(m){ return 440*Math.pow(2,(m-69)/12); }
+function playN(midi, dur=1.1){
+  ensureAC();
+  [[1,0.22],[2,0.05],[3,0.02]].forEach(([h,v])=>{
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    o.frequency.value=midiHz(midi)*h;
+    o.type = h===1?'triangle':'sine';
+    const t=AC.currentTime;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(v,t+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur*(h===1?1:0.4));
+    o.start(); o.stop(t+dur+0.05);
+  });
+}
+
+// ═══ SVG STAFF ═══
+// ViewBox: 600 x 190
+// Staff lines: 5 dòng, cách nhau LG=18px
+// Căn giữa khuông nhạc theo chiều ngang và dọc
+// Clef ở bên trái, nốt ở GIỮA SVG (x=300)
+
+const NS  = 'http://www.w3.org/2000/svg';
+const LG  = 18;    // khoảng cách giữa 2 dòng kẻ
+const SY  = 80;    // y của dòng 5 (trên cùng) → dòng 1 = SY + 4*LG = 152
+const SXL = 55;    // staff bắt đầu từ x=55
+const SXR = 580;   // staff kết thúc x=580
+const NX  = 300;   // nốt nằm GIỮA SVG
+
+// Tính y từ step: step 0=dòng1 (dưới cùng), step 4=dòng5 (trên cùng)
+// dòng1 y = SY + 4*LG = 80+72 = 152
+// dòng5 y = SY = 80
+// mỗi 0.5 step = LG/2 = 9px lên
+function stepY(s){ return SY + (4 - s) * LG; }
+// bước 0.5 step = LG/2 = 9px → stepY(s) = 80 + (4-s)*18
+
+function mkEl(tag,attrs){
+  const e=document.createElementNS(NS,tag);
+  Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));
+  return e;
+}
+
+function drawStaff(svg, step, clef){
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // 5 dòng kẻ
+  for(let i=0;i<5;i++){
+    const y = SY + i*LG;
+    svg.appendChild(mkEl('line',{
+      x1:SXL, x2:SXR, y1:y, y2:y,
+      stroke:'rgba(255,255,255,0.25)', 'stroke-width':'1.2'
+    }));
+  }
+
+  // Số thứ tự dòng nhỏ bên trái
+  for(let i=0;i<5;i++){
+    const y = SY + i*LG;
+    const lbl = document.createElementNS(NS,'text');
+    lbl.setAttribute('x','40');
+    lbl.setAttribute('y', y+4);
+    lbl.setAttribute('font-size','9');
+    lbl.setAttribute('fill','rgba(255,255,255,0.18)');
+    lbl.setAttribute('text-anchor','middle');
+    lbl.setAttribute('font-family','DM Sans,sans-serif');
+    lbl.textContent = `d${5-i}`;
+    svg.appendChild(lbl);
+  }
+
+  // Clef
+  const ct = document.createElementNS(NS,'text');
+  ct.setAttribute('fill','rgba(255,255,255,0.4)');
+  ct.setAttribute('font-family','serif');
+  if(clef==='sol'){
+    ct.setAttribute('x','58');
+    ct.setAttribute('y', SY + 3*LG + 12);
+    ct.setAttribute('font-size','84');
+    ct.textContent='𝄞';
+  } else {
+    ct.setAttribute('x','58');
+    ct.setAttribute('y', SY + LG + 6);
+    ct.setAttribute('font-size','50');
+    ct.textContent='𝄢';
+  }
+  svg.appendChild(ct);
+
+  // Dòng kẻ phụ
+  function ledger(s){
+    const y = stepY(s);
+    svg.appendChild(mkEl('line',{
+      x1:NX-20, x2:NX+20, y1:y, y2:y,
+      stroke:'rgba(255,255,255,0.5)', 'stroke-width':'1.4'
+    }));
+  }
+  // Phụ dưới: cần dòng phụ cho step âm chẵn
+  if(step <= -0.5){
+    for(let s = 0; s >= Math.floor(step); s--){
+      if(s % 1 === 0 && s < 0) ledger(s);
+    }
+    if(step % 1 !== 0) {} // khe phụ không cần ledger
+    if(step % 1 === 0) ledger(step);
+  }
+  // Phụ trên: step > 4
+  if(step > 4){
+    for(let s = 5; s <= Math.ceil(step); s++){
+      if(s % 1 === 0) ledger(s);
+    }
+  }
+
+  // Nốt ở GIỮA (NX = 300)
+  const ny = stepY(step);
+  // Glow
+  svg.appendChild(mkEl('ellipse',{
+    cx:NX, cy:ny, rx:'20', ry:'14',
+    fill:'rgba(212,168,83,0.2)',
+    transform:`rotate(-18,${NX},${ny})`
+  }));
+  // Đầu nốt
+  svg.appendChild(mkEl('ellipse',{
+    cx:NX, cy:ny, rx:'13', ry:'9',
+    fill:'#d4a853',
+    transform:`rotate(-18,${NX},${ny})`
+  }));
+  // Đuôi nốt
+  const up = step < 2;
+  const sx = up ? NX+12 : NX-12;
+  svg.appendChild(mkEl('line',{
+    x1:sx, x2:sx,
+    y1: ny + (up?2:-2),
+    y2: ny + (up?-46:46),
+    stroke:'#d4a853', 'stroke-width':'2'
+  }));
+}
+
+// ═══ KEYBOARD ═══
+const N12=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const VN ={C:'Đô',D:'Rê',E:'Mi',F:'Fa',G:'Sol',A:'La',B:'Si'};
+
+function buildKB(){
+  const kb=document.getElementById('kb');
+  kb.innerHTML='';
+  for(let midi=24; midi<=84; midi++){
+    const note=N12[midi%12];
+    if(note.includes('#')) continue;
+    const oct=Math.floor(midi/12)-1;
+    const wrap=document.createElement('div');
+    wrap.className='key-wrap';
+    const wk=document.createElement('div');
+    wk.className='wk'; wk.dataset.midi=midi;
+    if(note==='C'){
+      const lb=document.createElement('span');
+      lb.className='lbl';
+      lb.textContent=VN[note]+oct;
+      wk.appendChild(lb);
+    }
+    wk.addEventListener('click',()=>{ensureAC();playN(midi,0.7);});
+    wrap.appendChild(wk);
+    const nxt=N12[(midi+1)%12];
+    if(nxt.includes('#')&&midi+1<=84){
+      const bk=document.createElement('div');
+      bk.className='bk'; bk.dataset.midi=midi+1;
+      bk.style.left='20px';
+      bk.addEventListener('click',e=>{e.stopPropagation();ensureAC();playN(midi+1,0.7);});
+      wrap.appendChild(bk);
+    }
+    kb.appendChild(wrap);
+  }
+}
+
+function hlKey(midi){
+  document.querySelectorAll('.wk,.bk').forEach(k=>{k.classList.remove('hl');k.style.background='';});
+  const k=document.querySelector(`[data-midi="${midi}"]`);
+  if(k){
+    k.classList.add('hl');
+    setTimeout(()=>k.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),50);
+  }
+}
+
+// ═══ LEARN ═══
+function renderLearn(){
+  const ns=notes(lClef), n=ns[lIdx];
+  drawStaff(document.getElementById('lsvg'), n.step, lClef);
+  document.getElementById('lname').textContent = n.vn + n.en.slice(1);
+  document.getElementById('len').textContent   = n.en;
+  document.getElementById('lpos').textContent  = n.pos;
+  document.getElementById('ltip').textContent  = n.tip;
+  document.getElementById('lcnt').textContent  = `${lIdx+1} / ${ns.length}`;
+  document.getElementById('lprog').style.width = `${((lIdx+1)/ns.length)*100}%`;
+  hlKey(n.midi);
+}
+function lnav(d){
+  const ns=notes(lClef);
+  lIdx=(lIdx+d+ns.length)%ns.length;
+  renderLearn();
+}
+function setLClef(c,btn){
+  lClef=c; lIdx=0;
+  document.querySelectorAll('#panel-learn .clef-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderLearn();
+}
+
+// ═══ QUIZ ═══
+function updScore(){
+  document.getElementById('qscore').innerHTML=`${qR} <small>/ ${qT}</small>`;
+  const sb=document.getElementById('streak');
+  if(qS>=2){sb.classList.add('show');document.getElementById('snum').textContent=qS;}
+  else sb.classList.remove('show');
+}
+function nextQ(){
+  qDone=false;
+  document.getElementById('qfb').textContent='';
+  document.getElementById('qfb').className='feedback';
+  document.getElementById('qnext').classList.remove('show');
+  const ns=notes(qClef);
+  qN=ns[Math.floor(Math.random()*ns.length)];
+  drawStaff(document.getElementById('qsvg'), qN.step, qClef);
+  playN(qN.midi,1.0);
+  const allNames=[...new Set(ns.map(n=>n.vn))];
+  const wrong=allNames.filter(n=>n!==qN.vn).sort(()=>Math.random()-.5).slice(0,3);
+  const choices=[qN.vn,...wrong].sort(()=>Math.random()-.5);
+  const cont=document.getElementById('qch');
+  cont.innerHTML='';
+  choices.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='ch'; btn.textContent=c;
+    btn.addEventListener('click',()=>checkQ(btn,c));
+    cont.appendChild(btn);
+  });
+}
+function checkQ(btn,chosen){
+  if(qDone)return;
+  qDone=true; qT++;
+  document.querySelectorAll('.ch').forEach(b=>b.disabled=true);
+  const fb=document.getElementById('qfb');
+  if(chosen===qN.vn){
+    btn.classList.add('ok'); qR++; qS++;
+    fb.textContent=qS>=3?`🔥 Xuất sắc! ${qS} câu liên tiếp!`:'✓ Chính xác!';
+    fb.className='feedback ok';
+    playN(qN.midi,0.8);
+  } else {
+    btn.classList.add('bad'); qS=0;
+    document.querySelectorAll('.ch').forEach(b=>{if(b.textContent===qN.vn)b.classList.add('ok');});
+    fb.textContent=`✗ Sai. Đáp án: ${qN.vn} (${qN.en})`;
+    fb.className='feedback bad';
+  }
+  updScore();
+  document.getElementById('qnext').classList.add('show');
+}
+function setQClef(c,btn){
+  qClef=c; qR=0; qT=0; qS=0;
+  document.querySelectorAll('#panel-quiz .clef-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  updScore(); nextQ();
+}
+
+// ═══ REF ═══
+function buildRef(){
+  function fill(elId,clef){
+    const el=document.getElementById(elId);
+    el.innerHTML='';
+    const ns=notes(clef);
+    const dongs=ns.filter(n=>n.pos.includes('Dòng'));
+    const khes =ns.filter(n=>n.pos.includes('Khe'));
+    function sect(title,items){
+      const s=document.createElement('div');
+      s.className='ref-sect'; s.textContent=title; el.appendChild(s);
+      items.forEach(n=>{
+        const row=document.createElement('div');
+        row.className='ref-row';
+        row.title='Nhấn để nghe';
+        row.innerHTML=`<span class="ref-note">${n.vn}<sup style="font-size:.58rem;color:var(--tx3);margin-left:1px">${n.en.slice(1)}</sup></span><span class="ref-pos">${n.pos} · ${n.en}</span>`;
+        row.addEventListener('click',()=>playN(n.midi,0.8));
+        el.appendChild(row);
+      });
+    }
+    sect('Dòng kẻ',dongs);
+    sect('Khe nhạc',khes);
+  }
+  fill('ref-sol','sol');
+  fill('ref-fa','fa');
+}
+
+// ═══ TABS ═══
+function switchTab(btn,t){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('panel-'+t).classList.add('on');
+  btn.classList.add('on');
+  if(t==='quiz'&&!qN) nextQ();
+}
+
+// ═══ INIT ═══
+buildKB();
+buildRef();
+renderLearn();
+</script>
+</body>
+</html>
