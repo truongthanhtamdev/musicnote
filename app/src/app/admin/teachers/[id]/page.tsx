@@ -1,0 +1,112 @@
+import { notFound } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { getTeacher, listAvailability, listClassesForTeacher, listAttendance } from "@/lib/queries";
+import { formatTimeRange } from "@/lib/format";
+import { DAY_LABELS, ATTENDANCE_STATUS_LABELS } from "@/lib/types";
+import { AvailabilityGrid } from "@/components/availability-grid";
+import EditTeacherForm from "./edit-teacher-form";
+import ToggleActiveButton from "./toggle-active-button";
+
+export default async function TeacherDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const teacherId = Number(id);
+  const teacher = getTeacher(teacherId);
+  if (!teacher) notFound();
+
+  const session = await getSession();
+  const isAdmin = session?.role === "admin";
+
+  const availability = listAvailability(teacherId);
+  const classes = listClassesForTeacher(teacherId);
+  const attendance = listAttendance({ teacherId }).slice(0, 20);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">{teacher.name}</h1>
+          <p className="text-slate-500 text-sm">{teacher.email}</p>
+        </div>
+        {isAdmin && <ToggleActiveButton teacherId={teacher.id} active={!!teacher.active} />}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {isAdmin ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <h2 className="font-semibold text-slate-900 mb-3">Thông tin</h2>
+            <EditTeacherForm teacher={teacher} />
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm space-y-2">
+            <h2 className="font-semibold text-slate-900 mb-2">Thông tin</h2>
+            <p>
+              <span className="text-slate-500">SĐT:</span> {teacher.phone || "-"}
+            </p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h2 className="font-semibold text-slate-900 mb-3">Lớp đang phụ trách ({classes.length})</h2>
+          {classes.length === 0 ? (
+            <p className="text-sm text-slate-500">Chưa được giao lớp nào.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {classes.map((c) => (
+                <li key={c.id} className="flex justify-between">
+                  <span>{c.student_name}</span>
+                  <span className="text-slate-500">
+                    {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <h2 className="font-semibold text-slate-900 mb-3">Lịch rảnh</h2>
+        <AvailabilityGrid slots={availability} interactive={false} />
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-200">
+          <h2 className="font-semibold text-slate-900">Lịch sử điểm danh gần đây</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-600 text-left">
+              <tr>
+                <th className="px-4 py-2 font-medium">Ngày</th>
+                <th className="px-4 py-2 font-medium">Học sinh</th>
+                <th className="px-4 py-2 font-medium">Trạng thái</th>
+                <th className="px-4 py-2 font-medium">Giờ điểm danh</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {attendance.map((a) => (
+                <tr key={a.id}>
+                  <td className="px-4 py-2">{a.session_date}</td>
+                  <td className="px-4 py-2">{a.student_name}</td>
+                  <td className="px-4 py-2">{ATTENDANCE_STATUS_LABELS[a.status]}</td>
+                  <td className="px-4 py-2 text-slate-500">{a.check_in_time || "-"}</td>
+                </tr>
+              ))}
+              {attendance.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                    Chưa có dữ liệu điểm danh.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
