@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { listTeachers } from "@/lib/queries";
 import { formatVND } from "@/lib/format";
+import { parseLanguages, LANGUAGE_LABELS } from "@/lib/types";
 import NewTeacherForm from "./new-teacher-form";
 
 export default async function TeachersPage() {
@@ -23,6 +24,7 @@ export default async function TeachersPage() {
                 <th className="px-4 py-2.5 font-medium">Tên</th>
                 <th className="px-4 py-2.5 font-medium">Email</th>
                 <th className="px-4 py-2.5 font-medium">SĐT</th>
+                <th className="px-4 py-2.5 font-medium">Ngôn ngữ</th>
                 {isAdmin && <th className="px-4 py-2.5 font-medium">Lương/buổi</th>}
                 <th className="px-4 py-2.5 font-medium">Trạng thái</th>
                 <th className="px-4 py-2.5 font-medium"></th>
@@ -34,6 +36,9 @@ export default async function TeachersPage() {
                   <td className="px-4 py-2.5 font-medium text-slate-900">{t.name}</td>
                   <td className="px-4 py-2.5 text-slate-600">{t.email}</td>
                   <td className="px-4 py-2.5 text-slate-600">{t.phone || "-"}</td>
+                  <td className="px-4 py-2.5 text-slate-600">
+                    {parseLanguages(t.languages).map((l) => LANGUAGE_LABELS[l]).join(", ")}
+                  </td>
                   {isAdmin && (
                     <td className="px-4 py-2.5 text-slate-600">
                       {t.pay_per_session ? formatVND(t.pay_per_session) : "-"}
@@ -62,7 +67,7 @@ export default async function TeachersPage() {
               ))}
               {teachers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
                     Chưa có giáo viên nào.
                   </td>
                 </tr>

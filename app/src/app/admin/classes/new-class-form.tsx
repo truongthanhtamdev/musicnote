@@ -3,7 +3,7 @@
 import { useActionState, useRef, useEffect } from "react";
 import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
-import { DAY_LABELS, DAY_ORDER, type UserRow } from "@/lib/types";
+import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, type UserRow } from "@/lib/types";
 
 const initialState: FormState = {};
 
@@ -34,6 +34,25 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
           placeholder="Trình độ (VD: Cơ bản)"
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
+        <input
+          name="subject"
+          list="subject-suggestions"
+          placeholder="Môn học (VD: Guitar)"
+          defaultValue="Guitar"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        />
+        <datalist id="subject-suggestions">
+          {SUBJECT_SUGGESTIONS.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+        <select name="language" defaultValue="vi" className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
+            <option key={v} value={v}>
+              {label}
+            </option>
+          ))}
+        </select>
         <select
           name="day_of_week"
           required
@@ -57,7 +76,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
         />
         <select
           name="duration_minutes"
-          defaultValue="45"
+          defaultValue="60"
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         >
           <option value="30">30 phút</option>

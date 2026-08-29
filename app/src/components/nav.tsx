@@ -50,14 +50,14 @@ export function TopNav({
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center justify-between h-14">
-          <div className="flex items-center gap-6">
-            <span className="font-bold text-slate-900">{title}</span>
-            <nav className="hidden md:flex items-center gap-1">
+        <div className="flex items-center justify-between h-14 gap-4">
+          <div className="flex items-center gap-6 min-w-0">
+            <span className="font-bold text-slate-900 whitespace-nowrap shrink-0">{title}</span>
+            <nav className="hidden md:flex items-center gap-1 overflow-x-auto min-w-0">
               <NavLinks links={links} className="" />
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <span className="text-sm text-slate-500 hidden sm:inline">{userName}</span>
             <form action={logoutAction}>
               <button

@@ -19,7 +19,8 @@ function randomPassword(): string {
 
 /**
  * Expected columns (header row required, order fixed):
- * Ten,Email,SDT,LuongMoiBuoi,MatKhau
+ * Ten,Email,SDT,LuongMoiBuoi,NgonNgu,MatKhau
+ * NgonNgu: "vi", "en", hoặc "vi,en" (mặc định "vi" nếu để trống).
  * MatKhau may be blank — a random temporary password is generated.
  */
 export async function importTeachersAction(
@@ -40,8 +41,8 @@ export async function importTeachersAction(
   const dataRows = /email/i.test(rows[0].join(",")) ? rows.slice(1) : rows;
 
   const insert = db.prepare(
-    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, active)
-     VALUES (?, ?, ?, 'teacher', ?, ?, 1)`
+    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, languages, active)
+     VALUES (?, ?, ?, 'teacher', ?, ?, ?, 1)`
   );
 
   let created = 0;
@@ -49,7 +50,7 @@ export async function importTeachersAction(
   const generatedCreds: string[] = [];
 
   for (const cols of dataRows) {
-    const [name, email, phone, payRaw, passwordRaw] = cols.map((c) => (c || "").trim());
+    const [name, email, phone, payRaw, languagesRaw, passwordRaw] = cols.map((c) => (c || "").trim());
     if (!name || !email) {
       skipped++;
       continue;
@@ -60,7 +61,15 @@ export async function importTeachersAction(
     }
     const password = passwordRaw || randomPassword();
     const payPerSession = payRaw ? Number(payRaw.replace(/[^\d]/g, "")) : null;
-    insert.run(name, email.toLowerCase(), bcrypt.hashSync(password, 10), phone || null, payPerSession || null);
+    const languages = languagesRaw || "vi";
+    insert.run(
+      name,
+      email.toLowerCase(),
+      bcrypt.hashSync(password, 10),
+      phone || null,
+      payPerSession || null,
+      languages
+    );
     created++;
     if (!passwordRaw) generatedCreds.push(`${email}: ${password}`);
   }
@@ -76,8 +85,9 @@ export async function importTeachersAction(
 
 /**
  * Expected columns (header row required, order fixed):
- * TenHocSinh,SDT,TrinhDo,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
- * Thu accepts T2..T7/CN or 0-6. EmailGiaoVien may be blank (lớp chưa xếp GV).
+ * TenHocSinh,SDT,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
+ * Thu accepts T2..T7/CN or 0-6. MonHoc mặc định "Guitar" nếu để trống.
+ * NgonNgu là "vi" hoặc "en", mặc định "vi". EmailGiaoVien may be blank (lớp chưa xếp GV).
  */
 export async function importClassesAction(
   _prev: ImportState,
@@ -97,16 +107,26 @@ export async function importClassesAction(
   const dataRows = /thu|gio|hocsinh|học sinh/i.test(rows[0].join(",")) ? rows.slice(1) : rows;
 
   const insert = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, level, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, level, subject, language, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   );
 
   let created = 0;
   const errors: string[] = [];
 
   dataRows.forEach((cols, idx) => {
-    const [studentName, studentPhone, level, dayRaw, startTime, durationRaw, teacherEmail, notes] =
-      cols.map((c) => (c || "").trim());
+    const [
+      studentName,
+      studentPhone,
+      level,
+      subjectRaw,
+      languageRaw,
+      dayRaw,
+      startTime,
+      durationRaw,
+      teacherEmail,
+      notes,
+    ] = cols.map((c) => (c || "").trim());
     const lineNo = idx + 2; // account for header row
 
     if (!studentName) {
@@ -133,14 +153,17 @@ export async function importClassesAction(
       }
     }
 
-    const durationMinutes = durationRaw ? Number(durationRaw) : 45;
+    const durationMinutes = durationRaw ? Number(durationRaw) : 60;
+    const language = languageRaw.toLowerCase() === "en" ? "en" : "vi";
     insert.run(
       studentName,
       studentPhone || null,
       level || null,
+      subjectRaw || "Guitar",
+      language,
       dayOfWeek,
       startTime,
-      Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes : 45,
+      Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes : 60,
       teacherId,
       notes || null
     );

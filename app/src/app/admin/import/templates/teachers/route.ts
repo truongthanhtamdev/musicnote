@@ -1,8 +1,8 @@
 import { getSession } from "@/lib/auth";
 
-const SAMPLE = `Ten,Email,SDT,LuongMoiBuoi,MatKhau
-Nguyen Van A,vana.guitar@musicnote.local,0901111111,150000,
-Tran Thi B,thib.guitar@musicnote.local,0902222222,160000,
+const SAMPLE = `Ten,Email,SDT,LuongMoiBuoi,NgonNgu,MatKhau
+Nguyen Van A,vana.guitar@musicnote.local,0901111111,125000,vi,
+Tran Thi B,thib.guitar@musicnote.local,0902222222,150000,"vi,en",
 `;
 
 export async function GET() {

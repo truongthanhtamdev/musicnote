@@ -48,6 +48,17 @@ export default function NewTeacherForm() {
           placeholder="Mật khẩu tạm"
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm col-span-2"
         />
+        <div className="col-span-2">
+          <label className="block text-xs text-slate-500 mb-1">Ngôn ngữ dạy được</label>
+          <div className="flex gap-4 text-sm">
+            <label className="flex items-center gap-1.5">
+              <input type="checkbox" name="languages" value="vi" defaultChecked /> Tiếng Việt
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input type="checkbox" name="languages" value="en" /> Tiếng Anh
+            </label>
+          </div>
+        </div>
       </div>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state.success && <p className="text-sm text-emerald-600">Đã thêm giáo viên.</p>}

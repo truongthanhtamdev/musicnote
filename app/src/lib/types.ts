@@ -8,15 +8,22 @@ export interface UserRow {
   role: Role;
   phone: string | null;
   pay_per_session: number | null;
+  languages: string; // comma-separated: "vi" | "vi,en"
   active: number;
   created_at: string;
 }
+
+export type ClassLanguage = "vi" | "en";
+export type ClassSource = "center" | "self";
 
 export interface ClassRow {
   id: number;
   student_name: string;
   student_phone: string | null;
   level: string | null;
+  subject: string;
+  language: ClassLanguage;
+  source: ClassSource;
   day_of_week: number; // 0=CN..6=T7 (JS getDay convention)
   start_time: string; // HH:MM
   duration_minutes: number;
@@ -55,6 +62,25 @@ export interface AttendanceRow {
 
 export const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Đệm hát", "Thanh nhạc", "Ukulele"];
+
+export const LANGUAGE_LABELS: Record<ClassLanguage, string> = {
+  vi: "Tiếng Việt",
+  en: "Tiếng Anh",
+};
+
+export const SOURCE_LABELS: Record<ClassSource, string> = {
+  center: "Trung tâm giao",
+  self: "GV tự tìm học viên",
+};
+
+export function parseLanguages(csv: string): ClassLanguage[] {
+  return csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s): s is ClassLanguage => s === "vi" || s === "en");
+}
 
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   completed: "Đã dạy",

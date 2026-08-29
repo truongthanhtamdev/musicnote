@@ -47,9 +47,16 @@ export default async function TeacherTodayPage() {
               >
                 <div className="flex items-center justify-between mb-3 gap-2">
                   <div>
-                    <p className="font-semibold text-slate-900">{c.student_name}</p>
+                    <p className="font-semibold text-slate-900">
+                      {c.student_name}
+                      {c.language === "en" && (
+                        <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 align-middle">
+                          EN
+                        </span>
+                      )}
+                    </p>
                     <p className="text-sm text-slate-500">
-                      {formatTimeRange(c.start_time, c.duration_minutes)}
+                      {formatTimeRange(c.start_time, c.duration_minutes)} · {c.subject}
                       {c.level ? ` · ${c.level}` : ""}
                     </p>
                   </div>

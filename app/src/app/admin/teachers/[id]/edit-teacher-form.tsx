@@ -2,12 +2,13 @@
 
 import { useActionState } from "react";
 import { updateTeacherAction, type FormState } from "@/actions/teachers";
-import type { UserRow } from "@/lib/types";
+import { parseLanguages, type UserRow } from "@/lib/types";
 
 const initialState: FormState = {};
 
 export default function EditTeacherForm({ teacher }: { teacher: UserRow }) {
   const [state, formAction, pending] = useActionState(updateTeacherAction, initialState);
+  const langs = parseLanguages(teacher.languages);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -38,6 +39,17 @@ export default function EditTeacherForm({ teacher }: { teacher: UserRow }) {
           defaultValue={teacher.pay_per_session || ""}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
+      </div>
+      <div>
+        <label className="block text-xs text-slate-500 mb-1">Ngôn ngữ dạy được</label>
+        <div className="flex gap-4 text-sm">
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" name="languages" value="vi" defaultChecked={langs.includes("vi")} /> Tiếng Việt
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" name="languages" value="en" defaultChecked={langs.includes("en")} /> Tiếng Anh
+          </label>
+        </div>
       </div>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state.success && <p className="text-sm text-emerald-600">Đã lưu thay đổi.</p>}
