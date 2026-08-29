@@ -30,6 +30,11 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
         <input
+          name="guardian_name"
+          placeholder="Tên phụ huynh (nếu HS là trẻ em)"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        />
+        <input
           name="level"
           placeholder="Trình độ (VD: Cơ bản)"
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"

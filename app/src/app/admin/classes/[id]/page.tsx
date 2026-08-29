@@ -29,6 +29,9 @@ export default async function ClassDetailPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900">{cls.student_name}</h1>
+          {cls.guardian_name && (
+            <p className="text-slate-500 text-sm">Phụ huynh: {cls.guardian_name}</p>
+          )}
           <p className="text-slate-500 text-sm">
             {DAY_LABELS[cls.day_of_week]} {cls.start_time} · {cls.duration_minutes} phút ·{" "}
             {cls.subject} · {LANGUAGE_LABELS[cls.language]} · {SOURCE_LABELS[cls.source]}

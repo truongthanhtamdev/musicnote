@@ -46,6 +46,7 @@ function migrate() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       student_name TEXT NOT NULL,
       student_phone TEXT,
+      guardian_name TEXT,
       level TEXT,
       subject TEXT NOT NULL DEFAULT 'Guitar',
       language TEXT NOT NULL DEFAULT 'vi' CHECK(language IN ('vi','en')),
@@ -92,6 +93,7 @@ function migrate() {
   // a database created before these columns existed needs them added
   // explicitly, or older deployments crash on the first query that touches
   // one of them.
+  ensureColumn("classes", "guardian_name", "TEXT");
   ensureColumn("classes", "subject", "TEXT NOT NULL DEFAULT 'Guitar'");
   ensureColumn("classes", "language", "TEXT NOT NULL DEFAULT 'vi'");
   ensureColumn("classes", "source", "TEXT NOT NULL DEFAULT 'center'");
@@ -169,12 +171,13 @@ function seedInner() {
   }
 
   const insertClass = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, level, subject, language, source, day_of_week, start_time, duration_minutes, teacher_id, status, notes)
-     VALUES (@student_name, @student_phone, @level, @subject, @language, @source, @day_of_week, @start_time, @duration_minutes, @teacher_id, 'active', @notes)`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, day_of_week, start_time, duration_minutes, teacher_id, status, notes)
+     VALUES (@student_name, @student_phone, @guardian_name, @level, @subject, @language, @source, @day_of_week, @start_time, @duration_minutes, @teacher_id, 'active', @notes)`
   );
   insertClass.run({
     student_name: "Bé Minh Khang",
     student_phone: "0912000111",
+    guardian_name: "Chị Lan (mẹ bé Khang)",
     level: "Cơ bản",
     subject: "Guitar",
     language: "vi",
@@ -188,6 +191,7 @@ function seedInner() {
   insertClass.run({
     student_name: "Chị Thu Hà",
     student_phone: "0912000222",
+    guardian_name: null,
     level: "Trung cấp",
     subject: "Piano",
     language: "vi",
@@ -201,6 +205,7 @@ function seedInner() {
   insertClass.run({
     student_name: "Anh Quốc Bảo",
     student_phone: "0912000333",
+    guardian_name: null,
     level: "Cơ bản",
     subject: "Guitar",
     language: "vi",
@@ -214,6 +219,7 @@ function seedInner() {
   insertClass.run({
     student_name: "Ms. Sarah Johnson",
     student_phone: "0912000444",
+    guardian_name: null,
     level: "Cơ bản",
     subject: "Guitar",
     language: "en",

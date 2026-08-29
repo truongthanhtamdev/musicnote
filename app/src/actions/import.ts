@@ -85,9 +85,10 @@ export async function importTeachersAction(
 
 /**
  * Expected columns (header row required, order fixed):
- * TenHocSinh,SDT,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
- * Thu accepts T2..T7/CN or 0-6. MonHoc mặc định "Guitar" nếu để trống.
- * NgonNgu là "vi" hoặc "en", mặc định "vi". EmailGiaoVien may be blank (lớp chưa xếp GV).
+ * TenHocSinh,SDT,PhuHuynh,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
+ * Thu accepts T2..T7/CN or 0-6. PhuHuynh (tên người đóng tiền) may be blank nếu học viên tự đóng.
+ * MonHoc mặc định "Guitar" nếu để trống. NgonNgu là "vi" hoặc "en", mặc định "vi".
+ * EmailGiaoVien may be blank (lớp chưa xếp GV).
  */
 export async function importClassesAction(
   _prev: ImportState,
@@ -107,8 +108,8 @@ export async function importClassesAction(
   const dataRows = /thu|gio|hocsinh|học sinh/i.test(rows[0].join(",")) ? rows.slice(1) : rows;
 
   const insert = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, level, subject, language, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   );
 
   let created = 0;
@@ -118,6 +119,7 @@ export async function importClassesAction(
     const [
       studentName,
       studentPhone,
+      guardianName,
       level,
       subjectRaw,
       languageRaw,
@@ -158,6 +160,7 @@ export async function importClassesAction(
     insert.run(
       studentName,
       studentPhone || null,
+      guardianName || null,
       level || null,
       subjectRaw || "Guitar",
       language,

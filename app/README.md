@@ -75,10 +75,12 @@ Gợi ý:
   học cố định hàng tuần, môn học, ngôn ngữ giảng dạy, và nguồn lớp — "Trung tâm
   giao" hay "GV tự tìm học viên") — hệ thống tự gán lớp cho chính giáo viên đó,
   và có thể sửa lại lớp mình đang dạy nếu nhập sai.
-- **Môn học & ngôn ngữ**: mỗi lớp có môn học (Guitar/Piano/Đệm hát...) và ngôn
-  ngữ giảng dạy (Tiếng Việt/Tiếng Anh). Mỗi giáo viên khai báo ngôn ngữ mình
-  dạy được — trang Giao lớp sẽ cảnh báo nếu định giao lớp tiếng Anh cho giáo
-  viên chưa dạy được tiếng Anh.
+- **Môn học & ngôn ngữ**: mỗi lớp có môn học (Guitar/Piano/Violin/Thanh nhạc —
+  hoặc tự gõ môn khác) và ngôn ngữ giảng dạy (Tiếng Việt/Tiếng Anh). Mỗi giáo
+  viên khai báo ngôn ngữ mình dạy được — trang Giao lớp sẽ cảnh báo nếu định
+  giao lớp tiếng Anh cho giáo viên chưa dạy được tiếng Anh.
+- **Phụ huynh**: với học sinh là trẻ em, có thể ghi thêm tên phụ huynh/người
+  đóng học phí (khác với tên học sinh) để tiện liên hệ, thu học phí.
 - **Giáo viên → Khung giờ rảnh**: lưới theo tuần (30 phút/ô, 07:00–22:00),
   bấm để bật/tắt khung giờ có thể nhận lớp.
 - **Admin/Quản lý ca → Nhập dữ liệu**: tải lên file CSV để tạo hàng loạt

@@ -58,6 +58,7 @@ export default async function TeacherTodayPage() {
                     <p className="text-sm text-slate-500">
                       {formatTimeRange(c.start_time, c.duration_minutes)} · {c.subject}
                       {c.level ? ` · ${c.level}` : ""}
+                      {c.guardian_name ? ` · PH: ${c.guardian_name}` : ""}
                     </p>
                   </div>
                   {existing && (

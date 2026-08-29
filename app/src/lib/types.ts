@@ -20,6 +20,7 @@ export interface ClassRow {
   id: number;
   student_name: string;
   student_phone: string | null;
+  guardian_name: string | null;
   level: string | null;
   subject: string;
   language: ClassLanguage;
@@ -63,7 +64,7 @@ export interface AttendanceRow {
 export const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Đệm hát", "Thanh nhạc", "Ukulele"];
+export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Violin", "Thanh nhạc"];
 
 export const LANGUAGE_LABELS: Record<ClassLanguage, string> = {
   vi: "Tiếng Việt",

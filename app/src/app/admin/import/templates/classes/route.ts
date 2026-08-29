@@ -1,9 +1,9 @@
 import { getSession } from "@/lib/auth";
 
-const SAMPLE = `TenHocSinh,SDT,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
-Be Minh Khang,0912000111,Co ban,Guitar,vi,T3,19:00,45,long.guitar@musicnote.local,
-Chi Thu Ha,0912000222,Trung cap,Piano,vi,T5,20:00,60,,Lop moi chua xep GV
-Ms. Sarah,0912000444,Co ban,Guitar,en,T4,18:00,45,,Hoc vien noi tieng Anh
+const SAMPLE = `TenHocSinh,SDT,PhuHuynh,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
+Be Minh Khang,0912000111,Chi Lan (me be Khang),Co ban,Guitar,vi,T3,19:00,60,long.guitar@musicnote.local,
+Chi Thu Ha,0912000222,,Trung cap,Piano,vi,T5,20:00,60,,Lop moi chua xep GV
+Ms. Sarah,0912000444,,Co ban,Guitar,en,T4,18:00,60,,Hoc vien noi tieng Anh
 `;
 
 export async function GET() {
