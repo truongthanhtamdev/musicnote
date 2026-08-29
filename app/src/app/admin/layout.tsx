@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-slate-50">
       <TopNav
-        title="pianoguitardemhatnhe"
+        title="Piano Guitar Đệm Hát Nhẹ"
         userName={`${session.name} (${session.role === "admin" ? "Admin" : "Quản lý ca"})`}
         links={links}
       />
