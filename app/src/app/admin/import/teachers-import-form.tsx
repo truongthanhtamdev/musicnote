@@ -12,8 +12,9 @@ export default function TeachersImportForm() {
   return (
     <form ref={formRef} action={formAction} className="space-y-3">
       <p className="text-xs text-slate-500">
-        Cột theo thứ tự: <code>Ten,Email,SDT,LuongMoiBuoi,MatKhau</code> (dòng đầu là tiêu đề).
-        Để trống MatKhau để hệ thống tự sinh mật khẩu tạm.
+        Cột theo thứ tự: <code>Ten,Email,SDT,LuongMoiBuoi,NgonNgu,MatKhau</code> (dòng đầu là tiêu
+        đề). NgonNgu là <code>vi</code>, <code>en</code>, hoặc <code>vi,en</code> (mặc định{" "}
+        <code>vi</code>). Để trống MatKhau để hệ thống tự sinh mật khẩu tạm.
       </p>
       <input
         type="file"

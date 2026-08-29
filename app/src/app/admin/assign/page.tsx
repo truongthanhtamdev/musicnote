@@ -1,6 +1,6 @@
-import { listClasses, listTeachers, isTeacherAvailable } from "@/lib/queries";
+import { listClasses, listTeachers, isTeacherAvailable, teacherSpeaksLanguage } from "@/lib/queries";
 import { formatTimeRange } from "@/lib/format";
-import { DAY_LABELS } from "@/lib/types";
+import { DAY_LABELS, LANGUAGE_LABELS } from "@/lib/types";
 import AssignRow from "./assign-row";
 
 export default async function AssignPage() {
@@ -29,8 +29,13 @@ export default async function AssignPage() {
               id: t.id,
               name: t.name,
               available: isTeacherAvailable(t.id, c.day_of_week, c.start_time, c.duration_minutes),
+              speaksLanguage: teacherSpeaksLanguage(t, c.language),
             }));
-            options.sort((a, b) => Number(b.available) - Number(a.available));
+            options.sort(
+              (a, b) =>
+                Number(b.available && b.speaksLanguage) - Number(a.available && a.speaksLanguage) ||
+                Number(b.available) - Number(a.available)
+            );
             return (
               <div key={c.id} className="bg-white rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -38,11 +43,16 @@ export default async function AssignPage() {
                     <p className="font-medium text-slate-900">{c.student_name}</p>
                     <p className="text-sm text-slate-500">
                       {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
-                      {c.level ? ` · ${c.level}` : ""}
+                      {c.level ? ` · ${c.level}` : ""} · {c.subject}
+                      {c.language === "en" && (
+                        <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">
+                          Dạy bằng {LANGUAGE_LABELS.en}
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
-                <AssignRow classId={c.id} teachers={options} />
+                <AssignRow classId={c.id} teachers={options} needsLanguage={c.language === "en"} />
               </div>
             );
           })}

@@ -1,5 +1,5 @@
 import { db } from "./db";
-import type { AttendanceRow, AvailabilityRow, ClassRow, UserRow } from "./types";
+import { parseLanguages, type AttendanceRow, type AvailabilityRow, type ClassRow, type UserRow } from "./types";
 
 export function listTeachers(includeInactive = true): UserRow[] {
   const sql = includeInactive
@@ -83,6 +83,10 @@ export function listClassesByDay(dayOfWeek: number): ClassWithTeacher[] {
        ORDER BY c.start_time`
     )
     .all(dayOfWeek) as ClassWithTeacher[];
+}
+
+export function teacherSpeaksLanguage(teacher: UserRow, language: string): boolean {
+  return parseLanguages(teacher.languages).includes(language as "vi" | "en");
 }
 
 export function listAvailability(teacherId: number): AvailabilityRow[] {

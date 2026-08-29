@@ -72,8 +72,13 @@ Gợi ý:
   gợi ý giáo viên có khung giờ rảnh trùng lịch lớp (đánh dấu ✓), bấm để giao
   ngay.
 - **Giáo viên → Lịch dạy**: tự thêm lớp học mới của mình (tên học sinh, thứ/giờ
-  học cố định hàng tuần) — hệ thống tự gán lớp cho chính giáo viên đó, và có
-  thể sửa lại lớp mình đang dạy nếu nhập sai.
+  học cố định hàng tuần, môn học, ngôn ngữ giảng dạy, và nguồn lớp — "Trung tâm
+  giao" hay "GV tự tìm học viên") — hệ thống tự gán lớp cho chính giáo viên đó,
+  và có thể sửa lại lớp mình đang dạy nếu nhập sai.
+- **Môn học & ngôn ngữ**: mỗi lớp có môn học (Guitar/Piano/Đệm hát...) và ngôn
+  ngữ giảng dạy (Tiếng Việt/Tiếng Anh). Mỗi giáo viên khai báo ngôn ngữ mình
+  dạy được — trang Giao lớp sẽ cảnh báo nếu định giao lớp tiếng Anh cho giáo
+  viên chưa dạy được tiếng Anh.
 - **Giáo viên → Khung giờ rảnh**: lưới theo tuần (30 phút/ô, 07:00–22:00),
   bấm để bật/tắt khung giờ có thể nhận lớp.
 - **Admin/Quản lý ca → Nhập dữ liệu**: tải lên file CSV để tạo hàng loạt

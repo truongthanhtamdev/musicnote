@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { updateClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
 import { formatTimeRange } from "@/lib/format";
-import { DAY_LABELS, DAY_ORDER, type ClassRow } from "@/lib/types";
+import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, type ClassRow } from "@/lib/types";
 
 const initialState: FormState = {};
 
@@ -21,7 +21,13 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
   if (!editing) {
     return (
       <li className="flex items-center justify-between gap-3 py-2">
-        <span className="text-slate-800">{cls.student_name}</span>
+        <span className="text-slate-800">
+          {cls.student_name}
+          <span className="text-slate-400 text-xs ml-1.5">
+            {cls.subject}
+            {cls.language === "en" ? " · EN" : ""}
+          </span>
+        </span>
         <div className="flex items-center gap-3">
           <span className="text-slate-500 text-sm">
             {formatTimeRange(cls.start_time, cls.duration_minutes)}
@@ -90,6 +96,29 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
             placeholder="Trình độ"
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
+          <input
+            name="subject"
+            list="subject-suggestions"
+            defaultValue={cls.subject}
+            placeholder="Môn học"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <datalist id="subject-suggestions">
+            {SUBJECT_SUGGESTIONS.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+          <select
+            name="language"
+            defaultValue={cls.language}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
+              <option key={v} value={v}>
+                {label}
+              </option>
+            ))}
+          </select>
           <input
             name="notes"
             defaultValue={cls.notes || ""}

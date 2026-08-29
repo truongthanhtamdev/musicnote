@@ -37,6 +37,7 @@ function migrate() {
       role TEXT NOT NULL CHECK(role IN ('admin','coordinator','teacher')),
       phone TEXT,
       pay_per_session INTEGER,
+      languages TEXT NOT NULL DEFAULT 'vi',
       active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -46,9 +47,12 @@ function migrate() {
       student_name TEXT NOT NULL,
       student_phone TEXT,
       level TEXT,
+      subject TEXT NOT NULL DEFAULT 'Guitar',
+      language TEXT NOT NULL DEFAULT 'vi' CHECK(language IN ('vi','en')),
+      source TEXT NOT NULL DEFAULT 'center' CHECK(source IN ('center','self')),
       day_of_week INTEGER NOT NULL,
       start_time TEXT NOT NULL,
-      duration_minutes INTEGER NOT NULL DEFAULT 45,
+      duration_minutes INTEGER NOT NULL DEFAULT 60,
       teacher_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
       status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','paused','ended')),
       notes TEXT,
@@ -83,6 +87,22 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_availability_teacher ON availability(teacher_id);
   `);
+
+  // CREATE TABLE IF NOT EXISTS above only helps on a brand-new database file;
+  // a database created before these columns existed needs them added
+  // explicitly, or older deployments crash on the first query that touches
+  // one of them.
+  ensureColumn("classes", "subject", "TEXT NOT NULL DEFAULT 'Guitar'");
+  ensureColumn("classes", "language", "TEXT NOT NULL DEFAULT 'vi'");
+  ensureColumn("classes", "source", "TEXT NOT NULL DEFAULT 'center'");
+  ensureColumn("users", "languages", "TEXT NOT NULL DEFAULT 'vi'");
+}
+
+function ensureColumn(table: string, column: string, definition: string) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }
 
 function seedInner() {
@@ -112,22 +132,27 @@ function seedInner() {
     pay_per_session: null,
   });
 
-  const t1 = insertUser.run({
+  const insertTeacher = db.prepare(
+    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, languages, active)
+     VALUES (@name, @email, @password_hash, 'teacher', @phone, @pay_per_session, @languages, 1)`
+  );
+
+  const t1 = insertTeacher.run({
     name: "Nguyễn Văn Long",
     email: "long.guitar@musicnote.local",
     password_hash: bcrypt.hashSync("teacher123", 10),
-    role: "teacher",
     phone: "0901234567",
-    pay_per_session: 150000,
+    pay_per_session: 125000,
+    languages: "vi",
   });
 
-  const t2 = insertUser.run({
+  const t2 = insertTeacher.run({
     name: "Trần Thị Mai",
     email: "mai.guitar@musicnote.local",
     password_hash: bcrypt.hashSync("teacher123", 10),
-    role: "teacher",
     phone: "0907654321",
-    pay_per_session: 160000,
+    pay_per_session: 150000,
+    languages: "vi,en",
   });
 
   const insertAvail = db.prepare(
@@ -144,16 +169,19 @@ function seedInner() {
   }
 
   const insertClass = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, level, day_of_week, start_time, duration_minutes, teacher_id, status, notes)
-     VALUES (@student_name, @student_phone, @level, @day_of_week, @start_time, @duration_minutes, @teacher_id, 'active', @notes)`
+    `INSERT INTO classes (student_name, student_phone, level, subject, language, source, day_of_week, start_time, duration_minutes, teacher_id, status, notes)
+     VALUES (@student_name, @student_phone, @level, @subject, @language, @source, @day_of_week, @start_time, @duration_minutes, @teacher_id, 'active', @notes)`
   );
   insertClass.run({
     student_name: "Bé Minh Khang",
     student_phone: "0912000111",
     level: "Cơ bản",
+    subject: "Guitar",
+    language: "vi",
+    source: "center",
     day_of_week: 2,
     start_time: "19:00",
-    duration_minutes: 45,
+    duration_minutes: 60,
     teacher_id: t1.lastInsertRowid,
     notes: "Học guitar đệm hát",
   });
@@ -161,6 +189,9 @@ function seedInner() {
     student_name: "Chị Thu Hà",
     student_phone: "0912000222",
     level: "Trung cấp",
+    subject: "Piano",
+    language: "vi",
+    source: "center",
     day_of_week: 4,
     start_time: "20:00",
     duration_minutes: 60,
@@ -171,11 +202,27 @@ function seedInner() {
     student_name: "Anh Quốc Bảo",
     student_phone: "0912000333",
     level: "Cơ bản",
+    subject: "Guitar",
+    language: "vi",
+    source: "center",
     day_of_week: 6,
     start_time: "10:00",
-    duration_minutes: 45,
+    duration_minutes: 60,
     teacher_id: null,
     notes: "Lớp mới, chưa xếp giáo viên",
+  });
+  insertClass.run({
+    student_name: "Ms. Sarah Johnson",
+    student_phone: "0912000444",
+    level: "Cơ bản",
+    subject: "Guitar",
+    language: "en",
+    source: "center",
+    day_of_week: 3,
+    start_time: "18:00",
+    duration_minutes: 60,
+    teacher_id: t2.lastInsertRowid,
+    notes: "Học viên nước ngoài, dạy bằng tiếng Anh",
   });
 
   void admin;

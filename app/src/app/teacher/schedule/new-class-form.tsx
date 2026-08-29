@@ -3,7 +3,7 @@
 import { useActionState, useRef, useEffect, useState } from "react";
 import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
-import { DAY_LABELS, DAY_ORDER } from "@/lib/types";
+import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, SOURCE_LABELS } from "@/lib/types";
 
 const initialState: FormState = {};
 
@@ -50,6 +50,20 @@ export default function NewClassForm() {
       </div>
       <form ref={formRef} action={formAction} className="space-y-3">
         <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Nguồn lớp</label>
+          <select
+            name="source"
+            defaultValue="center"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+          >
+            {Object.entries(SOURCE_LABELS).map(([v, label]) => (
+              <option key={v} value={v}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Tên học sinh</label>
           <input
             name="student_name"
@@ -74,6 +88,34 @@ export default function NewClassForm() {
               placeholder="VD: Cơ bản"
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Môn học</label>
+            <input
+              name="subject"
+              list="subject-suggestions"
+              defaultValue="Guitar"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+            />
+            <datalist id="subject-suggestions">
+              {SUBJECT_SUGGESTIONS.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Ngôn ngữ</label>
+            <select
+              name="language"
+              defaultValue="vi"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+            >
+              {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
+                <option key={v} value={v}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Thứ học</label>
@@ -106,7 +148,7 @@ export default function NewClassForm() {
             <label className="block text-sm font-medium text-slate-700 mb-1">Thời lượng</label>
             <select
               name="duration_minutes"
-              defaultValue="45"
+              defaultValue="60"
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
             >
               <option value="30">30 phút</option>

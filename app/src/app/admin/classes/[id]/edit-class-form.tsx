@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { updateClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
-import { DAY_LABELS, DAY_ORDER, type ClassRow } from "@/lib/types";
+import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, type ClassRow } from "@/lib/types";
 
 const initialState: FormState = {};
 
@@ -33,6 +33,29 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
           placeholder="Trình độ"
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
+        <input
+          name="subject"
+          list="subject-suggestions"
+          defaultValue={cls.subject}
+          placeholder="Môn học"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        />
+        <datalist id="subject-suggestions">
+          {SUBJECT_SUGGESTIONS.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+        <select
+          name="language"
+          defaultValue={cls.language}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        >
+          {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
+            <option key={v} value={v}>
+              {label}
+            </option>
+          ))}
+        </select>
         <select
           name="day_of_week"
           defaultValue={cls.day_of_week}

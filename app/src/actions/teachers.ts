@@ -22,6 +22,7 @@ export async function createTeacherAction(
   const phone = String(formData.get("phone") || "").trim();
   const password = String(formData.get("password") || "");
   const payPerSession = Number(formData.get("pay_per_session") || 0);
+  const languages = formData.getAll("languages").join(",") || "vi";
 
   if (!name || !email || !password) {
     return { error: "Vui lòng nhập đầy đủ tên, email, mật khẩu" };
@@ -34,9 +35,9 @@ export async function createTeacherAction(
   }
 
   db.prepare(
-    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, active)
-     VALUES (?, ?, ?, 'teacher', ?, ?, 1)`
-  ).run(name, email, bcrypt.hashSync(password, 10), phone || null, payPerSession || null);
+    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, languages, active)
+     VALUES (?, ?, ?, 'teacher', ?, ?, ?, 1)`
+  ).run(name, email, bcrypt.hashSync(password, 10), phone || null, payPerSession || null, languages);
 
   revalidatePath("/admin/teachers");
   return { success: true };
@@ -52,12 +53,13 @@ export async function updateTeacherAction(
   const name = String(formData.get("name") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
   const payPerSession = Number(formData.get("pay_per_session") || 0);
+  const languages = formData.getAll("languages").join(",") || "vi";
 
   if (!id || !name) return { error: "Thiếu thông tin" };
 
   db.prepare(
-    `UPDATE users SET name = ?, phone = ?, pay_per_session = ? WHERE id = ? AND role = 'teacher'`
-  ).run(name, phone || null, payPerSession || null, id);
+    `UPDATE users SET name = ?, phone = ?, pay_per_session = ?, languages = ? WHERE id = ? AND role = 'teacher'`
+  ).run(name, phone || null, payPerSession || null, languages, id);
 
   revalidatePath("/admin/teachers");
   revalidatePath(`/admin/teachers/${id}`);

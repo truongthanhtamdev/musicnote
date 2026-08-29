@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getClass, listTeachers, listAttendance, isTeacherAvailable } from "@/lib/queries";
-import { DAY_LABELS, ATTENDANCE_STATUS_LABELS } from "@/lib/types";
+import { DAY_LABELS, ATTENDANCE_STATUS_LABELS, LANGUAGE_LABELS, SOURCE_LABELS } from "@/lib/types";
 import EditClassForm from "./edit-class-form";
 import ClassActions from "./class-actions";
 
@@ -30,7 +30,8 @@ export default async function ClassDetailPage({
         <div>
           <h1 className="text-xl font-bold text-slate-900">{cls.student_name}</h1>
           <p className="text-slate-500 text-sm">
-            {DAY_LABELS[cls.day_of_week]} {cls.start_time} · {cls.duration_minutes} phút
+            {DAY_LABELS[cls.day_of_week]} {cls.start_time} · {cls.duration_minutes} phút ·{" "}
+            {cls.subject} · {LANGUAGE_LABELS[cls.language]} · {SOURCE_LABELS[cls.source]}
           </p>
         </div>
         <ClassActions classId={cls.id} status={cls.status} teacherId={cls.teacher_id} teachers={teachers} canDelete={isAdmin} />

@@ -21,6 +21,7 @@ export default async function ClassesPage() {
             <thead className="bg-slate-50 text-slate-600 text-left">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Học sinh</th>
+                <th className="px-4 py-2.5 font-medium">Môn / Ngôn ngữ</th>
                 <th className="px-4 py-2.5 font-medium">Trình độ</th>
                 <th className="px-4 py-2.5 font-medium">Lịch học</th>
                 <th className="px-4 py-2.5 font-medium">Giáo viên</th>
@@ -32,6 +33,14 @@ export default async function ClassesPage() {
               {classes.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50">
                   <td className="px-4 py-2.5 font-medium text-slate-900">{c.student_name}</td>
+                  <td className="px-4 py-2.5 text-slate-600">
+                    {c.subject}
+                    {c.language === "en" && (
+                      <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">
+                        EN
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-slate-600">{c.level || "-"}</td>
                   <td className="px-4 py-2.5 text-slate-600">
                     {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
@@ -53,7 +62,7 @@ export default async function ClassesPage() {
               ))}
               {classes.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
                     Chưa có lớp học nào.
                   </td>
                 </tr>
