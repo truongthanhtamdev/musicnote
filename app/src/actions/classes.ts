@@ -9,7 +9,7 @@ export async function createClassAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(["admin", "coordinator", "teacher"]);
 
   const studentName = String(formData.get("student_name") || "").trim();
   const studentPhone = String(formData.get("student_phone") || "").trim();
@@ -17,9 +17,18 @@ export async function createClassAction(
   const dayOfWeek = Number(formData.get("day_of_week"));
   const startTime = String(formData.get("start_time") || "");
   const durationMinutes = Number(formData.get("duration_minutes") || 45);
-  const teacherIdRaw = String(formData.get("teacher_id") || "");
-  const teacherId = teacherIdRaw ? Number(teacherIdRaw) : null;
   const notes = String(formData.get("notes") || "").trim();
+
+  // Teachers can only ever create a class for themselves — the client
+  // never even shows them a teacher picker, but derive it from the
+  // session rather than trusting the form either way.
+  let teacherId: number | null;
+  if (session.role === "teacher") {
+    teacherId = session.userId;
+  } else {
+    const teacherIdRaw = String(formData.get("teacher_id") || "");
+    teacherId = teacherIdRaw ? Number(teacherIdRaw) : null;
+  }
 
   if (!studentName || Number.isNaN(dayOfWeek) || !startTime) {
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
@@ -41,6 +50,8 @@ export async function createClassAction(
 
   revalidatePath("/admin/classes");
   revalidatePath("/admin/assign");
+  revalidatePath("/teacher/schedule");
+  revalidatePath("/teacher");
   return { success: true };
 }
 
@@ -48,7 +59,7 @@ export async function updateClassAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(["admin", "coordinator", "teacher"]);
 
   const id = Number(formData.get("id"));
   const studentName = String(formData.get("student_name") || "").trim();
@@ -63,22 +74,33 @@ export async function updateClassAction(
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
   }
 
-  db.prepare(
-    `UPDATE classes SET student_name=?, student_phone=?, level=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?
-     WHERE id = ?`
-  ).run(
-    studentName,
-    studentPhone || null,
-    level || null,
-    dayOfWeek,
-    startTime,
-    durationMinutes || 45,
-    notes || null,
-    id
-  );
+  const result = db
+    .prepare(
+      `UPDATE classes SET student_name=?, student_phone=?, level=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?
+       WHERE id = ? ${session.role === "teacher" ? "AND teacher_id = ?" : ""}`
+    )
+    .run(
+      ...([
+        studentName,
+        studentPhone || null,
+        level || null,
+        dayOfWeek,
+        startTime,
+        durationMinutes || 45,
+        notes || null,
+        id,
+        ...(session.role === "teacher" ? [session.userId] : []),
+      ] as (string | number | null)[])
+    );
+
+  if (result.changes === 0) {
+    return { error: "Không tìm thấy lớp học hoặc bạn không có quyền sửa" };
+  }
 
   revalidatePath("/admin/classes");
   revalidatePath(`/admin/classes/${id}`);
+  revalidatePath("/teacher/schedule");
+  revalidatePath("/teacher");
   return { success: true };
 }
 

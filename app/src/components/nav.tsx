@@ -1,9 +1,41 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { logoutAction } from "@/actions/auth";
 
 interface NavLink {
   href: string;
   label: string;
+}
+
+function isActive(pathname: string, href: string): boolean {
+  if (href === "/admin" || href === "/teacher") return pathname === href;
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+function NavLinks({ links, className }: { links: NavLink[]; className: string }) {
+  const pathname = usePathname();
+  return (
+    <>
+      {links.map((l) => {
+        const active = isActive(pathname, l.href);
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`text-sm rounded-md px-3 py-1.5 transition whitespace-nowrap ${className} ${
+              active
+                ? "text-indigo-700 bg-indigo-50 font-medium"
+                : "text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"
+            }`}
+          >
+            {l.label}
+          </Link>
+        );
+      })}
+    </>
+  );
 }
 
 export function TopNav({
@@ -22,15 +54,7 @@ export function TopNav({
           <div className="flex items-center gap-6">
             <span className="font-bold text-slate-900">{title}</span>
             <nav className="hidden md:flex items-center gap-1">
-              {links.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="text-sm text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-md px-3 py-1.5 transition"
-                >
-                  {l.label}
-                </Link>
-              ))}
+              <NavLinks links={links} className="" />
             </nav>
           </div>
           <div className="flex items-center gap-3">
@@ -46,15 +70,7 @@ export function TopNav({
           </div>
         </div>
         <nav className="flex md:hidden items-center gap-1 pb-2 overflow-x-auto">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-sm text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-md px-3 py-1.5 transition whitespace-nowrap"
-            >
-              {l.label}
-            </Link>
-          ))}
+          <NavLinks links={links} className="" />
         </nav>
       </div>
     </header>

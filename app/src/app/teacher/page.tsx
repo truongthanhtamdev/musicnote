@@ -14,37 +14,48 @@ export default async function TeacherTodayPage() {
   const classes = listClassesForTeacher(teacherId).filter(
     (c) => c.day_of_week === dow && c.status === "active"
   );
+  const doneCount = classes.filter((c) => getAttendance(c.id, todayStr)).length;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Lớp học hôm nay</h1>
+        <h1 className="text-xl font-bold text-slate-900">Chào {session!.name.split(" ").pop()} 👋</h1>
         <p className="text-slate-500 text-sm mt-1">
-          {DAY_LABELS[dow]}, {todayStr} · Đừng quên điểm danh trên nhóm Facebook như thường lệ.
+          {DAY_LABELS[dow]}, {todayStr}
+          {classes.length > 0 && ` · Đã điểm danh ${doneCount}/${classes.length} lớp`}
+        </p>
+        <p className="text-amber-700 bg-amber-50 border border-amber-100 rounded-lg text-sm mt-2 px-3 py-2">
+          Nhớ điểm danh trên nhóm Facebook song song như quy định nhé.
         </p>
       </div>
 
       {classes.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
-          Hôm nay bạn không có lớp nào.
+        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-500">
+          <p className="text-3xl mb-2">🎸</p>
+          <p>Hôm nay bạn không có lớp nào. Nghỉ ngơi thôi!</p>
         </div>
       ) : (
         <div className="space-y-4">
           {classes.map((c) => {
             const existing = getAttendance(c.id, todayStr);
             return (
-              <div key={c.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between mb-3">
+              <div
+                key={c.id}
+                className={`bg-white rounded-xl border p-4 ${
+                  existing ? "border-emerald-200" : "border-slate-200"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3 gap-2">
                   <div>
-                    <p className="font-medium text-slate-900">{c.student_name}</p>
+                    <p className="font-semibold text-slate-900">{c.student_name}</p>
                     <p className="text-sm text-slate-500">
                       {formatTimeRange(c.start_time, c.duration_minutes)}
                       {c.level ? ` · ${c.level}` : ""}
                     </p>
                   </div>
                   {existing && (
-                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">
-                      Đã điểm danh lúc {existing.check_in_time}
+                    <span className="shrink-0 text-xs font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                      ✓ Đã điểm danh {existing.check_in_time}
                     </span>
                   )}
                 </div>

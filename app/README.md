@@ -11,7 +11,7 @@ một VPS nhỏ, không cần dịch vụ ngoài.
 |---|---|
 | **Admin** | Toàn quyền: quản lý giáo viên & lương/buổi, quản lý lớp, giao lớp, sửa điểm danh, xem/xuất báo cáo lương, quản lý tài khoản Quản lý ca. |
 | **Quản lý ca** (coordinator) | Tạo/sửa lớp học, giao lớp cho giáo viên, xem & sửa nhật ký điểm danh. Không xem/sửa được lương hay tài khoản. |
-| **Giáo viên** | Xem lớp được giao, điểm danh buổi học hôm nay (kèm tick "đã điểm danh trên Facebook"), cập nhật khung giờ rảnh theo tuần, xem lịch dạy & thu nhập của mình. |
+| **Giáo viên** | Xem lớp được giao, **tự thêm lớp mới của mình** (học sinh + thứ/giờ học) và sửa lịch lớp mình đang dạy, điểm danh buổi học hôm nay (kèm tick "đã điểm danh trên Facebook"), cập nhật khung giờ rảnh theo tuần, xem lịch dạy & thu nhập của mình. |
 
 Lưu ý: hệ thống **không thay thế** việc điểm danh trên nhóm Facebook — giáo
 viên vẫn cần điểm danh song song ở cả hai nơi như quy định hiện tại của
@@ -71,8 +71,14 @@ Gợi ý:
 - **Admin/Quản lý ca → Giao lớp**: danh sách lớp chưa có giáo viên; hệ thống
   gợi ý giáo viên có khung giờ rảnh trùng lịch lớp (đánh dấu ✓), bấm để giao
   ngay.
+- **Giáo viên → Lịch dạy**: tự thêm lớp học mới của mình (tên học sinh, thứ/giờ
+  học cố định hàng tuần) — hệ thống tự gán lớp cho chính giáo viên đó, và có
+  thể sửa lại lớp mình đang dạy nếu nhập sai.
 - **Giáo viên → Khung giờ rảnh**: lưới theo tuần (30 phút/ô, 07:00–22:00),
   bấm để bật/tắt khung giờ có thể nhận lớp.
+- **Admin/Quản lý ca → Nhập dữ liệu**: tải lên file CSV để tạo hàng loạt
+  giáo viên/lớp học một lần (hữu ích khi đưa ~200 lớp có sẵn vào hệ thống),
+  có file mẫu tải sẵn và báo lỗi theo từng dòng.
 - **Giáo viên → Hôm nay**: danh sách lớp trong ngày, điểm danh 1 lần/lớp/buổi
   (trạng thái: Đã dạy / GV vắng / HS vắng / Dời lịch), có ô ghi chú và ô tick
   xác nhận đã điểm danh Facebook.
