@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MusicNote Guitar - Quản lý giáo viên",
+  title: "pianoguitardemhatnhe - Quản lý giáo viên",
   description: "Điểm danh, chấm công và giao lớp cho giáo viên guitar online",
 };
 

@@ -14,7 +14,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <TopNav title="MusicNote Guitar" userName={session.name} links={links} />
+      <TopNav title="pianoguitardemhatnhe" userName={session.name} links={links} />
       <main className="max-w-4xl mx-auto px-4 py-6">{children}</main>
     </div>
   );
