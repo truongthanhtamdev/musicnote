@@ -32,7 +32,14 @@ export default async function ClassesPage() {
             <tbody className="divide-y divide-slate-100">
               {classes.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-medium text-slate-900">{c.student_name}</td>
+                  <td className="px-4 py-2.5 font-medium text-slate-900">
+                    {c.student_name}
+                    {c.guardian_name && (
+                      <span className="block text-xs font-normal text-slate-400">
+                        PH: {c.guardian_name}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-slate-600">
                     {c.subject}
                     {c.language === "en" && (

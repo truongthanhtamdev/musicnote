@@ -14,9 +14,10 @@ export default function ClassesImportForm() {
       <p className="text-xs text-slate-500">
         Cột theo thứ tự:{" "}
         <code>
-          TenHocSinh,SDT,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
+          TenHocSinh,SDT,PhuHuynh,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
         </code>{" "}
-        (dòng đầu là tiêu đề). MonHoc mặc định &quot;Guitar&quot; nếu để trống. NgonNgu là{" "}
+        (dòng đầu là tiêu đề). PhuHuynh (tên người đóng tiền) để trống nếu học viên tự đóng.
+        MonHoc mặc định &quot;Guitar&quot; nếu để trống. NgonNgu là{" "}
         <code>vi</code> hoặc <code>en</code> (mặc định <code>vi</code>). Thu nhận T2..T7 hoặc CN.
         GioBatDau dạng HH:MM (VD 19:00). EmailGiaoVien để trống nếu lớp chưa xếp giáo viên.
       </p>
