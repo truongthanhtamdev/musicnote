@@ -10,6 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/assign", label: "Giao lớp" },
     { href: "/admin/teachers", label: "Giáo viên" },
     { href: "/admin/attendance", label: "Điểm danh" },
+    { href: "/admin/import", label: "Nhập dữ liệu" },
     ...(session.role === "admin"
       ? [
           { href: "/admin/payroll", label: "Chấm công / Lương" },
