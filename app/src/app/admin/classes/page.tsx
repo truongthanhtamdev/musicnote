@@ -1,0 +1,72 @@
+import Link from "next/link";
+import { listClasses, listTeachers } from "@/lib/queries";
+import { formatTimeRange } from "@/lib/format";
+import { DAY_LABELS } from "@/lib/types";
+import NewClassForm from "./new-class-form";
+import ClassStatusBadge from "./status-badge";
+
+export default async function ClassesPage() {
+  const classes = listClasses();
+  const teachers = listTeachers(false);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-slate-900">Lớp học ({classes.length})</h1>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-600 text-left">
+              <tr>
+                <th className="px-4 py-2.5 font-medium">Học sinh</th>
+                <th className="px-4 py-2.5 font-medium">Trình độ</th>
+                <th className="px-4 py-2.5 font-medium">Lịch học</th>
+                <th className="px-4 py-2.5 font-medium">Giáo viên</th>
+                <th className="px-4 py-2.5 font-medium">Trạng thái</th>
+                <th className="px-4 py-2.5 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {classes.map((c) => (
+                <tr key={c.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-2.5 font-medium text-slate-900">{c.student_name}</td>
+                  <td className="px-4 py-2.5 text-slate-600">{c.level || "-"}</td>
+                  <td className="px-4 py-2.5 text-slate-600">
+                    {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
+                  </td>
+                  <td className="px-4 py-2.5 text-slate-600">
+                    {c.teacher_name || (
+                      <span className="text-amber-600">Chưa xếp GV</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <ClassStatusBadge status={c.status} />
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <Link href={`/admin/classes/${c.id}`} className="text-indigo-600 hover:underline">
+                      Chi tiết
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {classes.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                    Chưa có lớp học nào.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 p-4 max-w-xl">
+        <h2 className="font-semibold text-slate-900 mb-3">Thêm lớp học mới</h2>
+        <NewClassForm teachers={teachers} />
+      </div>
+    </div>
+  );
+}
