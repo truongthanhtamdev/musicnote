@@ -31,7 +31,8 @@ export default async function PayrollPage({
       <div>
         <h1 className="text-xl font-bold text-slate-900">Chấm công / Tính lương</h1>
         <p className="text-slate-500 text-sm mt-1">
-          Lương = số buổi đã dạy (trạng thái &quot;Đã dạy&quot;) × đơn giá/buổi của từng giáo viên.
+          Lương = số buổi đã dạy (trạng thái &quot;Đã dạy&quot;) × đơn giá/buổi, cộng số buổi học
+          thử × 50.000đ/buổi (không theo đơn giá thường).
         </p>
       </div>
 
@@ -75,6 +76,7 @@ export default async function PayrollPage({
               <tr>
                 <th className="px-4 py-2.5 font-medium">Giáo viên</th>
                 <th className="px-4 py-2.5 font-medium">Số buổi đã dạy</th>
+                <th className="px-4 py-2.5 font-medium">Buổi thử</th>
                 <th className="px-4 py-2.5 font-medium">Đơn giá/buổi</th>
                 <th className="px-4 py-2.5 font-medium">Thành tiền</th>
               </tr>
@@ -84,6 +86,7 @@ export default async function PayrollPage({
                 <tr key={r.teacher_id} className="hover:bg-slate-50">
                   <td className="px-4 py-2.5 font-medium text-slate-900">{r.teacher_name}</td>
                   <td className="px-4 py-2.5">{r.completed_sessions}</td>
+                  <td className="px-4 py-2.5">{r.trial_sessions > 0 ? r.trial_sessions : "-"}</td>
                   <td className="px-4 py-2.5">
                     {r.pay_per_session ? formatVND(r.pay_per_session) : "-"}
                   </td>
@@ -92,7 +95,7 @@ export default async function PayrollPage({
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
                     Không có dữ liệu.
                   </td>
                 </tr>
@@ -100,7 +103,7 @@ export default async function PayrollPage({
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-slate-200 font-semibold">
-                <td className="px-4 py-2.5" colSpan={3}>
+                <td className="px-4 py-2.5" colSpan={4}>
                   Tổng cộng
                 </td>
                 <td className="px-4 py-2.5">{formatVND(total)}</td>

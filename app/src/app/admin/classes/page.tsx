@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { listClasses, listTeachers, getPackageProgress } from "@/lib/queries";
+import { listClasses, listTeachers, getPackageProgress, annotateSchedule } from "@/lib/queries";
 import { formatTimeRange } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 import NewClassForm from "./new-class-form";
 import ClassStatusBadge from "./status-badge";
 
 export default async function ClassesPage() {
-  const classes = listClasses();
+  const classes = annotateSchedule(listClasses());
   const teachers = listTeachers(false);
 
   return (
@@ -24,6 +24,7 @@ export default async function ClassesPage() {
                 <th className="px-4 py-2.5 font-medium">Môn / Ngôn ngữ</th>
                 <th className="px-4 py-2.5 font-medium">Trình độ</th>
                 <th className="px-4 py-2.5 font-medium">Lịch học</th>
+                <th className="px-4 py-2.5 font-medium">Buổi tiếp theo</th>
                 <th className="px-4 py-2.5 font-medium">Gói học</th>
                 <th className="px-4 py-2.5 font-medium">Giáo viên</th>
                 <th className="px-4 py-2.5 font-medium">Trạng thái</th>
@@ -34,7 +35,7 @@ export default async function ClassesPage() {
               {classes.map((c) => {
                 const progress = getPackageProgress(c);
                 return (
-                  <tr key={c.id} className="hover:bg-slate-50">
+                  <tr key={c.id} className={c.missedLastSession ? "bg-red-50 hover:bg-red-100" : "hover:bg-slate-50"}>
                     <td className="px-4 py-2.5 font-medium text-slate-900">
                       {c.student_name}
                       {c.guardian_name && (
@@ -54,6 +55,14 @@ export default async function ClassesPage() {
                     <td className="px-4 py-2.5 text-slate-600">{c.level || "-"}</td>
                     <td className="px-4 py-2.5 text-slate-600">
                       {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className="text-slate-600">{c.nextSessionDate}</span>
+                      {c.missedLastSession && (
+                        <span className="block text-xs font-medium text-red-600">
+                          ⚠ Chưa điểm danh buổi {c.lastDueDate}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-slate-600">
                       {progress ? (
@@ -82,7 +91,7 @@ export default async function ClassesPage() {
               })}
               {classes.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={9} className="px-4 py-6 text-center text-slate-500">
                     Chưa có lớp học nào.
                   </td>
                 </tr>

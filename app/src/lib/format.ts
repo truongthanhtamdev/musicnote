@@ -37,3 +37,21 @@ export function addDays(d: Date, days: number): Date {
   date.setDate(date.getDate() + days);
   return date;
 }
+
+/** Next date on/after `from` that falls on `dayOfWeek` (0=CN..6=T7, JS getDay convention). */
+export function nextOccurrence(dayOfWeek: number, from: Date = new Date()): Date {
+  const d = new Date(from);
+  d.setHours(0, 0, 0, 0);
+  const diff = (dayOfWeek - d.getDay() + 7) % 7;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+/** Most recent date on/before `from` that falls on `dayOfWeek` — today counts if it matches. */
+export function mostRecentOccurrence(dayOfWeek: number, from: Date = new Date()): Date {
+  const d = new Date(from);
+  d.setHours(0, 0, 0, 0);
+  const diff = (d.getDay() - dayOfWeek + 7) % 7;
+  d.setDate(d.getDate() - diff);
+  return d;
+}
