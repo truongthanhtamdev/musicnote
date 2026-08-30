@@ -12,10 +12,10 @@ export default function LoginForm({ next }: { next: string }) {
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="next" value={next} />
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Email hoặc SĐT</label>
         <input
           name="email"
-          type="email"
+          type="text"
           required
           autoFocus
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -45,9 +45,8 @@ export default function LoginForm({ next }: { next: string }) {
         {pending ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
       <div className="text-xs text-slate-400 pt-2 border-t border-slate-100 space-y-0.5">
-        <p>Demo: admin@musicnote.local / admin123</p>
-        <p>Quản lý ca: manager@musicnote.local / manager123</p>
-        <p>Giáo viên: long.guitar@musicnote.local / teacher123</p>
+        <p>Tài khoản admin mặc định: admin@musicnote.local / admin123</p>
+        <p>Đổi mật khẩu này ngay sau khi đăng nhập lần đầu.</p>
       </div>
     </form>
   );

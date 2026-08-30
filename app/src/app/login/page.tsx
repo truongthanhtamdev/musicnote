@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { roleHomePath } from "@/lib/types";
 import LoginForm from "./login-form";
 
 export default async function LoginPage({
@@ -9,7 +10,7 @@ export default async function LoginPage({
 }) {
   const session = await getSession();
   if (session) {
-    redirect(session.role === "teacher" ? "/teacher" : "/admin");
+    redirect(roleHomePath(session.role));
   }
   const { next } = await searchParams;
 

@@ -15,12 +15,15 @@ declare global {
 
 function createConnection() {
   const db = new Database(DB_PATH);
+  // Set busy_timeout FIRST: several worker processes can import this module
+  // concurrently against the same file (e.g. during `next build`), and even
+  // the journal_mode/foreign_keys pragmas below can need a brief write lock
+  // (e.g. while another worker is mid-migration). Waiting for that lock
+  // instead of failing immediately requires busy_timeout to already be set
+  // before any other statement runs on this connection.
+  db.pragma("busy_timeout = 5000");
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
-  // Several build/dev worker processes can import this module concurrently
-  // against the same file; let a writer wait for a lock instead of throwing
-  // SQLITE_BUSY immediately (seed() below also takes an exclusive lock).
-  db.pragma("busy_timeout = 5000");
   return db;
 }
 
@@ -34,7 +37,7 @@ function migrate() {
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('admin','coordinator','teacher')),
+      role TEXT NOT NULL CHECK(role IN ('admin','coordinator','teacher','student')),
       phone TEXT,
       pay_per_session INTEGER,
       languages TEXT NOT NULL DEFAULT 'vi',
@@ -47,10 +50,13 @@ function migrate() {
       student_name TEXT NOT NULL,
       student_phone TEXT,
       guardian_name TEXT,
+      student_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
       level TEXT,
       subject TEXT NOT NULL DEFAULT 'Guitar',
       language TEXT NOT NULL DEFAULT 'vi' CHECK(language IN ('vi','en')),
       source TEXT NOT NULL DEFAULT 'center' CHECK(source IN ('center','self')),
+      package_total_sessions INTEGER,
+      package_started_at TEXT,
       day_of_week INTEGER NOT NULL,
       start_time TEXT NOT NULL,
       duration_minutes INTEGER NOT NULL DEFAULT 60,
@@ -78,12 +84,14 @@ function migrate() {
       check_in_time TEXT,
       check_out_time TEXT,
       fb_checkin_confirmed INTEGER NOT NULL DEFAULT 0,
+      lesson_content TEXT,
       note TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(class_id, session_date)
     );
 
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
+    CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_attendance_teacher_date ON attendance(teacher_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_availability_teacher ON availability(teacher_id);
@@ -97,7 +105,12 @@ function migrate() {
   ensureColumn("classes", "subject", "TEXT NOT NULL DEFAULT 'Guitar'");
   ensureColumn("classes", "language", "TEXT NOT NULL DEFAULT 'vi'");
   ensureColumn("classes", "source", "TEXT NOT NULL DEFAULT 'center'");
+  ensureColumn("classes", "student_user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL");
+  ensureColumn("classes", "package_total_sessions", "INTEGER");
+  ensureColumn("classes", "package_started_at", "TEXT");
   ensureColumn("users", "languages", "TEXT NOT NULL DEFAULT 'vi'");
+  ensureColumn("attendance", "lesson_content", "TEXT");
+  ensureStudentRoleSupported();
 }
 
 function ensureColumn(table: string, column: string, definition: string) {
@@ -107,131 +120,61 @@ function ensureColumn(table: string, column: string, definition: string) {
   }
 }
 
+// SQLite can't ALTER a CHECK constraint in place. A database created before
+// the 'student' role existed still has the old
+// CHECK(role IN ('admin','coordinator','teacher')) baked into its schema, so
+// inserting a student would fail — rebuild the table (preserving all rows)
+// the one time that's detected.
+function ensureStudentRoleSupported() {
+  const rebuild = () => {
+    const row = db
+      .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'")
+      .get() as { sql: string } | undefined;
+    if (!row || row.sql.includes("'student'")) return;
+
+    db.exec(`
+      ALTER TABLE users RENAME TO users_role_migration;
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('admin','coordinator','teacher','student')),
+        phone TEXT,
+        pay_per_session INTEGER,
+        languages TEXT NOT NULL DEFAULT 'vi',
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO users SELECT * FROM users_role_migration;
+      DROP TABLE users_role_migration;
+    `);
+  };
+
+  // Exclusive transaction: several worker processes may import this module
+  // concurrently against the same on-disk file (e.g. during `next build`).
+  // The lock serializes them so only one actually rebuilds the table; the
+  // others block, then see the 'student' role already present and no-op.
+  try {
+    db.transaction(rebuild).exclusive();
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (code !== "SQLITE_BUSY") throw err;
+  }
+}
+
 function seedInner() {
   const userCount = db.prepare("SELECT COUNT(*) as c FROM users").get() as { c: number };
   if (userCount.c > 0) return;
 
-  const insertUser = db.prepare(
-    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, active)
-     VALUES (@name, @email, @password_hash, @role, @phone, @pay_per_session, 1)`
-  );
-
-  const admin = insertUser.run({
+  db.prepare(
+    `INSERT INTO users (name, email, password_hash, role, active)
+     VALUES (@name, @email, @password_hash, 'admin', 1)`
+  ).run({
     name: "Quản trị viên",
     email: "admin@musicnote.local",
     password_hash: bcrypt.hashSync("admin123", 10),
-    role: "admin",
-    phone: null,
-    pay_per_session: null,
   });
-
-  insertUser.run({
-    name: "Quản lý ca",
-    email: "manager@musicnote.local",
-    password_hash: bcrypt.hashSync("manager123", 10),
-    role: "coordinator",
-    phone: null,
-    pay_per_session: null,
-  });
-
-  const insertTeacher = db.prepare(
-    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, languages, active)
-     VALUES (@name, @email, @password_hash, 'teacher', @phone, @pay_per_session, @languages, 1)`
-  );
-
-  const t1 = insertTeacher.run({
-    name: "Nguyễn Văn Long",
-    email: "long.guitar@musicnote.local",
-    password_hash: bcrypt.hashSync("teacher123", 10),
-    phone: "0901234567",
-    pay_per_session: 125000,
-    languages: "vi",
-  });
-
-  const t2 = insertTeacher.run({
-    name: "Trần Thị Mai",
-    email: "mai.guitar@musicnote.local",
-    password_hash: bcrypt.hashSync("teacher123", 10),
-    phone: "0907654321",
-    pay_per_session: 150000,
-    languages: "vi,en",
-  });
-
-  const insertAvail = db.prepare(
-    `INSERT INTO availability (teacher_id, day_of_week, start_time, end_time) VALUES (?, ?, ?, ?)`
-  );
-  for (const d of [1, 2, 3, 4, 5]) {
-    insertAvail.run(t1.lastInsertRowid, d, "18:00", "21:00");
-  }
-  for (const d of [0, 6]) {
-    insertAvail.run(t1.lastInsertRowid, d, "09:00", "12:00");
-  }
-  for (const d of [2, 4, 6]) {
-    insertAvail.run(t2.lastInsertRowid, d, "19:00", "22:00");
-  }
-
-  const insertClass = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, day_of_week, start_time, duration_minutes, teacher_id, status, notes)
-     VALUES (@student_name, @student_phone, @guardian_name, @level, @subject, @language, @source, @day_of_week, @start_time, @duration_minutes, @teacher_id, 'active', @notes)`
-  );
-  insertClass.run({
-    student_name: "Bé Minh Khang",
-    student_phone: "0912000111",
-    guardian_name: "Chị Lan (mẹ bé Khang)",
-    level: "Cơ bản",
-    subject: "Guitar",
-    language: "vi",
-    source: "center",
-    day_of_week: 2,
-    start_time: "19:00",
-    duration_minutes: 60,
-    teacher_id: t1.lastInsertRowid,
-    notes: "Học guitar đệm hát",
-  });
-  insertClass.run({
-    student_name: "Chị Thu Hà",
-    student_phone: "0912000222",
-    guardian_name: null,
-    level: "Trung cấp",
-    subject: "Piano",
-    language: "vi",
-    source: "center",
-    day_of_week: 4,
-    start_time: "20:00",
-    duration_minutes: 60,
-    teacher_id: t2.lastInsertRowid,
-    notes: "",
-  });
-  insertClass.run({
-    student_name: "Anh Quốc Bảo",
-    student_phone: "0912000333",
-    guardian_name: null,
-    level: "Cơ bản",
-    subject: "Guitar",
-    language: "vi",
-    source: "center",
-    day_of_week: 6,
-    start_time: "10:00",
-    duration_minutes: 60,
-    teacher_id: null,
-    notes: "Lớp mới, chưa xếp giáo viên",
-  });
-  insertClass.run({
-    student_name: "Ms. Sarah Johnson",
-    student_phone: "0912000444",
-    guardian_name: null,
-    level: "Cơ bản",
-    subject: "Guitar",
-    language: "en",
-    source: "center",
-    day_of_week: 3,
-    start_time: "18:00",
-    duration_minutes: 60,
-    teacher_id: t2.lastInsertRowid,
-    notes: "Học viên nước ngoài, dạy bằng tiếng Anh",
-  });
-
-  void admin;
 }
 
 function seed() {

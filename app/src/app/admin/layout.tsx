@@ -13,6 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/import", label: "Nhập dữ liệu" },
     ...(session.role === "admin"
       ? [
+          { href: "/admin/students", label: "Học viên" },
           { href: "/admin/payroll", label: "Chấm công / Lương" },
           { href: "/admin/staff", label: "Nhân sự quản lý" },
         ]
@@ -23,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-screen bg-slate-50">
       <TopNav
         title="Piano Guitar Đệm Hát Nhẹ"
-        userName={`${session.name} (${session.role === "admin" ? "Admin" : "Quản lý ca"})`}
+        userName={`${session.name} (${session.role === "admin" ? "Admin" : "Giáo vụ"})`}
         links={links}
       />
       <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>

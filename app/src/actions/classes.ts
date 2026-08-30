@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
+import { todayISO } from "@/lib/format";
 import type { FormState } from "./teachers";
 
 export async function createClassAction(
@@ -21,6 +22,9 @@ export async function createClassAction(
   const startTime = String(formData.get("start_time") || "");
   const durationMinutes = Number(formData.get("duration_minutes") || 60);
   const notes = String(formData.get("notes") || "").trim();
+  const packageRaw = String(formData.get("package_total_sessions") || "");
+  const packageTotalSessions = packageRaw ? Number(packageRaw) : null;
+  const packageStartedAt = packageTotalSessions ? todayISO() : null;
 
   // Teachers can only ever create a class for themselves — the client
   // never even shows them a teacher picker, but derive it from the
@@ -42,8 +46,8 @@ export async function createClassAction(
   }
 
   db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, package_total_sessions, package_started_at, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   ).run(
     studentName,
     studentPhone || null,
@@ -52,6 +56,8 @@ export async function createClassAction(
     subject,
     language,
     source,
+    packageTotalSessions,
+    packageStartedAt,
     dayOfWeek,
     startTime,
     durationMinutes || 60,
@@ -119,6 +125,23 @@ export async function updateClassAction(
   revalidatePath("/teacher/schedule");
   revalidatePath("/teacher");
   return { success: true };
+}
+
+export async function setPackageAction(classId: number, totalSessions: number | null) {
+  await assertRole(["admin", "coordinator"]);
+  const startedAt = totalSessions ? todayISO() : null;
+  db.prepare(
+    "UPDATE classes SET package_total_sessions = ?, package_started_at = ? WHERE id = ?"
+  ).run(totalSessions, startedAt, classId);
+  revalidatePath("/admin/classes");
+  revalidatePath(`/admin/classes/${classId}`);
+}
+
+export async function linkStudentAccountAction(classId: number, studentUserId: number | null) {
+  await assertRole(["admin", "coordinator"]);
+  db.prepare("UPDATE classes SET student_user_id = ? WHERE id = ?").run(studentUserId, classId);
+  revalidatePath("/admin/classes");
+  revalidatePath(`/admin/classes/${classId}`);
 }
 
 export async function assignTeacherAction(classId: number, teacherId: number | null) {

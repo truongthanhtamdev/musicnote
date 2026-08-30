@@ -8,7 +8,10 @@ const COOKIE_NAME = "musicnote_session";
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const isProtected = pathname.startsWith("/admin") || pathname.startsWith("/teacher");
+  const isProtected =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/teacher") ||
+    pathname.startsWith("/student");
   if (!isProtected) return NextResponse.next();
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -24,5 +27,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/teacher/:path*"],
+  matcher: ["/admin/:path*", "/teacher/:path*", "/student/:path*"],
 };

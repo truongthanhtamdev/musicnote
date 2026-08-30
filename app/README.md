@@ -9,25 +9,28 @@ một VPS nhỏ, không cần dịch vụ ngoài.
 
 | Vai trò | Quyền |
 |---|---|
-| **Admin** | Toàn quyền: quản lý giáo viên & lương/buổi, quản lý lớp, giao lớp, sửa điểm danh, xem/xuất báo cáo lương, quản lý tài khoản Quản lý ca. |
-| **Quản lý ca** (coordinator) | Tạo/sửa lớp học, giao lớp cho giáo viên, xem & sửa nhật ký điểm danh. Không xem/sửa được lương hay tài khoản. |
-| **Giáo viên** | Xem lớp được giao, **tự thêm lớp mới của mình** (học sinh + thứ/giờ học) và sửa lịch lớp mình đang dạy, điểm danh buổi học hôm nay (kèm tick "đã điểm danh trên Facebook"), cập nhật khung giờ rảnh theo tuần, xem lịch dạy & thu nhập của mình. |
+| **Admin** | Toàn quyền: tạo tài khoản cho Giáo vụ/Giáo viên/Học viên, quản lý giáo viên & lương/buổi, quản lý lớp, giao lớp, sửa điểm danh, xem/xuất báo cáo lương. |
+| **Giáo vụ** (coordinator) | Tạo/sửa lớp học, giao lớp cho giáo viên, xem & sửa nhật ký điểm danh. Không xem/sửa được lương hay tài khoản. |
+| **Giáo viên** | Xem lớp được giao, **tự thêm lớp mới của mình** (học sinh + thứ/giờ học) và sửa lịch lớp mình đang dạy, điểm danh buổi học hôm nay (kèm nội dung bài học + tick "đã điểm danh trên Facebook"), cập nhật khung giờ rảnh theo tuần, xem lịch dạy & thu nhập của mình. |
+| **Học viên** | Đăng nhập xem lớp học của mình: tiến độ gói học (đã học/còn lại bao nhiêu tiết) và nội dung các buổi học gần đây. Chỉ xem, không sửa được gì. |
 
 Lưu ý: hệ thống **không thay thế** việc điểm danh trên nhóm Facebook — giáo
 viên vẫn cần điểm danh song song ở cả hai nơi như quy định hiện tại của
 trung tâm; hệ thống chỉ có ô tick để xác nhận đã làm việc đó.
 
-## Tài khoản demo (seed sẵn khi chạy lần đầu)
+## Tài khoản khi chạy lần đầu
+
+Lần đầu khởi động, hệ thống chỉ tạo sẵn **1 tài khoản Admin**, không có dữ
+liệu demo nào khác:
 
 | Vai trò | Email | Mật khẩu |
 |---|---|---|
 | Admin | admin@musicnote.local | admin123 |
-| Quản lý ca | manager@musicnote.local | manager123 |
-| Giáo viên | long.guitar@musicnote.local | teacher123 |
-| Giáo viên | mai.guitar@musicnote.local | teacher123 |
 
-**Đổi các mật khẩu này (hoặc tạo tài khoản admin mới rồi vô hiệu hoá các tài
-khoản demo) trước khi đưa vào dùng thật.**
+**Đổi mật khẩu này ngay khi đăng nhập lần đầu.** Sau đó Admin là người tạo
+toàn bộ tài khoản còn lại (Giáo vụ ở trang **Nhân sự quản lý**, Giáo viên ở
+trang **Giáo viên**, Học viên ở trang **Học viên**) và nhập lớp học (thủ công
+hoặc import CSV hàng loạt).
 
 ## Chạy thử (development)
 
@@ -38,7 +41,7 @@ npm run dev
 ```
 
 Mở http://localhost:3000 — lần chạy đầu tiên hệ thống tự tạo file SQLite tại
-`data/musicnote.db` và chèn sẵn dữ liệu demo ở trên.
+`data/musicnote.db` và chèn sẵn tài khoản Admin ở trên.
 
 ## Triển khai (production)
 
@@ -66,9 +69,9 @@ Gợi ý:
 
 ## Các luồng chính
 
-- **Admin/Quản lý ca → Lớp học**: thêm lớp mới (học sinh, thứ/giờ học cố
+- **Admin/Giáo vụ → Lớp học**: thêm lớp mới (học sinh, thứ/giờ học cố
   định hàng tuần, thời lượng), sửa thông tin, tạm dừng/kết thúc lớp.
-- **Admin/Quản lý ca → Giao lớp**: danh sách lớp chưa có giáo viên; hệ thống
+- **Admin/Giáo vụ → Giao lớp**: danh sách lớp chưa có giáo viên; hệ thống
   gợi ý giáo viên có khung giờ rảnh trùng lịch lớp (đánh dấu ✓), bấm để giao
   ngay.
 - **Giáo viên → Lịch dạy**: tự thêm lớp học mới của mình (tên học sinh, thứ/giờ
@@ -81,9 +84,19 @@ Gợi ý:
   giao lớp tiếng Anh cho giáo viên chưa dạy được tiếng Anh.
 - **Phụ huynh**: với học sinh là trẻ em, có thể ghi thêm tên phụ huynh/người
   đóng học phí (khác với tên học sinh) để tiện liên hệ, thu học phí.
+- **Gói học (20/50/100 tiết)**: mỗi lớp có thể gắn 1 gói học; hệ thống tự đếm
+  số buổi "Đã dạy" tính từ ngày bắt đầu gói để ra số tiết đã học/còn lại
+  (cảnh báo màu cam khi còn ≤ 3 tiết). Bấm "Gia hạn (làm mới)" khi học viên
+  mua gói mới — chỉ tính lại từ ngày gia hạn, không xoá lịch sử cũ.
+- **Nội dung bài học**: mỗi lần điểm danh, giáo viên ghi lại buổi đó đã dạy
+  gì; nội dung này hiện trong lịch sử điểm danh (Admin/Giáo vụ/Giáo viên) và
+  trong trang của Học viên, giúp theo dõi học viên đã học tới đâu.
+- **Tài khoản Học viên**: Admin tạo tài khoản rồi gắn vào lớp (ở trang chi
+  tiết lớp học) để học viên tự đăng nhập xem tiến độ gói học và nội dung các
+  buổi học gần đây. Đăng nhập bằng Email hoặc SĐT tuỳ theo cách tạo tài khoản.
 - **Giáo viên → Khung giờ rảnh**: lưới theo tuần (30 phút/ô, 07:00–22:00),
   bấm để bật/tắt khung giờ có thể nhận lớp.
-- **Admin/Quản lý ca → Nhập dữ liệu**: tải lên file CSV để tạo hàng loạt
+- **Admin/Giáo vụ → Nhập dữ liệu**: tải lên file CSV để tạo hàng loạt
   giáo viên/lớp học một lần (hữu ích khi đưa ~200 lớp có sẵn vào hệ thống),
   có file mẫu tải sẵn và báo lỗi theo từng dòng.
 - **Giáo viên → Hôm nay**: danh sách lớp trong ngày, điểm danh 1 lần/lớp/buổi

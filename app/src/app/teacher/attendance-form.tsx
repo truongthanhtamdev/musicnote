@@ -65,6 +65,19 @@ export default function AttendanceForm({
         Đã điểm danh trên nhóm Facebook
       </label>
 
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          Nội dung bài học hôm nay
+        </label>
+        <textarea
+          name="lesson_content"
+          defaultValue={existing?.lesson_content || ""}
+          placeholder="VD: Ôn hợp âm Am, Dm · Học bài mới: Chương 3"
+          rows={2}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+        />
+      </div>
+
       <input
         name="note"
         defaultValue={existing?.note || ""}

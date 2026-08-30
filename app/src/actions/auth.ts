@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { clearSessionCookie, getUserByEmail, setSessionCookie } from "@/lib/auth";
+import { roleHomePath } from "@/lib/types";
 
 export interface LoginState {
   error?: string;
@@ -35,7 +36,7 @@ export async function loginAction(
   if (next && next.startsWith("/")) {
     redirect(next);
   }
-  redirect(user.role === "teacher" ? "/teacher" : "/admin");
+  redirect(roleHomePath(user.role));
 }
 
 export async function logoutAction() {

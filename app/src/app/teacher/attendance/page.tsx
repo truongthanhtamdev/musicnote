@@ -54,6 +54,7 @@ export default async function TeacherAttendanceHistoryPage({
               <th className="px-4 py-2.5 font-medium">Học sinh</th>
               <th className="px-4 py-2.5 font-medium">Trạng thái</th>
               <th className="px-4 py-2.5 font-medium">Giờ</th>
+              <th className="px-4 py-2.5 font-medium">Nội dung bài học</th>
               <th className="px-4 py-2.5 font-medium">Ghi chú</th>
             </tr>
           </thead>
@@ -64,12 +65,13 @@ export default async function TeacherAttendanceHistoryPage({
                 <td className="px-4 py-2.5 font-medium text-slate-900">{a.student_name}</td>
                 <td className="px-4 py-2.5">{ATTENDANCE_STATUS_LABELS[a.status]}</td>
                 <td className="px-4 py-2.5 text-slate-500">{a.check_in_time || "-"}</td>
+                <td className="px-4 py-2.5 text-slate-600">{a.lesson_content || "-"}</td>
                 <td className="px-4 py-2.5 text-slate-500">{a.note || "-"}</td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
                   Không có dữ liệu.
                 </td>
               </tr>

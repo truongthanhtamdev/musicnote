@@ -29,7 +29,7 @@ export default function AttendanceRow({
         <td className="px-4 py-2">{row.session_date}</td>
         <td className="px-4 py-2">{row.student_name}</td>
         <td className="px-4 py-2">{row.teacher_name}</td>
-        <td colSpan={5} className="px-4 py-2">
+        <td colSpan={6} className="px-4 py-2">
           <form action={formAction} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="id" value={row.id} />
             <select
@@ -43,6 +43,12 @@ export default function AttendanceRow({
                 </option>
               ))}
             </select>
+            <input
+              name="lesson_content"
+              defaultValue={row.lesson_content || ""}
+              placeholder="Nội dung bài học"
+              className="rounded-lg border border-slate-300 px-2 py-1 text-sm flex-1 min-w-[160px]"
+            />
             <input
               name="note"
               defaultValue={row.note || ""}
@@ -78,6 +84,7 @@ export default function AttendanceRow({
       <td className="px-4 py-2">{ATTENDANCE_STATUS_LABELS[row.status]}</td>
       <td className="px-4 py-2">{row.fb_checkin_confirmed ? "✔" : "-"}</td>
       <td className="px-4 py-2 text-slate-500">{row.check_in_time || "-"}</td>
+      <td className="px-4 py-2 text-slate-600">{row.lesson_content || "-"}</td>
       <td className="px-4 py-2 text-slate-500">{row.note || "-"}</td>
       <td className="px-4 py-2 text-right">
         <button

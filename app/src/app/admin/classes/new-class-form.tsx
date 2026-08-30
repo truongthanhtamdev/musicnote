@@ -3,7 +3,7 @@
 import { useActionState, useRef, useEffect } from "react";
 import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
-import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, type UserRow } from "@/lib/types";
+import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, PACKAGE_OPTIONS, type UserRow } from "@/lib/types";
 
 const initialState: FormState = {};
 
@@ -101,10 +101,22 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
             </option>
           ))}
         </select>
+        <select
+          name="package_total_sessions"
+          defaultValue=""
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        >
+          <option value="">Không theo gói (học đều đặn)</option>
+          {PACKAGE_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              Gói {n} tiết
+            </option>
+          ))}
+        </select>
         <input
           name="notes"
           placeholder="Ghi chú"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm col-span-2"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </div>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}

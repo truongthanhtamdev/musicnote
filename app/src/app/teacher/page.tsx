@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth";
-import { listClassesForTeacher, getAttendance } from "@/lib/queries";
+import { listClassesForTeacher, getAttendance, getPackageProgress } from "@/lib/queries";
 import { formatTimeRange, todayISO } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 import AttendanceForm from "./attendance-form";
@@ -38,6 +38,7 @@ export default async function TeacherTodayPage() {
         <div className="space-y-4">
           {classes.map((c) => {
             const existing = getAttendance(c.id, todayStr);
+            const progress = getPackageProgress(c);
             return (
               <div
                 key={c.id}
@@ -60,6 +61,15 @@ export default async function TeacherTodayPage() {
                       {c.level ? ` · ${c.level}` : ""}
                       {c.guardian_name ? ` · PH: ${c.guardian_name}` : ""}
                     </p>
+                    {progress && (
+                      <p
+                        className={`text-xs mt-0.5 ${
+                          progress.remaining <= 3 ? "text-amber-600 font-medium" : "text-slate-400"
+                        }`}
+                      >
+                        Gói {progress.total} tiết · Đã học {progress.used} · Còn {progress.remaining}
+                      </p>
+                    )}
                   </div>
                   {existing && (
                     <span className="shrink-0 text-xs font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">

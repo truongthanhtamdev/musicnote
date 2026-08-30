@@ -89,6 +89,52 @@ export function teacherSpeaksLanguage(teacher: UserRow, language: string): boole
   return parseLanguages(teacher.languages).includes(language as "vi" | "en");
 }
 
+export function listStudents(): UserRow[] {
+  return db.prepare("SELECT * FROM users WHERE role = 'student' ORDER BY name").all() as UserRow[];
+}
+
+export function getStudentUser(id: number): UserRow | undefined {
+  return db.prepare("SELECT * FROM users WHERE id = ? AND role = 'student'").get(id) as
+    | UserRow
+    | undefined;
+}
+
+export function listClassesForStudent(studentUserId: number): ClassWithTeacher[] {
+  return db
+    .prepare(
+      `SELECT c.*, u.name as teacher_name
+       FROM classes c LEFT JOIN users u ON u.id = c.teacher_id
+       WHERE c.student_user_id = ?
+       ORDER BY c.day_of_week, c.start_time`
+    )
+    .all(studentUserId) as ClassWithTeacher[];
+}
+
+export interface PackageProgress {
+  total: number;
+  used: number;
+  remaining: number;
+  startedAt: string;
+}
+
+/** Sessions taught ("Đã dạy") since the package's start date count against it. */
+export function getPackageProgress(cls: ClassRow): PackageProgress | null {
+  if (!cls.package_total_sessions || !cls.package_started_at) return null;
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) as c FROM attendance
+       WHERE class_id = ? AND status = 'completed' AND session_date >= ?`
+    )
+    .get(cls.id, cls.package_started_at) as { c: number };
+  const used = row.c;
+  return {
+    total: cls.package_total_sessions,
+    used,
+    remaining: Math.max(0, cls.package_total_sessions - used),
+    startedAt: cls.package_started_at,
+  };
+}
+
 export function listAvailability(teacherId: number): AvailabilityRow[] {
   return db
     .prepare(
