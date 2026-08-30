@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Guitar Đệm Hát Nhẹ — Xem thử</title>
+<meta name="description" content="Bản xem trước giao diện quản lý điểm danh, chấm công và giao lớp cho giáo viên guitar." />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#FBF8F3; --surface:#FFFFFF; --ink:#251D16; --ink-muted:#75695A;
+    --line:#E7DFD1; --string:#4B3AD1; --string-strong:#3B2CB0; --string-soft:#EEEBFC;
+    --success:#1B8F62; --success-soft:#E4F5EE; --warning:#B0730A; --warning-soft:#FCF0DC;
+    --danger:#C23B2E; --danger-soft:#FBE9E7; --shadow: 0 1px 2px rgba(37,29,22,.05), 0 6px 20px -8px rgba(37,29,22,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#17140F; --surface:#211C15; --ink:#F3EEE4; --ink-muted:#B4A996;
+      --line:#362E22; --string:#8B7CFF; --string-strong:#A79CFF; --string-soft:#2A2350;
+      --success:#34C48C; --success-soft:#153328; --warning:#E0A53C; --warning-soft:#3A2A0E;
+      --danger:#F0685A; --danger-soft:#3B1D1A; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 26px -10px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#17140F; --surface:#211C15; --ink:#F3EEE4; --ink-muted:#B4A996;
+    --line:#362E22; --string:#8B7CFF; --string-strong:#A79CFF; --string-soft:#2A2350;
+    --success:#34C48C; --success-soft:#153328; --warning:#E0A53C; --warning-soft:#3A2A0E;
+    --danger:#F0685A; --danger-soft:#3B1D1A; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 26px -10px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box}
+  html,body{background:var(--paper); color:var(--ink);}
+  body{font-family:'Public Sans',ui-sans-serif,system-ui,sans-serif; -webkit-font-smoothing:antialiased;}
+  .font-display{font-family:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;}
+  .font-mono{font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,monospace; font-variant-numeric:tabular-nums;}
+  h1,h2,h3{text-wrap:balance;}
+
+  .surface{background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow);}
+  .ink-muted{color:var(--ink-muted);}
+  .hairline{border-color:var(--line) !important;}
+  .bg-paper{background:var(--paper);}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:.4rem; font-weight:600; border-radius:.6rem; padding:.55rem 1rem; font-size:.875rem; transition:.15s; cursor:pointer; border:1px solid transparent;}
+  .btn:focus-visible{outline:2px solid var(--string); outline-offset:2px;}
+  .btn-primary{background:var(--string); color:#fff;}
+  .btn-primary:hover{background:var(--string-strong);}
+  .btn-ghost{background:transparent; color:var(--ink-muted); border-color:var(--line);}
+  .btn-ghost:hover{color:var(--ink); border-color:var(--ink-muted);}
+  .btn-soft{background:var(--string-soft); color:var(--string-strong);}
+  .btn-soft:hover{filter:brightness(0.96);}
+
+  input,select{background:var(--surface); border:1px solid var(--line); color:var(--ink); border-radius:.6rem; padding:.5rem .7rem; font-size:.875rem; width:100%;}
+  input:focus,select:focus{outline:2px solid var(--string); outline-offset:1px; border-color:var(--string);}
+  label{font-size:.78rem; font-weight:600; color:var(--ink-muted); display:block; margin-bottom:.3rem;}
+
+  .pill{font-size:.72rem; font-weight:600; padding:.2rem .55rem; border-radius:999px; white-space:nowrap;}
+  .pill-success{background:var(--success-soft); color:var(--success);}
+  .pill-warning{background:var(--warning-soft); color:var(--warning);}
+  .pill-danger{background:var(--danger-soft); color:var(--danger);}
+  .pill-muted{background:var(--paper); color:var(--ink-muted); border:1px solid var(--line);}
+
+  .navlink{display:flex; align-items:center; gap:.6rem; padding:.55rem .75rem; border-radius:.55rem; font-size:.875rem; font-weight:500; color:var(--ink-muted); cursor:pointer;}
+  .navlink:hover{background:var(--string-soft); color:var(--ink);}
+  .navlink.active{background:var(--string-soft); color:var(--string-strong); font-weight:700;}
+
+  table{width:100%; border-collapse:collapse; font-size:.875rem;}
+  th{text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-muted); font-weight:700; padding:.6rem .8rem; border-bottom:1px solid var(--line);}
+  td{padding:.65rem .8rem; border-bottom:1px solid var(--line);}
+  tr:last-child td{border-bottom:none;}
+
+  .status-pill{display:block; text-align:center; border:1px solid var(--line); border-radius:.6rem; padding:.5rem; font-size:.8rem; font-weight:700; cursor:pointer; color:var(--ink-muted); transition:.12s;}
+  .status-pill:hover{border-color:var(--ink-muted);}
+  .status-pill.selected[data-tone="ok"]{background:var(--success); border-color:var(--success); color:#fff;}
+  .status-pill.selected[data-tone="warn"]{background:var(--warning); border-color:var(--warning); color:#fff;}
+  .status-pill.selected[data-tone="bad"]{background:var(--danger); border-color:var(--danger); color:#fff;}
+  .status-pill.selected[data-tone="off"]{background:var(--ink-muted); border-color:var(--ink-muted); color:#fff;}
+
+  .slot{height:1.35rem; border-radius:.3rem; background:var(--paper); border:1px solid var(--line); cursor:pointer;}
+  .slot.on{background:var(--success); border-color:var(--success);}
+  .slot:hover{filter:brightness(0.94);}
+
+  ::-webkit-scrollbar{height:8px; width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:99px;}
+
+  [hidden]{display:none !important;}
+  .fade-in{animation:fade .25s ease both;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+  @media (prefers-reduced-motion: reduce){ .fade-in{animation:none;} }
+</style>
+</head>
+<body>
+<div class="min-h-screen bg-paper">
+
+  <!-- ===== Demo notice ===== -->
+  <div class="text-xs text-center py-2 px-4" style="background:var(--string-soft); color:var(--string-strong);">
+    🎸 Đây là bản <strong>xem trước giao diện</strong> với dữ liệu mẫu, chạy ngay trong trình duyệt của bạn — chưa nối với máy chủ thật, dữ liệu không dùng cho việc trả lương thật.
+  </div>
+
+  <!-- ===== Gate: role picker ===== -->
+  <div id="gate" class="min-h-[85vh] flex items-center justify-center px-4">
+    <div class="w-full max-w-md fade-in">
+      <div class="text-center mb-8">
+        <p class="font-display text-2xl font-bold" style="color:var(--string-strong);">Piano Guitar Đệm Hát Nhẹ</p>
+        <p class="ink-muted mt-1 text-sm">Điểm danh · Chấm công · Xếp lớp cho giáo viên online</p>
+      </div>
+      <div class="surface rounded-2xl p-6">
+        <p class="text-sm font-semibold mb-3">Xem thử với vai trò nào?</p>
+        <div class="space-y-2.5">
+          <button onclick="enter('admin')" class="w-full text-left rounded-xl p-3.5 flex items-center gap-3 hairline border transition hover:border-[var(--string)]">
+            <span class="w-9 h-9 rounded-lg grid place-items-center text-base" style="background:var(--string-soft);">👑</span>
+            <span>
+              <span class="block font-semibold text-sm">Admin</span>
+              <span class="block ink-muted text-xs">Toàn quyền: lớp học, giáo viên, lương</span>
+            </span>
+          </button>
+          <button onclick="enter('coordinator')" class="w-full text-left rounded-xl p-3.5 flex items-center gap-3 hairline border transition hover:border-[var(--string)]">
+            <span class="w-9 h-9 rounded-lg grid place-items-center text-base" style="background:var(--string-soft);">🗂️</span>
+            <span>
+              <span class="block font-semibold text-sm">Quản lý ca</span>
+              <span class="block ink-muted text-xs">Xếp lớp &amp; xem điểm danh, không đụng vào lương</span>
+            </span>
+          </button>
+          <button onclick="enter('teacher')" class="w-full text-left rounded-xl p-3.5 flex items-center gap-3 hairline border transition hover:border-[var(--string)]">
+            <span class="w-9 h-9 rounded-lg grid place-items-center text-base" style="background:var(--string-soft);">🎸</span>
+            <span>
+              <span class="block font-semibold text-sm">Giáo viên (Nguyễn Văn Long)</span>
+              <span class="block ink-muted text-xs">Điểm danh, khung giờ rảnh, thu nhập</span>
+            </span>
+          </button>
+        </div>
+      </div>
+      <p class="text-center text-xs ink-muted mt-5">Không cần mật khẩu — đây là bản xem thử offline.</p>
+    </div>
+  </div>
+
+  <!-- ===== App shell ===== -->
+  <div id="app" hidden>
+    <header class="surface" style="border-left:none; border-right:none; border-top:none;">
+      <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="font-display font-bold" style="color:var(--string-strong);">Piano Guitar Đệm Hát Nhẹ</span>
+          <span id="roleTag" class="pill pill-muted"></span>
+        </div>
+        <button onclick="exitDemo()" class="btn btn-ghost">← Đổi vai trò</button>
+      </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-4 py-6 flex gap-6">
+      <nav id="sidenav" class="w-52 shrink-0 hidden md:flex flex-col gap-1"></nav>
+      <main id="view" class="flex-1 min-w-0 fade-in"></main>
+    </div>
+
+    <nav id="mobilenav" class="md:hidden fixed bottom-0 left-0 right-0 surface flex overflow-x-auto"></nav>
+  </div>
+</div>
+
+<script>
+// ---------- Mock data store (persisted per-viewer in this browser only) ----------
+const KEY = 'pgdhn_demo_v3';
+const DAY_LABELS = ['CN','T2','T3','T4','T5','T6','T7'];
+const DAY_ORDER = [1,2,3,4,5,6,0];
+const TODAY_DOW = 2; // fixed "demo today" = Thứ 3, so sample data always shows something
+
+function seed(){
+  return {
+    teachers: [
+      { id:1, name:'Nguyễn Văn Long', phone:'0901 234 567', pay:125000, langs:['vi'] },
+      { id:2, name:'Trần Thị Mai', phone:'0907 654 321', pay:150000, langs:['vi','en'] },
+    ],
+    classes: [
+      { id:1, student:'Bé Minh Khang', guardian:'Chị Lan (mẹ bé Khang)', level:'Cơ bản', subject:'Guitar', lang:'vi', source:'center', day:2, time:'19:00', dur:60, teacher:1, status:'active' },
+      { id:2, student:'Chị Thu Hà', level:'Trung cấp', subject:'Piano', lang:'vi', source:'center', day:4, time:'20:00', dur:60, teacher:2, status:'active' },
+      { id:3, student:'Anh Quốc Bảo', level:'Cơ bản', subject:'Guitar', lang:'vi', source:'center', day:6, time:'10:00', dur:60, teacher:null, status:'active' },
+      { id:4, student:'Ms. Sarah Johnson', level:'Cơ bản', subject:'Guitar', lang:'en', source:'center', day:3, time:'18:00', dur:60, teacher:2, status:'active' },
+    ],
+    availability: {
+      1: ['1-18:00','1-18:30','1-19:00','1-19:30','1-20:00','1-20:30',
+          '2-18:00','2-18:30','2-19:00','2-19:30','2-20:00','2-20:30',
+          '3-18:00','3-18:30','3-19:00','3-19:30','3-20:00','3-20:30',
+          '4-18:00','4-18:30','4-19:00','4-19:30','4-20:00','4-20:30',
+          '5-18:00','5-18:30','5-19:00','5-19:30','5-20:00','5-20:30',
+          '0-09:00','0-09:30','0-10:00','0-10:30','0-11:00','0-11:30',
+          '6-09:00','6-09:30','6-10:00','6-10:30','6-11:00','6-11:30'],
+      2: ['2-19:00','2-19:30','2-20:00','2-20:30','2-21:00','2-21:30',
+          '4-19:00','4-19:30','4-20:00','4-20:30','4-21:00','4-21:30',
+          '6-19:00','6-19:30','6-20:00','6-20:30','6-21:00','6-21:30'],
+    },
+    attendance: {
+      // key: classId_date -> {status, fb, note, time}
+      '1_2026-08-04':{status:'ok', fb:1, time:'19:02'},
+      '1_2026-08-11':{status:'ok', fb:1, time:'19:05'},
+      '1_2026-08-18':{status:'ok', fb:0, note:'Trễ 10 phút', time:'19:12'},
+      '2_2026-08-06':{status:'ok', fb:1, time:'20:01'},
+      '2_2026-08-13':{status:'bad', fb:1, note:'Học sinh báo bận', time:'20:03'},
+      '2_2026-08-20':{status:'ok', fb:1, time:'20:00'},
+    },
+    nextId: 5,
+  };
+}
+function load(){
+  try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return seed();
+}
+let DB = load();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} }
+function resetDemo(){ DB = seed(); save(); render(); }
+
+const STATUS_META = {
+  ok:   {label:'Đã dạy',  tone:'ok'},
+  wait: {label:'Chưa điểm danh', tone:'warn'},
+  tabs: {label:'HS vắng', tone:'warn'},
+  bad:  {label:'GV vắng', tone:'bad'},
+  resc: {label:'Dời lịch', tone:'off'},
+};
+
+function vnd(n){ return (n||0).toLocaleString('vi-VN') + 'đ'; }
+function endTime(t,dur){ const [h,m]=t.split(':').map(Number); const d=new Date(2000,0,1,h,m+dur); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function teacherName(id){ const t=DB.teachers.find(t=>t.id===id); return t? t.name : null; }
+function classesFor(teacherId){ return DB.classes.filter(c=>c.teacher===teacherId); }
+function teacherSpeaks(teacherId, lang){ const t=DB.teachers.find(t=>t.id===teacherId); return !!t && t.langs.includes(lang); }
+
+const SUBJECTS = ['Guitar','Piano','Violin','Thanh nhạc'];
+const LANG_LABEL = { vi:'Tiếng Việt', en:'Tiếng Anh' };
+const SOURCE_LABEL = { center:'Trung tâm giao', self:'GV tự tìm học viên' };
+function langBadge(lang){ return lang==='en' ? `<span class="pill" style="background:#E3EEFF; color:#2454B8;">EN</span>` : ''; }
+
+function isAvailable(teacherId, day, time, dur){
+  const slots = DB.availability[teacherId] || [];
+  const [h,m] = time.split(':').map(Number);
+  const start = h*60+m, end = start+dur;
+  // slots are 30-min blocks like "2-18:00" -> covers 18:00-18:30
+  for(const s of slots){
+    // scan contiguous run starting at each slot to see if it covers [start,end)
+  }
+  // Build coverage set of minutes-of-day covered for that day
+  const covered = new Set();
+  slots.filter(s=>s.startsWith(day+'-')).forEach(s=>{
+    const t = s.split('-')[1]; const [sh,sm]=t.split(':').map(Number);
+    const base = sh*60+sm;
+    for(let m2=base; m2<base+30; m2++) covered.add(m2);
+  });
+  for(let m2=start; m2<end; m2++) if(!covered.has(m2)) return false;
+  return true;
+}
+
+// ---------- Routing / state ----------
+let ROLE = null; // 'admin' | 'coordinator' | 'teacher'
+let PAGE = null;
+const CURRENT_TEACHER_ID = 1;
+
+const NAV = {
+  admin: [
+    ['overview','Tổng quan','📊'],
+    ['classes','Lớp học','🎼'],
+    ['assign','Giao lớp','🧩'],
+    ['teachers','Giáo viên','🧑‍🏫'],
+    ['attendance','Điểm danh','✅'],
+    ['payroll','Chấm công / Lương','💵'],
+  ],
+  coordinator: [
+    ['overview','Tổng quan','📊'],
+    ['classes','Lớp học','🎼'],
+    ['assign','Giao lớp','🧩'],
+    ['attendance','Điểm danh','✅'],
+  ],
+  teacher: [
+    ['today','Hôm nay','🎸'],
+    ['schedule','Lịch dạy','🗓️'],
+    ['availability','Khung giờ rảnh','🕘'],
+    ['earnings','Thu nhập','💰'],
+  ],
+};
+const ROLE_TAG = { admin:'Admin', coordinator:'Quản lý ca', teacher:'Giáo viên · Nguyễn Văn Long' };
+
+function enter(role){
+  ROLE = role;
+  PAGE = NAV[role][0][0];
+  document.getElementById('gate').hidden = true;
+  document.getElementById('app').hidden = false;
+  document.getElementById('roleTag').textContent = ROLE_TAG[role];
+  buildNav();
+  render();
+}
+function exitDemo(){
+  document.getElementById('gate').hidden = false;
+  document.getElementById('app').hidden = true;
+}
+function go(page){ PAGE = page; buildNav(); render(); }
+
+function buildNav(){
+  const items = NAV[ROLE];
+  const mk = (extra) => items.map(([id,label,icon]) => `
+    <button onclick="go('${id}')" class="navlink ${PAGE===id?'active':''} ${extra}">
+      <span>${icon}</span><span>${label}</span>
+    </button>`).join('');
+  document.getElementById('sidenav').innerHTML = mk('');
+  document.getElementById('mobilenav').innerHTML = items.map(([id,label,icon]) => `
+    <button onclick="go('${id}')" class="flex-1 min-w-[84px] flex flex-col items-center gap-0.5 py-2.5 text-[11px] ${PAGE===id? 'font-bold':'ink-muted'}" style="color:${PAGE===id?'var(--string-strong)':''}">
+      <span class="text-base">${icon}</span>${label}
+    </button>`).join('');
+}
+
+function card(inner, cls=''){ return `<div class="surface rounded-2xl ${cls}">${inner}</div>`; }
+function h1(title, sub){ return `<div class="mb-5"><h1 class="font-display text-xl font-bold">${title}</h1>${sub?`<p class="ink-muted text-sm mt-1">${sub}</p>`:''}</div>`; }
+
+// ---------- Screens: Admin / Coordinator ----------
+function screenOverview(){
+  const activeClasses = DB.classes.filter(c=>c.status==='active');
+  const unassigned = activeClasses.filter(c=>!c.teacher);
+  const todays = activeClasses.filter(c=>c.day===TODAY_DOW);
+  const rows = todays.map(c=>{
+    const marked = !!DB.attendance[c.id+'_2026-08-25'];
+    return `<div class="flex items-center justify-between py-2.5 hairline border-b last:border-0">
+      <div><p class="font-semibold text-sm">${c.student}</p><p class="ink-muted text-xs">${c.time}–${endTime(c.time,c.dur)} · ${teacherName(c.teacher)||'Chưa có GV'}</p></div>
+      <span class="pill ${marked?'pill-success':'pill-warning'}">${marked?'Đã điểm danh':'Chưa điểm danh'}</span>
+    </div>`;
+  }).join('') || `<p class="ink-muted text-sm py-4">Không có lớp nào hôm nay.</p>`;
+
+  document.getElementById('view').innerHTML = `
+    ${h1('Tổng quan','Thứ 3 (demo) · 25/08/2026')}
+    <div class="grid grid-cols-3 gap-4 mb-5">
+      ${card(`<div class="p-4"><p class="ink-muted text-xs">Giáo viên</p><p class="font-mono text-2xl font-bold mt-1">${DB.teachers.length}</p></div>`)}
+      ${card(`<div class="p-4"><p class="ink-muted text-xs">Lớp đang học</p><p class="font-mono text-2xl font-bold mt-1">${activeClasses.length}</p></div>`)}
+      ${card(`<div class="p-4"><p class="ink-muted text-xs">Chưa có giáo viên</p><p class="font-mono text-2xl font-bold mt-1" style="color:${unassigned.length?'var(--warning)':'inherit'}">${unassigned.length}</p></div>`)}
+    </div>
+    ${card(`<div class="p-4"><h2 class="font-semibold text-sm mb-1">Lớp học hôm nay</h2>${rows}</div>`)}
+  `;
+}
+
+function screenClasses(){
+  const rows = DB.classes.map(c=>`
+    <tr>
+      <td class="font-semibold">${c.student}${c.guardian?`<span class="block text-xs font-normal ink-muted">PH: ${c.guardian}</span>`:''}</td>
+      <td class="ink-muted">${c.subject} ${langBadge(c.lang)}</td>
+      <td class="ink-muted">${c.level}</td>
+      <td class="ink-muted">${DAY_LABELS[c.day]} ${c.time}–${endTime(c.time,c.dur)}</td>
+      <td>${teacherName(c.teacher) || '<span style="color:var(--warning)">Chưa xếp GV</span>'}</td>
+      <td><span class="pill ${c.status==='active'?'pill-success':'pill-muted'}">${c.status==='active'?'Đang học':'Tạm dừng'}</span></td>
+    </tr>`).join('');
+
+  document.getElementById('view').innerHTML = `
+    ${h1('Lớp học', DB.classes.length + ' lớp')}
+    ${card(`<div class="overflow-x-auto"><table><thead><tr><th>Học sinh</th><th>Môn/Ngôn ngữ</th><th>Trình độ</th><th>Lịch học</th><th>Giáo viên</th><th>Trạng thái</th></tr></thead><tbody>${rows}</tbody></table></div>`,'mb-5')}
+    ${card(`<div class="p-4">
+      <h2 class="font-semibold text-sm mb-3">Thêm lớp học mới</h2>
+      <form onsubmit="return addClass(event)" class="grid grid-cols-2 gap-3">
+        <input name="student" required placeholder="Tên học sinh" class="col-span-2" />
+        <input name="guardian" placeholder="Tên phụ huynh (nếu HS là trẻ em)" class="col-span-2" />
+        <input name="subject" list="subjectlist" value="Guitar" placeholder="Môn học" />
+        <datalist id="subjectlist">${SUBJECTS.map(s=>`<option value="${s}">`).join('')}</datalist>
+        <select name="lang"><option value="vi">Tiếng Việt</option><option value="en">Tiếng Anh</option></select>
+        <select name="day">${DAY_ORDER.map(d=>`<option value="${d}">${DAY_LABELS[d]}</option>`).join('')}</select>
+        <input name="time" type="time" required value="19:00" />
+        <select name="dur" class="col-span-2"><option value="45">45 phút</option><option value="60" selected>60 phút</option></select>
+        <button class="btn btn-primary col-span-2">+ Thêm lớp</button>
+      </form>
+    </div>`)}
+  `;
+}
+function addClass(e){
+  e.preventDefault();
+  const f = new FormData(e.target);
+  DB.classes.push({ id: DB.nextId++, student: f.get('student'), guardian:f.get('guardian')||null, level:'Cơ bản', subject:f.get('subject')||'Guitar', lang:f.get('lang'), source:'center', day:Number(f.get('day')), time:f.get('time'), dur:Number(f.get('dur')), teacher:null, status:'active' });
+  save(); screenClasses();
+  return false;
+}
+
+function screenAssign(){
+  const unassigned = DB.classes.filter(c=>c.status==='active' && !c.teacher);
+  const blocks = unassigned.map(c => {
+    const opts = DB.teachers.map(t=>{
+      const avail = isAvailable(t.id, c.day, c.time, c.dur);
+      const speaks = teacherSpeaks(t.id, c.lang);
+      const ok = avail && speaks;
+      let note = '';
+      if(!speaks && c.lang==='en') note = ' (chưa dạy được tiếng Anh)';
+      else if(!avail) note = ' (bận giờ này)';
+      return `<button onclick="assign(${c.id},${t.id})" class="btn ${ok?'btn-soft':'btn-ghost'} text-xs">${ok?'✓ ':''}${t.name}${note}</button>`;
+    }).join('');
+    return card(`<div class="p-4">
+      <p class="font-semibold text-sm">${c.student}</p>
+      <p class="ink-muted text-xs mb-3">${DAY_LABELS[c.day]} ${c.time}–${endTime(c.time,c.dur)} · ${c.level} · ${c.subject} ${langBadge(c.lang)}</p>
+      <div class="flex flex-wrap gap-2">${opts}</div>
+    </div>`,'mb-4');
+  }).join('') || card(`<div class="p-8 text-center ink-muted">Tất cả lớp đang học đều đã có giáo viên 🎉</div>`);
+
+  document.getElementById('view').innerHTML = `
+    ${h1('Giao lớp cho giáo viên', unassigned.length + ' lớp chưa có giáo viên · ✓ = giáo viên rảnh đúng giờ, đúng ngôn ngữ')}
+    ${blocks}
+  `;
+}
+function assign(classId, teacherId){
+  const c = DB.classes.find(c=>c.id===classId); c.teacher = teacherId; save(); screenAssign();
+}
+
+function screenTeachers(){
+  const rows = DB.teachers.map(t=>`
+    <tr><td class="font-semibold">${t.name}</td><td class="ink-muted">${t.phone}</td>
+    <td class="ink-muted">${t.langs.map(l=>LANG_LABEL[l]).join(', ')}</td>
+    <td class="font-mono">${vnd(t.pay)}/buổi</td><td>${classesFor(t.id).length} lớp</td></tr>`).join('');
+  document.getElementById('view').innerHTML = `
+    ${h1('Giáo viên')}
+    ${card(`<div class="overflow-x-auto"><table><thead><tr><th>Tên</th><th>SĐT</th><th>Ngôn ngữ</th><th>Lương/buổi</th><th>Đang dạy</th></tr></thead><tbody>${rows}</tbody></table></div>`)}
+  `;
+}
+
+function allAttendanceRows(){
+  return Object.entries(DB.attendance).map(([k,v])=>{
+    const [classId,date] = k.split('_');
+    const c = DB.classes.find(c=>c.id==classId);
+    return {classId:Number(classId), date, ...v, student:c?.student, teacherId:c?.teacher};
+  }).sort((a,b)=> b.date.localeCompare(a.date));
+}
+function screenAttendance(){
+  const rows = allAttendanceRows().map(r=>`
+    <tr><td class="font-mono">${r.date}</td><td class="font-semibold">${r.student}</td><td class="ink-muted">${teacherName(r.teacherId)}</td>
+    <td><span class="pill ${r.status==='ok'?'pill-success':'pill-danger'}">${r.status==='ok'?'Đã dạy':'HS vắng'}</span></td>
+    <td>${r.fb? '✔':'—'}</td><td class="ink-muted">${r.note||'—'}</td></tr>`).join('');
+  document.getElementById('view').innerHTML = `
+    ${h1('Nhật ký điểm danh')}
+    ${card(`<div class="overflow-x-auto"><table><thead><tr><th>Ngày</th><th>Học sinh</th><th>Giáo viên</th><th>Trạng thái</th><th>FB</th><th>Ghi chú</th></tr></thead><tbody>${rows}</tbody></table></div>`)}
+  `;
+}
+
+function screenPayroll(){
+  const rows = DB.teachers.map(t=>{
+    const n = allAttendanceRows().filter(r=>r.teacherId===t.id && r.status==='ok').length;
+    return {t, n, total:n*t.pay};
+  });
+  const grand = rows.reduce((s,r)=>s+r.total,0);
+  const body = rows.map(r=>`<tr><td class="font-semibold">${r.t.name}</td><td class="font-mono">${r.n}</td><td class="font-mono">${vnd(r.t.pay)}</td><td class="font-mono font-bold">${vnd(r.total)}</td></tr>`).join('');
+  document.getElementById('view').innerHTML = `
+    ${h1('Chấm công / Lương','Tháng 8/2026 (demo) · Lương = số buổi "Đã dạy" × đơn giá')}
+    ${card(`<div class="overflow-x-auto"><table><thead><tr><th>Giáo viên</th><th>Số buổi</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td class="font-bold" colspan="3">Tổng cộng</td><td class="font-mono font-bold">${vnd(grand)}</td></tr></tfoot>
+    </table></div>`)}
+  `;
+}
+
+// ---------- Screens: Teacher ----------
+function screenToday(){
+  const todays = DB.classes.filter(c=>c.teacher===CURRENT_TEACHER_ID && c.day===TODAY_DOW && c.status==='active');
+  const dateKey = '2026-08-25';
+  const done = todays.filter(c=>DB.attendance[c.id+'_'+dateKey]).length;
+  const items = todays.map(c=>{
+    const rec = DB.attendance[c.id+'_'+dateKey];
+    const opts = [['ok','Đã dạy','ok'],['tabs','HS vắng','warn'],['bad','GV vắng','bad'],['resc','Dời lịch','off']];
+    const pills = opts.map(([v,label,tone])=>`<button data-tone="${tone}" class="status-pill ${rec&&rec.status===v?'selected':''}" onclick="markAttendance(${c.id},'${v}')">${label}</button>`).join('');
+    return card(`<div class="p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div><p class="font-semibold text-sm">${c.student} ${langBadge(c.lang)}</p><p class="ink-muted text-xs">${c.time}–${endTime(c.time,c.dur)} · ${c.subject}${c.guardian?` · PH: ${c.guardian}`:''}</p></div>
+        ${rec?`<span class="pill pill-success">✓ ${rec.time}</span>`:''}
+      </div>
+      <div class="grid grid-cols-2 gap-2">${pills}</div>
+    </div>`,'mb-4');
+  }).join('') || card(`<div class="p-10 text-center"><p class="text-3xl mb-2">🎸</p><p class="ink-muted">Hôm nay bạn không có lớp nào.</p></div>`);
+
+  document.getElementById('view').innerHTML = `
+    ${h1('Chào Long 👋', `Thứ 3, 25/08/2026${todays.length?` · Đã điểm danh ${done}/${todays.length} lớp`:''}`)}
+    <div class="rounded-xl p-3 mb-4 text-sm" style="background:var(--warning-soft); color:var(--warning);">Nhớ điểm danh trên nhóm Facebook song song như quy định nhé.</div>
+    ${items}
+  `;
+}
+function markAttendance(classId, status){
+  const now = new Date(); const time = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  DB.attendance[classId+'_2026-08-25'] = { status, fb:1, time };
+  save(); screenToday();
+}
+
+function screenSchedule(){
+  const mine = DB.classes.filter(c=>c.teacher===CURRENT_TEACHER_ID && c.status==='active');
+  const grid = DAY_ORDER.map(d=>{
+    const list = mine.filter(c=>c.day===d);
+    return card(`<div class="p-3.5">
+      <p class="font-semibold text-sm mb-1.5">${DAY_LABELS[d]}</p>
+      ${list.length? list.map(c=>`<div class="flex justify-between text-sm py-1"><span>${c.student} <span class="ink-muted text-xs">${c.subject}${c.lang==='en'?' · EN':''}</span></span><span class="ink-muted font-mono">${c.time}</span></div>`).join('') : '<p class="ink-muted text-xs">Không có lớp</p>'}
+    </div>`);
+  }).join('');
+  document.getElementById('view').innerHTML = `
+    ${h1('Lịch dạy trong tuần', `Bạn có ${mine.length} lớp · Có học sinh mới nhận từ trung tâm hoặc tự tìm? Thêm ngay bên dưới`)}
+    ${card(`<div class="p-4 mb-5">
+      <form onsubmit="return addOwnClass(event)" class="grid grid-cols-2 gap-3">
+        <select name="source" class="col-span-2"><option value="center">Trung tâm giao</option><option value="self">GV tự tìm học viên</option></select>
+        <input name="student" required placeholder="Tên học sinh" class="col-span-2" />
+        <input name="guardian" placeholder="Tên phụ huynh (nếu HS là trẻ em)" class="col-span-2" />
+        <input name="subject" list="subjectlist2" value="Guitar" placeholder="Môn học" />
+        <datalist id="subjectlist2">${SUBJECTS.map(s=>`<option value="${s}">`).join('')}</datalist>
+        <select name="lang"><option value="vi">Tiếng Việt</option><option value="en">Tiếng Anh</option></select>
+        <select name="day">${DAY_ORDER.map(d=>`<option value="${d}">${DAY_LABELS[d]}</option>`).join('')}</select>
+        <input name="time" type="time" required value="18:00" />
+        <button class="btn btn-primary col-span-2">+ Thêm lớp của tôi</button>
+      </form>
+    </div>`)}
+    <div class="grid sm:grid-cols-2 gap-3">${grid}</div>
+  `;
+}
+function addOwnClass(e){
+  e.preventDefault(); const f = new FormData(e.target);
+  DB.classes.push({ id: DB.nextId++, student:f.get('student'), guardian:f.get('guardian')||null, level:'Cơ bản', subject:f.get('subject')||'Guitar', lang:f.get('lang'), source:f.get('source'), day:Number(f.get('day')), time:f.get('time'), dur:60, teacher:CURRENT_TEACHER_ID, status:'active' });
+  save(); screenSchedule(); return false;
+}
+
+function screenAvailability(){
+  const slots = [];
+  for(let h=7; h<22; h++){ slots.push(`${String(h).padStart(2,'0')}:00`); slots.push(`${String(h).padStart(2,'0')}:30`); }
+  const filled = new Set(DB.availability[CURRENT_TEACHER_ID]||[]);
+  const rows = slots.map(time => `<tr>
+    <td class="ink-muted text-xs text-right pr-2 font-mono">${time}</td>
+    ${DAY_ORDER.map(d=>{ const key=d+'-'+time; return `<td class="p-0.5"><div class="slot ${filled.has(key)?'on':''}" onclick="toggleSlot('${key}')"></div></td>`; }).join('')}
+  </tr>`).join('');
+  document.getElementById('view').innerHTML = `
+    ${h1('Khung giờ rảnh','Bấm vào ô để bật/tắt khung giờ bạn có thể nhận lớp.')}
+    <div class="flex items-center gap-4 text-xs ink-muted mb-3">
+      <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded" style="background:var(--success)"></span>Rảnh</span>
+      <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded hairline border" style="background:var(--paper)"></span>Bận</span>
+    </div>
+    ${card(`<div class="p-3 overflow-x-auto"><table><thead><tr><th></th>${DAY_ORDER.map(d=>`<th class="text-center">${DAY_LABELS[d]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`)}
+  `;
+}
+function toggleSlot(key){
+  const list = DB.availability[CURRENT_TEACHER_ID] || (DB.availability[CURRENT_TEACHER_ID]=[]);
+  const i = list.indexOf(key);
+  if(i>=0) list.splice(i,1); else list.push(key);
+  save(); screenAvailability();
+}
+
+function screenEarnings(){
+  const t = DB.teachers.find(t=>t.id===CURRENT_TEACHER_ID);
+  const n = allAttendanceRows().filter(r=>r.teacherId===t.id && r.status==='ok').length;
+  document.getElementById('view').innerHTML = `
+    ${h1('Thu nhập của tôi','Tháng 8/2026 (demo)')}
+    ${card(`<div class="p-6 grid grid-cols-3 gap-4 text-center">
+      <div><p class="ink-muted text-xs">Số buổi đã dạy</p><p class="font-mono text-2xl font-bold mt-1">${n}</p></div>
+      <div><p class="ink-muted text-xs">Đơn giá/buổi</p><p class="font-mono text-2xl font-bold mt-1">${vnd(t.pay)}</p></div>
+      <div><p class="ink-muted text-xs">Tổng thu nhập</p><p class="font-mono text-2xl font-bold mt-1" style="color:var(--string-strong)">${vnd(n*t.pay)}</p></div>
+    </div>`)}
+  `;
+}
+
+function render(){
+  buildNav();
+  const map = { overview:screenOverview, classes:screenClasses, assign:screenAssign, teachers:screenTeachers, attendance:screenAttendance, payroll:screenPayroll,
+                today:screenToday, schedule:screenSchedule, availability:screenAvailability, earnings:screenEarnings };
+  (map[PAGE] || screenOverview)();
+}
+</script>
+</body>
+</html>
