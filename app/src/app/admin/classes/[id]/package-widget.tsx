@@ -37,14 +37,14 @@ export default function PackageWidget({
           <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
             <div
               className={`h-full rounded-full ${
-                progress.remaining <= 3 ? "bg-amber-500" : "bg-indigo-600"
+                progress.remaining <= 3 ? "bg-amber-500" : "bg-gold-600"
               }`}
               style={{ width: `${Math.min(100, (progress.used / progress.total) * 100)}%` }}
             />
           </div>
           <p className="text-xs text-slate-400 mt-1">Bắt đầu tính từ {progress.startedAt}</p>
           {progress.sharedWith.length > 0 && (
-            <p className="text-xs text-indigo-600 mt-1">
+            <p className="text-xs text-gold-600 mt-1">
               Dùng chung gói với {progress.sharedWith.length} lịch học khác của học viên này —
               học buổi nào cũng trừ chung vào {progress.total} tiết trên.
             </p>

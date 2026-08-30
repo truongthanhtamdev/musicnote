@@ -35,7 +35,7 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-indigo-600 hover:underline text-sm"
+            className="text-gold-600 hover:underline text-sm"
           >
             Sửa
           </button>
@@ -137,7 +137,7 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
           <button
             type="submit"
             disabled={pending}
-            className="text-sm bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded-lg px-3 py-1.5"
+            className="text-sm bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white rounded-lg px-3 py-1.5"
           >
             {pending ? "Đang lưu..." : "Lưu"}
           </button>

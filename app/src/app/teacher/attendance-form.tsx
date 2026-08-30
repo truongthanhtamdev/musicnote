@@ -101,7 +101,7 @@ export default function AttendanceForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-lg px-4 py-3 text-base"
+        className="w-full bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white font-semibold rounded-lg px-4 py-3 text-base"
       >
         {pending ? "Đang lưu..." : existing ? "Cập nhật điểm danh" : "Điểm danh buổi này"}
       </button>

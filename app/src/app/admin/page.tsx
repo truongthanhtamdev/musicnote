@@ -11,7 +11,7 @@ function classEndMinutes(startTime: string, durationMinutes: number): number {
 
 function StatCard({ label, value, href }: { label: string; value: number | string; href?: string }) {
   const content = (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-indigo-300 transition">
+    <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-gold-300 transition">
       <p className="text-sm text-slate-500">{label}</p>
       <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
     </div>
@@ -60,7 +60,7 @@ export default async function AdminDashboard() {
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
           <h2 className="font-semibold text-slate-900">Lớp học hôm nay ({todaysClasses.length})</h2>
-          <Link href="/admin/attendance" className="text-sm text-indigo-600 hover:underline">
+          <Link href="/admin/attendance" className="text-sm text-gold-600 hover:underline">
             Xem toàn bộ điểm danh
           </Link>
         </div>

@@ -15,6 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       ? [
           { href: "/admin/students", label: "Học viên" },
           { href: "/admin/payroll", label: "Chấm công / Lương" },
+          { href: "/admin/finance", label: "Doanh thu" },
           { href: "/admin/staff", label: "Nhân sự quản lý" },
         ]
       : []),
@@ -23,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-slate-50">
       <TopNav
-        title="Piano Guitar Đệm Hát Nhẹ"
+        title="Piano Guitar Đệm Hát"
         userName={`${session.name} (${session.role === "admin" ? "Admin" : "Giáo vụ"})`}
         links={links}
       />

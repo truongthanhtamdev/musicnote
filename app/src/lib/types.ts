@@ -49,6 +49,26 @@ export interface PackageRow {
   created_at: string;
 }
 
+export interface PaymentRow {
+  id: number;
+  class_id: number | null;
+  amount: number;
+  paid_at: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface ExpenseRow {
+  id: number;
+  category: string;
+  amount: number;
+  expense_date: string;
+  note: string | null;
+  created_at: string;
+}
+
+export const EXPENSE_CATEGORY_SUGGESTIONS = ["Quảng cáo (Ads)", "Vận hành", "Mặt bằng", "Khác"];
+
 export interface AvailabilityRow {
   id: number;
   teacher_id: number;

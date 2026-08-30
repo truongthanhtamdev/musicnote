@@ -1,4 +1,4 @@
-# Piano Guitar Đệm Hát Nhẹ — Quản lý điểm danh & chấm công giáo viên
+# Piano Guitar Đệm Hát — Quản lý điểm danh & chấm công giáo viên
 
 Web app cho trung tâm dạy guitar online 1 kèm 1 (~200 lớp): điểm danh buổi học,
 chấm công theo buổi, quản lý khung giờ rảnh của giáo viên, và giao lớp học
@@ -9,7 +9,7 @@ một VPS nhỏ, không cần dịch vụ ngoài.
 
 | Vai trò | Quyền |
 |---|---|
-| **Admin** | Toàn quyền: tạo tài khoản cho Giáo vụ/Giáo viên/Học viên, quản lý giáo viên & lương/buổi, quản lý lớp, giao lớp, sửa điểm danh, xem/xuất báo cáo lương. |
+| **Admin** | Toàn quyền: tạo tài khoản cho Giáo vụ/Giáo viên/Học viên, quản lý giáo viên & lương/buổi, quản lý lớp, giao lớp, sửa điểm danh, xem/xuất báo cáo lương, quản lý doanh thu & lợi nhuận. |
 | **Giáo vụ** (coordinator) | Tạo/sửa lớp học, giao lớp cho giáo viên, xem & sửa nhật ký điểm danh. Không xem/sửa được lương hay tài khoản. |
 | **Giáo viên** | Xem lớp được giao, **tự thêm lớp mới của mình** (học sinh + thứ/giờ học) và sửa lịch lớp mình đang dạy, điểm danh buổi học hôm nay (kèm nội dung bài học + tick "đã điểm danh trên Facebook"), cập nhật khung giờ rảnh theo tuần, xem lịch dạy & thu nhập của mình. |
 | **Học viên** | Đăng nhập xem lớp học của mình: tiến độ gói học (đã học/còn lại bao nhiêu tiết) và nội dung các buổi học gần đây. Chỉ xem, không sửa được gì. |
@@ -122,6 +122,11 @@ Gợi ý:
 - **Admin → Chấm công / Lương**: chọn khoảng ngày, hệ thống tính
   `số buổi "Đã dạy" × đơn giá/buổi` cho từng giáo viên, xuất file CSV để trả
   lương.
+- **Admin → Doanh thu**: ghi nhận từng khoản học phí thu được (số tiền, ngày,
+  có thể gắn với 1 lớp cụ thể) và chi phí phát sinh (quảng cáo, vận hành...,
+  loại tự gõ). Chọn khoảng ngày (mặc định theo tháng hiện tại) để xem
+  **Doanh thu, Lương giáo viên, Chi phí khác, Lợi nhuận** (= doanh thu − lương
+  − chi phí), xuất file CSV hàng tháng để gửi báo cáo.
 
 ## Ngăn xếp công nghệ
 

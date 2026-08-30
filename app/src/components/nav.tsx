@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/actions/auth";
+import { Logo } from "./logo";
 
 interface NavLink {
   href: string;
@@ -26,8 +27,8 @@ function NavLinks({ links, className }: { links: NavLink[]; className: string })
             href={l.href}
             className={`text-sm rounded-md px-3 py-1.5 transition whitespace-nowrap ${className} ${
               active
-                ? "text-indigo-700 bg-indigo-50 font-medium"
-                : "text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"
+                ? "text-gold-400 bg-gold-400/10 font-medium"
+                : "text-neutral-300 hover:text-gold-400 hover:bg-white/5"
             }`}
           >
             {l.label}
@@ -48,21 +49,24 @@ export function TopNav({
   links: NavLink[];
 }) {
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <header className="bg-neutral-950 border-b border-neutral-800 sticky top-0 z-10">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-14 gap-4">
           <div className="flex items-center gap-6 min-w-0">
-            <span className="font-bold text-slate-900 whitespace-nowrap shrink-0">{title}</span>
+            <span className="flex items-center gap-2 whitespace-nowrap shrink-0">
+              <Logo className="h-7 w-7 shrink-0" />
+              <span className="font-bold text-gold-300">{title}</span>
+            </span>
             <nav className="hidden md:flex items-center gap-1 overflow-x-auto min-w-0">
               <NavLinks links={links} className="" />
             </nav>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <span className="text-sm text-slate-500 hidden sm:inline">{userName}</span>
+            <span className="text-sm text-neutral-400 hidden sm:inline">{userName}</span>
             <form action={logoutAction}>
               <button
                 type="submit"
-                className="text-sm text-slate-500 hover:text-red-600 border border-slate-200 rounded-md px-3 py-1.5 transition"
+                className="text-sm text-neutral-400 hover:text-red-400 border border-neutral-700 hover:border-red-900 rounded-md px-3 py-1.5 transition"
               >
                 Đăng xuất
               </button>

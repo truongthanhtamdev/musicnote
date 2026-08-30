@@ -1,17 +1,6 @@
 import { requireRole } from "@/lib/guard";
 import { computePayroll } from "@/lib/queries";
-import { formatVND } from "@/lib/format";
-
-function firstDayOfMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-function lastDayOfMonth(): string {
-  const now = new Date();
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`;
-}
+import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
 
 export default async function PayrollPage({
   searchParams,
@@ -57,7 +46,7 @@ export default async function PayrollPage({
         </div>
         <button
           type="submit"
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2"
+          className="bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-lg px-4 py-2"
         >
           Xem
         </button>
