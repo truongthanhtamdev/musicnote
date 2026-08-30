@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/guard";
-import { listPayments, listExpenses, getRevenueSummary, listClasses } from "@/lib/queries";
+import { listPayments, listExpenses, getRevenueSummary, listClasses, getPackage } from "@/lib/queries";
 import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
 import NewPaymentForm from "./new-payment-form";
 import NewExpenseForm from "./new-expense-form";
@@ -22,6 +22,8 @@ export default async function FinancePage({
   const classes = listClasses().map((c) => ({
     id: c.id,
     label: `${c.student_name} (${c.teacher_name || "Chưa xếp GV"})`,
+    subject: c.subject,
+    packageTotal: c.package_id ? (getPackage(c.package_id)?.total_sessions ?? null) : null,
   }));
 
   return (
