@@ -54,7 +54,7 @@ export function TopNav({
         <div className="flex items-center justify-between h-14 gap-4">
           <div className="flex items-center gap-6 min-w-0">
             <span className="flex items-center gap-2 whitespace-nowrap shrink-0">
-              <Logo className="h-7 w-7 shrink-0" />
+              <Logo className="h-7 shrink-0" />
               <span className="font-bold text-gold-300">{title}</span>
             </span>
             <nav className="hidden md:flex items-center gap-1 overflow-x-auto min-w-0">
