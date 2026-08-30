@@ -7,6 +7,7 @@ import {
   isTeacherAvailable,
   listStudents,
   getPackageProgress,
+  listSiblingClasses,
 } from "@/lib/queries";
 import { DAY_LABELS, ATTENDANCE_STATUS_LABELS, LANGUAGE_LABELS, SOURCE_LABELS } from "@/lib/types";
 import EditClassForm from "./edit-class-form";
@@ -34,6 +35,13 @@ export default async function ClassDetailPage({
   const history = listAttendance({ classId }).slice(0, 30);
   const students = listStudents();
   const progress = getPackageProgress(cls);
+  const siblings = listSiblingClasses(cls)
+    .filter((s) => s.package_id)
+    .map((s) => ({
+      id: s.id,
+      label: `${DAY_LABELS[s.day_of_week]} ${s.start_time}`,
+      progress: getPackageProgress(s)!,
+    }));
 
   return (
     <div className="space-y-6">
@@ -57,11 +65,7 @@ export default async function ClassDetailPage({
           <EditClassForm cls={cls} />
         </div>
         <div className="space-y-6">
-          <PackageWidget
-            classId={cls.id}
-            currentTotal={cls.package_total_sessions}
-            progress={progress}
-          />
+          <PackageWidget classId={cls.id} progress={progress} siblingsWithPackage={siblings} />
           <StudentLinkWidget
             classId={cls.id}
             currentStudentUserId={cls.student_user_id}
@@ -91,7 +95,14 @@ export default async function ClassDetailPage({
                 <tr key={a.id}>
                   <td className="px-4 py-2">{a.session_date}</td>
                   <td className="px-4 py-2">{a.teacher_name}</td>
-                  <td className="px-4 py-2">{ATTENDANCE_STATUS_LABELS[a.status]}</td>
+                  <td className="px-4 py-2">
+                    {ATTENDANCE_STATUS_LABELS[a.status]}
+                    {!!a.is_trial && (
+                      <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
+                        Thử
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-2">{a.fb_checkin_confirmed ? "✔" : "-"}</td>
                   <td className="px-4 py-2 text-slate-600">{a.lesson_content || "-"}</td>
                   <td className="px-4 py-2 text-slate-500">{a.note || "-"}</td>

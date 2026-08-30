@@ -45,6 +45,13 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS packages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      total_sessions INTEGER NOT NULL,
+      started_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS classes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       student_name TEXT NOT NULL,
@@ -57,6 +64,7 @@ function migrate() {
       source TEXT NOT NULL DEFAULT 'center' CHECK(source IN ('center','self')),
       package_total_sessions INTEGER,
       package_started_at TEXT,
+      package_id INTEGER REFERENCES packages(id) ON DELETE SET NULL,
       day_of_week INTEGER NOT NULL,
       start_time TEXT NOT NULL,
       duration_minutes INTEGER NOT NULL DEFAULT 60,
@@ -85,6 +93,7 @@ function migrate() {
       check_out_time TEXT,
       fb_checkin_confirmed INTEGER NOT NULL DEFAULT 0,
       lesson_content TEXT,
+      is_trial INTEGER NOT NULL DEFAULT 0,
       note TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(class_id, session_date)
@@ -108,9 +117,35 @@ function migrate() {
   ensureColumn("classes", "student_user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL");
   ensureColumn("classes", "package_total_sessions", "INTEGER");
   ensureColumn("classes", "package_started_at", "TEXT");
+  ensureColumn("classes", "package_id", "INTEGER REFERENCES packages(id) ON DELETE SET NULL");
   ensureColumn("users", "languages", "TEXT NOT NULL DEFAULT 'vi'");
   ensureColumn("attendance", "lesson_content", "TEXT");
+  ensureColumn("attendance", "is_trial", "INTEGER NOT NULL DEFAULT 0");
   ensureStudentRoleSupported();
+  migratePackagesToTable();
+}
+
+// Packages used to live as two columns directly on `classes`
+// (package_total_sessions/package_started_at), one package per weekly slot.
+// Now multiple weekly slots for the same student can share a single package
+// pool via `classes.package_id` -> `packages`. Move any pre-existing
+// per-class package data into its own `packages` row the first time this
+// runs against an older database; the old columns are left in place
+// unused (harmless) rather than dropped, since SQLite migrations that drop
+// columns are riskier than they're worth here.
+function migratePackagesToTable() {
+  const rows = db
+    .prepare(
+      `SELECT id, package_total_sessions, package_started_at FROM classes
+       WHERE package_total_sessions IS NOT NULL AND package_started_at IS NOT NULL AND package_id IS NULL`
+    )
+    .all() as { id: number; package_total_sessions: number; package_started_at: string }[];
+  for (const r of rows) {
+    const info = db
+      .prepare("INSERT INTO packages (total_sessions, started_at) VALUES (?, ?)")
+      .run(r.package_total_sessions, r.package_started_at);
+    db.prepare("UPDATE classes SET package_id = ? WHERE id = ?").run(info.lastInsertRowid, r.id);
+  }
 }
 
 function ensureColumn(table: string, column: string, definition: string) {

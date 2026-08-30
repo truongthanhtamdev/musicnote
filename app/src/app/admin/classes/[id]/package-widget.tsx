@@ -1,18 +1,18 @@
 "use client";
 
 import { useTransition } from "react";
-import { setPackageAction } from "@/actions/classes";
+import { setPackageAction, renewPackageAction, sharePackageAction } from "@/actions/classes";
 import { PACKAGE_OPTIONS } from "@/lib/types";
 import type { PackageProgress } from "@/lib/queries";
 
 export default function PackageWidget({
   classId,
-  currentTotal,
   progress,
+  siblingsWithPackage,
 }: {
   classId: number;
-  currentTotal: number | null;
   progress: PackageProgress | null;
+  siblingsWithPackage: { id: number; label: string; progress: PackageProgress }[];
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -43,13 +43,19 @@ export default function PackageWidget({
             />
           </div>
           <p className="text-xs text-slate-400 mt-1">Bắt đầu tính từ {progress.startedAt}</p>
+          {progress.sharedWith.length > 0 && (
+            <p className="text-xs text-indigo-600 mt-1">
+              Dùng chung gói với {progress.sharedWith.length} lịch học khác của học viên này —
+              học buổi nào cũng trừ chung vào {progress.total} tiết trên.
+            </p>
+          )}
         </div>
       ) : (
         <p className="text-sm text-slate-500 mb-3">Lớp học đều đặn hàng tuần, không theo gói.</p>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <select
-          defaultValue={currentTotal ?? ""}
+          defaultValue=""
           disabled={isPending}
           onChange={(e) =>
             startTransition(() =>
@@ -58,10 +64,12 @@ export default function PackageWidget({
           }
           className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
         >
-          <option value="">Không theo gói</option>
+          <option value="">
+            {progress ? "-- Đổi thành gói riêng mới --" : "Không theo gói"}
+          </option>
           {PACKAGE_OPTIONS.map((n) => (
             <option key={n} value={n}>
-              Gói {n} tiết
+              Gói {n} tiết mới (riêng)
             </option>
           ))}
         </select>
@@ -71,7 +79,7 @@ export default function PackageWidget({
             disabled={isPending}
             onClick={() => {
               if (confirm(`Đặt lại thành gói mới ${progress.total} tiết, tính từ hôm nay?`)) {
-                startTransition(() => setPackageAction(classId, progress.total));
+                startTransition(() => renewPackageAction(progress.packageId, progress.total));
               }
             }}
             className="text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 rounded-lg px-3 py-1.5"
@@ -80,6 +88,30 @@ export default function PackageWidget({
           </button>
         )}
       </div>
+
+      {siblingsWithPackage.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <label className="block text-xs text-slate-500 mb-1">
+            Học viên này có lịch học khác đã có gói — dùng chung gói đó (học 2-3 buổi/tuần
+            cùng trừ vào 1 gói):
+          </label>
+          <select
+            defaultValue=""
+            disabled={isPending}
+            onChange={(e) => {
+              if (e.target.value) startTransition(() => sharePackageAction(classId, Number(e.target.value)));
+            }}
+            className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+          >
+            <option value="">-- Chọn lịch học để dùng chung gói --</option>
+            {siblingsWithPackage.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label} (đã dùng {s.progress.used}/{s.progress.total} tiết)
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }

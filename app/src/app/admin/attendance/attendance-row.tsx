@@ -49,6 +49,15 @@ export default function AttendanceRow({
               placeholder="Nội dung bài học"
               className="rounded-lg border border-slate-300 px-2 py-1 text-sm flex-1 min-w-[160px]"
             />
+            <label className="flex items-center gap-1.5 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                name="is_trial"
+                defaultChecked={!!row.is_trial}
+                className="w-4 h-4 rounded border-slate-300"
+              />
+              Buổi thử (50k)
+            </label>
             <input
               name="note"
               defaultValue={row.note || ""}
@@ -81,7 +90,14 @@ export default function AttendanceRow({
       <td className="px-4 py-2">{row.session_date}</td>
       <td className="px-4 py-2 font-medium text-slate-900">{row.student_name}</td>
       <td className="px-4 py-2">{row.teacher_name}</td>
-      <td className="px-4 py-2">{ATTENDANCE_STATUS_LABELS[row.status]}</td>
+      <td className="px-4 py-2">
+        {ATTENDANCE_STATUS_LABELS[row.status]}
+        {!!row.is_trial && (
+          <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
+            Thử
+          </span>
+        )}
+      </td>
       <td className="px-4 py-2">{row.fb_checkin_confirmed ? "✔" : "-"}</td>
       <td className="px-4 py-2 text-slate-500">{row.check_in_time || "-"}</td>
       <td className="px-4 py-2 text-slate-600">{row.lesson_content || "-"}</td>

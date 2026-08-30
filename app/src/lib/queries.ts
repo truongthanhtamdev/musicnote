@@ -1,5 +1,14 @@
 import { db } from "./db";
-import { parseLanguages, type AttendanceRow, type AvailabilityRow, type ClassRow, type UserRow } from "./types";
+import { nextOccurrence, mostRecentOccurrence, toISODate, todayISO } from "./format";
+import {
+  parseLanguages,
+  TRIAL_SESSION_RATE,
+  type AttendanceRow,
+  type AvailabilityRow,
+  type ClassRow,
+  type PackageRow,
+  type UserRow,
+} from "./types";
 
 export function listTeachers(includeInactive = true): UserRow[] {
   const sql = includeInactive
@@ -111,28 +120,97 @@ export function listClassesForStudent(studentUserId: number): ClassWithTeacher[]
 }
 
 export interface PackageProgress {
+  packageId: number;
   total: number;
   used: number;
   remaining: number;
   startedAt: string;
+  /** Other classes (weekly slots) drawing from this same package pool, if any. */
+  sharedWith: { id: number; day_of_week: number; start_time: string }[];
 }
 
-/** Sessions taught ("Đã dạy") since the package's start date count against it. */
+export function getPackage(id: number): PackageRow | undefined {
+  return db.prepare("SELECT * FROM packages WHERE id = ?").get(id) as PackageRow | undefined;
+}
+
+/**
+ * A package is a pool of sessions ("tiết") a student bought, not tied to a
+ * single weekly slot — a student who comes 2-3 times a week has several
+ * `classes` rows (one per weekly day/time) all pointing at the same
+ * `package_id`, and usage is counted across all of them together.
+ * Sessions taught ("Đã dạy") since the package's start date count against it.
+ */
 export function getPackageProgress(cls: ClassRow): PackageProgress | null {
-  if (!cls.package_total_sessions || !cls.package_started_at) return null;
-  const row = db
-    .prepare(
-      `SELECT COUNT(*) as c FROM attendance
-       WHERE class_id = ? AND status = 'completed' AND session_date >= ?`
-    )
-    .get(cls.id, cls.package_started_at) as { c: number };
-  const used = row.c;
+  if (!cls.package_id) return null;
+  const pkg = getPackage(cls.package_id);
+  if (!pkg) return null;
+
+  const used = (
+    db
+      .prepare(
+        `SELECT COUNT(*) as c FROM attendance a
+         JOIN classes c ON c.id = a.class_id
+         WHERE c.package_id = ? AND a.status = 'completed' AND a.session_date >= ?`
+      )
+      .get(pkg.id, pkg.started_at) as { c: number }
+  ).c;
+
+  const sharedWith = db
+    .prepare("SELECT id, day_of_week, start_time FROM classes WHERE package_id = ? AND id != ?")
+    .all(pkg.id, cls.id) as { id: number; day_of_week: number; start_time: string }[];
+
   return {
-    total: cls.package_total_sessions,
+    packageId: pkg.id,
+    total: pkg.total_sessions,
     used,
-    remaining: Math.max(0, cls.package_total_sessions - used),
-    startedAt: cls.package_started_at,
+    remaining: Math.max(0, pkg.total_sessions - used),
+    startedAt: pkg.started_at,
+    sharedWith,
   };
+}
+
+/** Other classes (weekly slots) for the same student — used to offer "share this student's existing package". */
+export function listSiblingClasses(cls: ClassRow): ClassWithTeacher[] {
+  if (cls.student_user_id) {
+    return db
+      .prepare(
+        `SELECT c.*, u.name as teacher_name FROM classes c
+         LEFT JOIN users u ON u.id = c.teacher_id
+         WHERE c.student_user_id = ? AND c.id != ?
+         ORDER BY c.day_of_week, c.start_time`
+      )
+      .all(cls.student_user_id, cls.id) as ClassWithTeacher[];
+  }
+  return db
+    .prepare(
+      `SELECT c.*, u.name as teacher_name FROM classes c
+       LEFT JOIN users u ON u.id = c.teacher_id
+       WHERE c.student_name = ? AND c.id != ?
+       ORDER BY c.day_of_week, c.start_time`
+    )
+    .all(cls.student_name, cls.id) as ClassWithTeacher[];
+}
+
+export interface ClassWithSchedule extends ClassWithTeacher {
+  nextSessionDate: string;
+  /** True when the most recent weekly occurrence has already passed (not today) with no attendance recorded. */
+  missedLastSession: boolean;
+  lastDueDate: string;
+}
+
+export function annotateSchedule(classes: ClassWithTeacher[]): ClassWithSchedule[] {
+  const today = new Date();
+  const todayStr = todayISO();
+  return classes.map((c) => {
+    const nextSessionDate = toISODate(nextOccurrence(c.day_of_week, today));
+    const lastDueDate = toISODate(mostRecentOccurrence(c.day_of_week, today));
+    const createdDate = c.created_at.slice(0, 10);
+    let missedLastSession = false;
+    if (c.status === "active" && lastDueDate < todayStr && lastDueDate >= createdDate) {
+      missedLastSession = !getAttendance(c.id, lastDueDate);
+    }
+    return { ...c, nextSessionDate, missedLastSession, lastDueDate };
+  });
 }
 
 export function listAvailability(teacherId: number): AvailabilityRow[] {
@@ -211,14 +289,17 @@ export interface PayrollRow {
   teacher_name: string;
   pay_per_session: number | null;
   completed_sessions: number;
+  trial_sessions: number;
   total_pay: number;
 }
 
+/** Trial ("buổi thử") sessions are paid a flat TRIAL_SESSION_RATE regardless of the teacher's normal per-session rate. */
 export function computePayroll(from: string, to: string): PayrollRow[] {
   const rows = db
     .prepare(
       `SELECT u.id as teacher_id, u.name as teacher_name, u.pay_per_session as pay_per_session,
-              COUNT(a.id) as completed_sessions
+              SUM(CASE WHEN a.id IS NOT NULL AND a.is_trial = 0 THEN 1 ELSE 0 END) as completed_sessions,
+              SUM(CASE WHEN a.id IS NOT NULL AND a.is_trial = 1 THEN 1 ELSE 0 END) as trial_sessions
        FROM users u
        LEFT JOIN attendance a ON a.teacher_id = u.id
          AND a.status = 'completed' AND a.session_date >= ? AND a.session_date <= ?
@@ -230,6 +311,6 @@ export function computePayroll(from: string, to: string): PayrollRow[] {
 
   return rows.map((r) => ({
     ...r,
-    total_pay: (r.pay_per_session || 0) * r.completed_sessions,
+    total_pay: (r.pay_per_session || 0) * r.completed_sessions + TRIAL_SESSION_RATE * r.trial_sessions,
   }));
 }

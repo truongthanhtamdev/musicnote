@@ -24,7 +24,6 @@ export async function createClassAction(
   const notes = String(formData.get("notes") || "").trim();
   const packageRaw = String(formData.get("package_total_sessions") || "");
   const packageTotalSessions = packageRaw ? Number(packageRaw) : null;
-  const packageStartedAt = packageTotalSessions ? todayISO() : null;
 
   // Teachers can only ever create a class for themselves — the client
   // never even shows them a teacher picker, but derive it from the
@@ -45,9 +44,17 @@ export async function createClassAction(
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
   }
 
+  let packageId: number | null = null;
+  if (packageTotalSessions) {
+    const info = db
+      .prepare("INSERT INTO packages (total_sessions, started_at) VALUES (?, ?)")
+      .run(packageTotalSessions, todayISO());
+    packageId = Number(info.lastInsertRowid);
+  }
+
   db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, package_total_sessions, package_started_at, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, package_id, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   ).run(
     studentName,
     studentPhone || null,
@@ -56,8 +63,7 @@ export async function createClassAction(
     subject,
     language,
     source,
-    packageTotalSessions,
-    packageStartedAt,
+    packageId,
     dayOfWeek,
     startTime,
     durationMinutes || 60,
@@ -127,12 +133,40 @@ export async function updateClassAction(
   return { success: true };
 }
 
+/** Detach from any shared pool and start a fresh own package for this class, or clear it entirely (totalSessions = null). */
 export async function setPackageAction(classId: number, totalSessions: number | null) {
   await assertRole(["admin", "coordinator"]);
-  const startedAt = totalSessions ? todayISO() : null;
-  db.prepare(
-    "UPDATE classes SET package_total_sessions = ?, package_started_at = ? WHERE id = ?"
-  ).run(totalSessions, startedAt, classId);
+  if (!totalSessions) {
+    db.prepare("UPDATE classes SET package_id = NULL WHERE id = ?").run(classId);
+  } else {
+    const info = db
+      .prepare("INSERT INTO packages (total_sessions, started_at) VALUES (?, ?)")
+      .run(totalSessions, todayISO());
+    db.prepare("UPDATE classes SET package_id = ? WHERE id = ?").run(info.lastInsertRowid, classId);
+  }
+  revalidatePath("/admin/classes");
+  revalidatePath(`/admin/classes/${classId}`);
+}
+
+/** Reset the package's counting start date to today — used when a student renews/buys a new round of the same package. Resets for every class sharing this pool. */
+export async function renewPackageAction(packageId: number, totalSessions: number) {
+  await assertRole(["admin", "coordinator"]);
+  db.prepare("UPDATE packages SET total_sessions = ?, started_at = ? WHERE id = ?").run(
+    totalSessions,
+    todayISO(),
+    packageId
+  );
+  revalidatePath("/admin/classes");
+}
+
+/** Attach this class to another class's existing package pool (student who studies 2-3 buổi/tuần sharing one gói học). */
+export async function sharePackageAction(classId: number, sourceClassId: number) {
+  await assertRole(["admin", "coordinator"]);
+  const source = db.prepare("SELECT package_id FROM classes WHERE id = ?").get(sourceClassId) as
+    | { package_id: number | null }
+    | undefined;
+  if (!source?.package_id) return;
+  db.prepare("UPDATE classes SET package_id = ? WHERE id = ?").run(source.package_id, classId);
   revalidatePath("/admin/classes");
   revalidatePath(`/admin/classes/${classId}`);
 }

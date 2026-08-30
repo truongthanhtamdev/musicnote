@@ -4,6 +4,11 @@ import { listClassesByDay, listAttendance } from "@/lib/queries";
 import { formatTimeRange, todayISO } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 
+function classEndMinutes(startTime: string, durationMinutes: number): number {
+  const [h, m] = startTime.split(":").map(Number);
+  return h * 60 + m + durationMinutes;
+}
+
 function StatCard({ label, value, href }: { label: string; value: number | string; href?: string }) {
   const content = (
     <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-indigo-300 transition">
@@ -31,6 +36,7 @@ export default async function AdminDashboard() {
   const todaysClasses = listClassesByDay(dow);
   const todaysAttendance = listAttendance({ from: todayStr, to: todayStr });
   const markedClassIds = new Set(todaysAttendance.map((a) => a.class_id));
+  const nowMinutes = today.getHours() * 60 + today.getMinutes();
 
   return (
     <div className="space-y-6">
@@ -66,8 +72,12 @@ export default async function AdminDashboard() {
           <div className="divide-y divide-slate-100">
             {todaysClasses.map((c) => {
               const marked = markedClassIds.has(c.id);
+              const overdue = !marked && nowMinutes > classEndMinutes(c.start_time, c.duration_minutes);
               return (
-                <div key={c.id} className="px-4 py-3 flex items-center justify-between text-sm">
+                <div
+                  key={c.id}
+                  className={`px-4 py-3 flex items-center justify-between text-sm ${overdue ? "bg-red-50" : ""}`}
+                >
                   <div>
                     <p className="font-medium text-slate-900">{c.student_name}</p>
                     <p className="text-slate-500">
@@ -79,10 +89,16 @@ export default async function AdminDashboard() {
                     className={`text-xs font-medium px-2 py-1 rounded-full ${
                       marked
                         ? "bg-emerald-50 text-emerald-700"
-                        : "bg-amber-50 text-amber-700"
+                        : overdue
+                          ? "bg-red-100 text-red-700"
+                          : "bg-amber-50 text-amber-700"
                     }`}
                   >
-                    {marked ? "Đã điểm danh" : "Chưa điểm danh"}
+                    {marked
+                      ? "Đã điểm danh"
+                      : overdue
+                        ? "⚠ Quá giờ, chưa điểm danh"
+                        : "Chưa điểm danh"}
                   </span>
                 </div>
               );

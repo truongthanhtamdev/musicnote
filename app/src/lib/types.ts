@@ -32,14 +32,20 @@ export interface ClassRow {
   subject: string;
   language: ClassLanguage;
   source: ClassSource;
-  package_total_sessions: number | null;
-  package_started_at: string | null;
+  package_id: number | null;
   day_of_week: number; // 0=CN..6=T7 (JS getDay convention)
   start_time: string; // HH:MM
   duration_minutes: number;
   teacher_id: number | null;
   status: "active" | "paused" | "ended";
   notes: string | null;
+  created_at: string;
+}
+
+export interface PackageRow {
+  id: number;
+  total_sessions: number;
+  started_at: string;
   created_at: string;
 }
 
@@ -67,6 +73,7 @@ export interface AttendanceRow {
   check_out_time: string | null;
   fb_checkin_confirmed: number;
   lesson_content: string | null;
+  is_trial: number;
   note: string | null;
   created_at: string;
 }
@@ -77,6 +84,9 @@ export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Violin", "Thanh nhạc"];
 
 export const PACKAGE_OPTIONS = [20, 50, 100];
+
+/** Flat rate paid to the teacher for a trial ("buổi thử") session, regardless of their normal per-session rate. */
+export const TRIAL_SESSION_RATE = 50000;
 
 export const LANGUAGE_LABELS: Record<ClassLanguage, string> = {
   vi: "Tiếng Việt",

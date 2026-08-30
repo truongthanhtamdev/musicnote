@@ -1,7 +1,8 @@
 import { getSession } from "@/lib/auth";
-import { listAttendance } from "@/lib/queries";
+import { listAttendance, listClassesForTeacher } from "@/lib/queries";
 import { addDays, toISODate, todayISO } from "@/lib/format";
-import { ATTENDANCE_STATUS_LABELS } from "@/lib/types";
+import { ATTENDANCE_STATUS_LABELS, DAY_LABELS } from "@/lib/types";
+import MakeupAttendanceForm from "./makeup-attendance-form";
 
 export default async function TeacherAttendanceHistoryPage({
   searchParams,
@@ -14,10 +15,19 @@ export default async function TeacherAttendanceHistoryPage({
   const to = sp.to || todayISO();
 
   const rows = listAttendance({ teacherId: session!.userId, from, to });
+  const myClasses = listClassesForTeacher(session!.userId)
+    .filter((c) => c.status === "active")
+    .map((c) => ({
+      id: c.id,
+      label: `${c.student_name} · ${DAY_LABELS[c.day_of_week]} ${c.start_time}`,
+    }));
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-slate-900">Lịch sử điểm danh</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-xl font-bold text-slate-900">Lịch sử điểm danh</h1>
+        <MakeupAttendanceForm classes={myClasses} />
+      </div>
 
       <form className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap gap-3 items-end">
         <div>
@@ -63,7 +73,14 @@ export default async function TeacherAttendanceHistoryPage({
               <tr key={a.id}>
                 <td className="px-4 py-2.5">{a.session_date}</td>
                 <td className="px-4 py-2.5 font-medium text-slate-900">{a.student_name}</td>
-                <td className="px-4 py-2.5">{ATTENDANCE_STATUS_LABELS[a.status]}</td>
+                <td className="px-4 py-2.5">
+                  {ATTENDANCE_STATUS_LABELS[a.status]}
+                  {!!a.is_trial && (
+                    <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
+                      Thử
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-2.5 text-slate-500">{a.check_in_time || "-"}</td>
                 <td className="px-4 py-2.5 text-slate-600">{a.lesson_content || "-"}</td>
                 <td className="px-4 py-2.5 text-slate-500">{a.note || "-"}</td>

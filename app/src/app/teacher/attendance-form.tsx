@@ -65,6 +65,16 @@ export default function AttendanceForm({
         Đã điểm danh trên nhóm Facebook
       </label>
 
+      <label className="flex items-center gap-2 text-sm text-slate-700 py-1">
+        <input
+          type="checkbox"
+          name="is_trial"
+          defaultChecked={!!existing?.is_trial}
+          className="w-4 h-4 rounded border-slate-300"
+        />
+        Buổi học thử (tính lương 50.000đ/tiết, không theo đơn giá thường)
+      </label>
+
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1.5">
           Nội dung bài học hôm nay

@@ -13,12 +13,13 @@ export async function GET(req: NextRequest) {
   const to = searchParams.get("to") || "";
   const rows = computePayroll(from, to);
 
-  const header = "Giao vien,So buoi da day,Don gia/buoi,Thanh tien\n";
+  const header = "Giao vien,So buoi da day,Buoi thu,Don gia/buoi,Thanh tien\n";
   const body = rows
     .map((r) =>
       [
         `"${r.teacher_name.replace(/"/g, '""')}"`,
         r.completed_sessions,
+        r.trial_sessions,
         r.pay_per_session || 0,
         r.total_pay,
       ].join(",")

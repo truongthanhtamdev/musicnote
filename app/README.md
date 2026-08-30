@@ -87,7 +87,24 @@ Gợi ý:
 - **Gói học (20/50/100 tiết)**: mỗi lớp có thể gắn 1 gói học; hệ thống tự đếm
   số buổi "Đã dạy" tính từ ngày bắt đầu gói để ra số tiết đã học/còn lại
   (cảnh báo màu cam khi còn ≤ 3 tiết). Bấm "Gia hạn (làm mới)" khi học viên
-  mua gói mới — chỉ tính lại từ ngày gia hạn, không xoá lịch sử cũ.
+  mua gói mới — chỉ tính lại từ ngày gia hạn, không xoá lịch sử cũ. Học viên
+  học 2-3 buổi/tuần (nhiều lịch cố định khác ngày) có thể **dùng chung 1 gói**
+  cho các lịch đó — ở trang chi tiết lớp, chọn "dùng chung gói với" một lịch
+  học khác của cùng học viên, tất cả buổi học ở các lịch đó cùng trừ vào 1
+  gói duy nhất.
+- **Buổi học bù / dời lịch**: khi 1 buổi bị dời qua ngày khác với lịch cố
+  định hàng tuần, giáo viên vào **Lịch sử điểm danh → "+ Điểm danh buổi học
+  bù"**, chọn đúng lớp và ngày dạy bù thực tế để điểm danh — buổi này vẫn
+  tính vào gói học của học viên như bình thường.
+- **Buổi học thử**: tick "Buổi học thử" khi điểm danh để tính lương buổi đó
+  theo giá cố định 50.000đ/tiết, không theo đơn giá/buổi thường của giáo
+  viên. Trang Chấm công/Lương và file CSV xuất ra có cột riêng đếm số buổi
+  thử.
+- **Buổi tiếp theo & cảnh báo quên điểm danh**: trang Lớp học hiện cột "Buổi
+  tiếp theo" (ngày của buổi kế tiếp theo lịch cố định hàng tuần) và tô đỏ
+  dòng nào đã quá lịch tuần này mà chưa có điểm danh. Trang Tổng quan cũng tô
+  đỏ các lớp hôm nay đã quá giờ học mà giáo viên vẫn chưa điểm danh, để admin
+  dễ theo dõi và quyết định miss công hay du di.
 - **Nội dung bài học**: mỗi lần điểm danh, giáo viên ghi lại buổi đó đã dạy
   gì; nội dung này hiện trong lịch sử điểm danh (Admin/Giáo vụ/Giáo viên) và
   trong trang của Học viên, giúp theo dõi học viên đã học tới đâu.
