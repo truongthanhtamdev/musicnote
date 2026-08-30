@@ -1,9 +1,18 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { getClass, listTeachers, listAttendance, isTeacherAvailable } from "@/lib/queries";
+import {
+  getClass,
+  listTeachers,
+  listAttendance,
+  isTeacherAvailable,
+  listStudents,
+  getPackageProgress,
+} from "@/lib/queries";
 import { DAY_LABELS, ATTENDANCE_STATUS_LABELS, LANGUAGE_LABELS, SOURCE_LABELS } from "@/lib/types";
 import EditClassForm from "./edit-class-form";
 import ClassActions from "./class-actions";
+import PackageWidget from "./package-widget";
+import StudentLinkWidget from "./student-link-widget";
 
 export default async function ClassDetailPage({
   params,
@@ -23,6 +32,8 @@ export default async function ClassDetailPage({
     available: isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes),
   }));
   const history = listAttendance({ classId }).slice(0, 30);
+  const students = listStudents();
+  const progress = getPackageProgress(cls);
 
   return (
     <div className="space-y-6">
@@ -40,9 +51,23 @@ export default async function ClassDetailPage({
         <ClassActions classId={cls.id} status={cls.status} teacherId={cls.teacher_id} teachers={teachers} canDelete={isAdmin} />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 max-w-xl">
-        <h2 className="font-semibold text-slate-900 mb-3">Thông tin lớp</h2>
-        <EditClassForm cls={cls} />
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h2 className="font-semibold text-slate-900 mb-3">Thông tin lớp</h2>
+          <EditClassForm cls={cls} />
+        </div>
+        <div className="space-y-6">
+          <PackageWidget
+            classId={cls.id}
+            currentTotal={cls.package_total_sessions}
+            progress={progress}
+          />
+          <StudentLinkWidget
+            classId={cls.id}
+            currentStudentUserId={cls.student_user_id}
+            students={students}
+          />
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -57,6 +82,7 @@ export default async function ClassDetailPage({
                 <th className="px-4 py-2 font-medium">Giáo viên</th>
                 <th className="px-4 py-2 font-medium">Trạng thái</th>
                 <th className="px-4 py-2 font-medium">FB</th>
+                <th className="px-4 py-2 font-medium">Nội dung bài học</th>
                 <th className="px-4 py-2 font-medium">Ghi chú</th>
               </tr>
             </thead>
@@ -67,12 +93,13 @@ export default async function ClassDetailPage({
                   <td className="px-4 py-2">{a.teacher_name}</td>
                   <td className="px-4 py-2">{ATTENDANCE_STATUS_LABELS[a.status]}</td>
                   <td className="px-4 py-2">{a.fb_checkin_confirmed ? "✔" : "-"}</td>
+                  <td className="px-4 py-2 text-slate-600">{a.lesson_content || "-"}</td>
                   <td className="px-4 py-2 text-slate-500">{a.note || "-"}</td>
                 </tr>
               ))}
               {history.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
                     Chưa có dữ liệu điểm danh.
                   </td>
                 </tr>

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, type SessionPayload } from "./auth";
-import type { Role } from "./types";
+import { roleHomePath, type Role } from "./types";
 
 export async function requireSession(): Promise<SessionPayload> {
   const session = await getSession();
@@ -11,7 +11,7 @@ export async function requireSession(): Promise<SessionPayload> {
 export async function requireRole(roles: Role[]): Promise<SessionPayload> {
   const session = await requireSession();
   if (!roles.includes(session.role)) {
-    redirect(session.role === "teacher" ? "/teacher" : "/admin");
+    redirect(roleHomePath(session.role));
   }
   return session;
 }

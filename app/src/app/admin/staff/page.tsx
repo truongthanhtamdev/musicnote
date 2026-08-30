@@ -11,7 +11,7 @@ export default async function StaffPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900">Nhân sự quản lý</h1>
         <p className="text-slate-500 text-sm mt-1">
-          Admin có toàn quyền. Quản lý ca chỉ được xếp lớp và xem báo cáo, không xem/sửa được lương.
+          Admin có toàn quyền. Giáo vụ chỉ được xếp lớp và xem báo cáo, không xem/sửa được lương.
         </p>
       </div>
 
@@ -30,7 +30,7 @@ export default async function StaffPage() {
                 <td className="px-4 py-2.5 font-medium text-slate-900">{s.name}</td>
                 <td className="px-4 py-2.5 text-slate-600">{s.email}</td>
                 <td className="px-4 py-2.5 text-slate-600">
-                  {s.role === "admin" ? "Admin" : "Quản lý ca"}
+                  {s.role === "admin" ? "Admin" : "Giáo vụ"}
                 </td>
               </tr>
             ))}
@@ -39,7 +39,7 @@ export default async function StaffPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 p-4 max-w-lg">
-        <h2 className="font-semibold text-slate-900 mb-3">Thêm quản lý ca</h2>
+        <h2 className="font-semibold text-slate-900 mb-3">Thêm giáo vụ</h2>
         <NewCoordinatorForm />
       </div>
     </div>

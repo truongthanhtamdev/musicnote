@@ -24,6 +24,7 @@ export async function markAttendanceAction(
   const sessionDate = String(formData.get("session_date") || "");
   const status = String(formData.get("status") || "completed") as AttendanceStatus;
   const fbConfirmed = formData.get("fb_checkin_confirmed") ? 1 : 0;
+  const lessonContent = String(formData.get("lesson_content") || "").trim();
   const note = String(formData.get("note") || "").trim();
 
   if (!classId || !sessionDate || !VALID_STATUS.includes(status)) {
@@ -43,13 +44,23 @@ export async function markAttendanceAction(
 
   if (existing) {
     db.prepare(
-      `UPDATE attendance SET status=?, fb_checkin_confirmed=?, note=?, check_out_time=? WHERE id=?`
-    ).run(status, fbConfirmed, note || null, nowStr, existing.id);
+      `UPDATE attendance SET status=?, fb_checkin_confirmed=?, lesson_content=?, note=?, check_out_time=? WHERE id=?`
+    ).run(status, fbConfirmed, lessonContent || null, note || null, nowStr, existing.id);
   } else {
     db.prepare(
-      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, note)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(classId, session.userId, sessionDate, status, nowStr, nowStr, fbConfirmed, note || null);
+      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      classId,
+      session.userId,
+      sessionDate,
+      status,
+      nowStr,
+      nowStr,
+      fbConfirmed,
+      lessonContent || null,
+      note || null
+    );
   }
 
   revalidatePath("/teacher");
@@ -66,14 +77,16 @@ export async function correctAttendanceAction(
 
   const id = Number(formData.get("id"));
   const status = String(formData.get("status") || "") as AttendanceStatus;
+  const lessonContent = String(formData.get("lesson_content") || "").trim();
   const note = String(formData.get("note") || "").trim();
 
   if (!id || !VALID_STATUS.includes(status)) {
     return { error: "Dữ liệu không hợp lệ" };
   }
 
-  db.prepare("UPDATE attendance SET status = ?, note = ? WHERE id = ?").run(
+  db.prepare("UPDATE attendance SET status = ?, lesson_content = ?, note = ? WHERE id = ?").run(
     status,
+    lessonContent || null,
     note || null,
     id
   );

@@ -79,6 +79,7 @@ export default async function AttendancePage({
                 <th className="px-4 py-2.5 font-medium">Trạng thái</th>
                 <th className="px-4 py-2.5 font-medium">FB</th>
                 <th className="px-4 py-2.5 font-medium">Giờ điểm danh</th>
+                <th className="px-4 py-2.5 font-medium">Nội dung bài học</th>
                 <th className="px-4 py-2.5 font-medium">Ghi chú</th>
                 <th className="px-4 py-2.5 font-medium"></th>
               </tr>
@@ -89,7 +90,7 @@ export default async function AttendancePage({
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={9} className="px-4 py-6 text-center text-slate-500">
                     Không có dữ liệu trong khoảng thời gian này.
                   </td>
                 </tr>

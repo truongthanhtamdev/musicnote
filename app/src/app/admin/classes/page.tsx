@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listClasses, listTeachers } from "@/lib/queries";
+import { listClasses, listTeachers, getPackageProgress } from "@/lib/queries";
 import { formatTimeRange } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 import NewClassForm from "./new-class-form";
@@ -24,52 +24,65 @@ export default async function ClassesPage() {
                 <th className="px-4 py-2.5 font-medium">Môn / Ngôn ngữ</th>
                 <th className="px-4 py-2.5 font-medium">Trình độ</th>
                 <th className="px-4 py-2.5 font-medium">Lịch học</th>
+                <th className="px-4 py-2.5 font-medium">Gói học</th>
                 <th className="px-4 py-2.5 font-medium">Giáo viên</th>
                 <th className="px-4 py-2.5 font-medium">Trạng thái</th>
                 <th className="px-4 py-2.5 font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {classes.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-medium text-slate-900">
-                    {c.student_name}
-                    {c.guardian_name && (
-                      <span className="block text-xs font-normal text-slate-400">
-                        PH: {c.guardian_name}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-slate-600">
-                    {c.subject}
-                    {c.language === "en" && (
-                      <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">
-                        EN
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-slate-600">{c.level || "-"}</td>
-                  <td className="px-4 py-2.5 text-slate-600">
-                    {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
-                  </td>
-                  <td className="px-4 py-2.5 text-slate-600">
-                    {c.teacher_name || (
-                      <span className="text-amber-600">Chưa xếp GV</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <ClassStatusBadge status={c.status} />
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <Link href={`/admin/classes/${c.id}`} className="text-indigo-600 hover:underline">
-                      Chi tiết
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {classes.map((c) => {
+                const progress = getPackageProgress(c);
+                return (
+                  <tr key={c.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-2.5 font-medium text-slate-900">
+                      {c.student_name}
+                      {c.guardian_name && (
+                        <span className="block text-xs font-normal text-slate-400">
+                          PH: {c.guardian_name}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-600">
+                      {c.subject}
+                      {c.language === "en" && (
+                        <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">
+                          EN
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-600">{c.level || "-"}</td>
+                    <td className="px-4 py-2.5 text-slate-600">
+                      {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-600">
+                      {progress ? (
+                        <span className={progress.remaining <= 3 ? "text-amber-600 font-medium" : ""}>
+                          {progress.used}/{progress.total} tiết
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-600">
+                      {c.teacher_name || (
+                        <span className="text-amber-600">Chưa xếp GV</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <ClassStatusBadge status={c.status} />
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <Link href={`/admin/classes/${c.id}`} className="text-indigo-600 hover:underline">
+                        Chi tiết
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
               {classes.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
                     Chưa có lớp học nào.
                   </td>
                 </tr>
