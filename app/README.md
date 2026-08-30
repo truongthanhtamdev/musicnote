@@ -124,7 +124,11 @@ Gợi ý:
   lương.
 - **Admin → Doanh thu**: ghi nhận từng khoản học phí thu được (số tiền, ngày,
   có thể gắn với 1 lớp cụ thể) và chi phí phát sinh (quảng cáo, vận hành...,
-  loại tự gõ). Chọn khoảng ngày (mặc định theo tháng hiện tại) để xem
+  loại tự gõ). Khi chọn 1 lớp có gói học, số tiền tự điền sẵn theo bảng giá
+  (Guitar 20 tiết: 7,5tr, 50 tiết: 15tr · Piano/Violin/Thanh nhạc 20 tiết:
+  8tr, 50 tiết: 16tr — gói 100 tiết hoặc môn khác tự nhập tay), admin vẫn sửa
+  lại được nếu giá thực tế khác. Chọn khoảng ngày (mặc định theo tháng hiện
+  tại) để xem
   **Doanh thu, Lương giáo viên, Chi phí khác, Lợi nhuận** (= doanh thu − lương
   − chi phí), xuất file CSV hàng tháng để gửi báo cáo.
 

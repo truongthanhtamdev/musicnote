@@ -69,6 +69,26 @@ export interface ExpenseRow {
 
 export const EXPENSE_CATEGORY_SUGGESTIONS = ["Quảng cáo (Ads)", "Vận hành", "Mặt bằng", "Khác"];
 
+/**
+ * Suggested tuition price per package size, keyed by subject then total
+ * sessions. Not a strict per-tiết ratio (bigger packages are discounted), so
+ * each size is listed explicitly rather than derived. Missing subject/size
+ * combos (e.g. 100 tiết, or a custom typed-in subject) have no suggestion —
+ * admin types the amount manually in that case.
+ */
+const GUITAR_PACKAGE_PRICES: Record<number, number> = { 20: 7_500_000, 50: 15_000_000 };
+const OTHER_SUBJECT_PACKAGE_PRICES: Record<number, number> = { 20: 8_000_000, 50: 16_000_000 };
+const OTHER_PRICED_SUBJECTS = ["Piano", "Violin", "Thanh nhạc"];
+
+export function getSuggestedPackagePrice(
+  subject: string,
+  totalSessions: number
+): number | null {
+  if (subject === "Guitar") return GUITAR_PACKAGE_PRICES[totalSessions] ?? null;
+  if (OTHER_PRICED_SUBJECTS.includes(subject)) return OTHER_SUBJECT_PACKAGE_PRICES[totalSessions] ?? null;
+  return null;
+}
+
 export interface AvailabilityRow {
   id: number;
   teacher_id: number;
