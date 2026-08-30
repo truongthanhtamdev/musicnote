@@ -85,7 +85,7 @@ export default function MakeupAttendanceForm({
                     defaultChecked={value === "completed"}
                     className="peer sr-only"
                   />
-                  <span className="block text-center border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition cursor-pointer">
+                  <span className="block text-center border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 peer-checked:bg-gold-600 peer-checked:border-gold-600 peer-checked:text-white transition cursor-pointer">
                     {label}
                   </span>
                 </label>
@@ -120,7 +120,7 @@ export default function MakeupAttendanceForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-lg px-4 py-2.5 text-sm"
+          className="w-full bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white font-semibold rounded-lg px-4 py-2.5 text-sm"
         >
           {pending ? "Đang lưu..." : "Lưu điểm danh bù"}
         </button>

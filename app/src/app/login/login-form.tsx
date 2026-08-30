@@ -18,7 +18,7 @@ export default function LoginForm({ next }: { next: string }) {
           type="text"
           required
           autoFocus
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
           placeholder="ban@musicnote.local"
         />
       </div>
@@ -28,7 +28,7 @@ export default function LoginForm({ next }: { next: string }) {
           name="password"
           type="password"
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
           placeholder="••••••••"
         />
       </div>
@@ -40,7 +40,7 @@ export default function LoginForm({ next }: { next: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium rounded-lg px-3 py-2 text-sm transition"
+        className="w-full bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white font-medium rounded-lg px-3 py-2 text-sm transition"
       >
         {pending ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>

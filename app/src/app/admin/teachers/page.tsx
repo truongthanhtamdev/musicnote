@@ -58,7 +58,7 @@ export default async function TeachersPage() {
                   <td className="px-4 py-2.5 text-right">
                     <Link
                       href={`/admin/teachers/${t.id}`}
-                      className="text-indigo-600 hover:underline"
+                      className="text-gold-600 hover:underline"
                     >
                       Chi tiết
                     </Link>

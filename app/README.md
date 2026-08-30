@@ -1,4 +1,4 @@
-# Piano Guitar Đệm Hát Nhẹ — Quản lý điểm danh & chấm công giáo viên
+# Piano Guitar Đệm Hát — Quản lý điểm danh & chấm công giáo viên
 
 Web app cho trung tâm dạy guitar online 1 kèm 1 (~200 lớp): điểm danh buổi học,
 chấm công theo buổi, quản lý khung giờ rảnh của giáo viên, và giao lớp học

@@ -51,7 +51,7 @@ export default async function TeacherEarningsPage({
         </div>
         <button
           type="submit"
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2"
+          className="bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-lg px-4 py-2"
         >
           Xem
         </button>
@@ -70,7 +70,7 @@ export default async function TeacherEarningsPage({
         </div>
         <div>
           <p className="text-sm text-slate-500">Tổng thu nhập</p>
-          <p className="text-2xl font-bold text-indigo-600 mt-1">
+          <p className="text-2xl font-bold text-gold-600 mt-1">
             {formatVND(mine?.total_pay ?? 0)}
           </p>
         </div>

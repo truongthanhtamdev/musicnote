@@ -10,6 +10,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Brand gold, sampled from the "Guitar Đệm Hát" logo (black + gold). */
+  --color-gold-50: #fbf4e6;
+  --color-gold-100: #f4e4c6;
+  --color-gold-200: #e9cd9a;
+  --color-gold-300: #dbb56f;
+  --color-gold-400: #cda05a;
+  --color-gold-500: #bd8e49;
+  --color-gold-600: #a87c3f;
+  --color-gold-700: #8a6530;
+  --color-gold-800: #6b4e26;
+  --color-gold-900: #4a3719;
 }
 
 body {

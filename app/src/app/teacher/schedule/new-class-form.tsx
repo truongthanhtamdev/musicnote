@@ -29,7 +29,7 @@ export default function NewClassForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl px-4 py-3 text-base"
+        className="w-full bg-gold-600 hover:bg-gold-700 text-white font-medium rounded-xl px-4 py-3 text-base"
       >
         + Thêm lớp học mới
       </button>
@@ -178,7 +178,7 @@ export default function NewClassForm() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium rounded-lg px-4 py-2.5 text-base"
+          className="w-full bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white font-medium rounded-lg px-4 py-2.5 text-base"
         >
           {pending ? "Đang lưu..." : "Lưu lớp học"}
         </button>

@@ -22,7 +22,7 @@ export default async function ImportPage() {
             <h2 className="font-semibold text-slate-900">Nhập giáo viên từ CSV</h2>
             <a
               href="/admin/import/templates/teachers"
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-gold-600 hover:underline"
             >
               Tải file mẫu
             </a>
@@ -36,7 +36,7 @@ export default async function ImportPage() {
           <h2 className="font-semibold text-slate-900">Nhập lớp học từ CSV</h2>
           <a
             href="/admin/import/templates/classes"
-            className="text-sm text-indigo-600 hover:underline"
+            className="text-sm text-gold-600 hover:underline"
           >
             Tải file mẫu
           </a>

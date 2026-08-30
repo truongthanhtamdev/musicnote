@@ -45,7 +45,7 @@ export default function NewStudentForm() {
       <button
         type="submit"
         disabled={pending}
-        className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
       >
         {pending ? "Đang lưu..." : "Thêm học viên"}
       </button>
