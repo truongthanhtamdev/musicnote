@@ -32,6 +32,17 @@ export function startOfWeekMonday(d: Date): Date {
   return date;
 }
 
+export function firstDayOfMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+export function lastDayOfMonth(): string {
+  const now = new Date();
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return toISODate(last);
+}
+
 export function addDays(d: Date, days: number): Date {
   const date = new Date(d);
   date.setDate(date.getDate() + days);

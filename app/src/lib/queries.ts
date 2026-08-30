@@ -6,7 +6,9 @@ import {
   type AttendanceRow,
   type AvailabilityRow,
   type ClassRow,
+  type ExpenseRow,
   type PackageRow,
+  type PaymentRow,
   type UserRow,
 } from "./types";
 
@@ -313,4 +315,57 @@ export function computePayroll(from: string, to: string): PayrollRow[] {
     ...r,
     total_pay: (r.pay_per_session || 0) * r.completed_sessions + TRIAL_SESSION_RATE * r.trial_sessions,
   }));
+}
+
+export function listPayments(
+  from: string,
+  to: string
+): (PaymentRow & { student_name: string | null })[] {
+  return db
+    .prepare(
+      `SELECT p.*, c.student_name as student_name
+       FROM payments p
+       LEFT JOIN classes c ON c.id = p.class_id
+       WHERE p.paid_at >= ? AND p.paid_at <= ?
+       ORDER BY p.paid_at DESC, p.id DESC`
+    )
+    .all(from, to) as (PaymentRow & { student_name: string | null })[];
+}
+
+export function listExpenses(from: string, to: string): ExpenseRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM expenses WHERE expense_date >= ? AND expense_date <= ?
+       ORDER BY expense_date DESC, id DESC`
+    )
+    .all(from, to) as ExpenseRow[];
+}
+
+export interface RevenueSummary {
+  totalRevenue: number;
+  totalPayroll: number;
+  totalExpenses: number;
+  profit: number;
+}
+
+export function getRevenueSummary(from: string, to: string): RevenueSummary {
+  const totalRevenue = (
+    db
+      .prepare("SELECT COALESCE(SUM(amount), 0) as s FROM payments WHERE paid_at >= ? AND paid_at <= ?")
+      .get(from, to) as { s: number }
+  ).s;
+  const totalExpenses = (
+    db
+      .prepare(
+        "SELECT COALESCE(SUM(amount), 0) as s FROM expenses WHERE expense_date >= ? AND expense_date <= ?"
+      )
+      .get(from, to) as { s: number }
+  ).s;
+  const totalPayroll = computePayroll(from, to).reduce((sum, r) => sum + r.total_pay, 0);
+  return {
+    totalRevenue,
+    totalPayroll,
+    totalExpenses,
+    profit: totalRevenue - totalPayroll - totalExpenses,
+  };
 }

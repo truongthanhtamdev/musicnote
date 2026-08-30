@@ -99,11 +99,31 @@ function migrate() {
       UNIQUE(class_id, session_date)
     );
 
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
+      amount INTEGER NOT NULL,
+      paid_at TEXT NOT NULL,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL DEFAULT 'Quảng cáo (Ads)',
+      amount INTEGER NOT NULL,
+      expense_date TEXT NOT NULL,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_attendance_teacher_date ON attendance(teacher_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_availability_teacher ON availability(teacher_id);
+    CREATE INDEX IF NOT EXISTS idx_payments_paid_at ON payments(paid_at);
+    CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
   `);
 
   // CREATE TABLE IF NOT EXISTS above only helps on a brand-new database file;
