@@ -25,6 +25,7 @@ export interface UserRow {
 export type ClassLanguage = "vi" | "en";
 export type ClassSource = "center" | "self";
 export type ClassScheduleType = "fixed" | "flexible";
+export type ClassStatus = "active" | "paused" | "ended";
 
 export interface ClassRow {
   id: number;
@@ -45,7 +46,7 @@ export interface ClassRow {
   start_time: string; // HH:MM
   duration_minutes: number;
   teacher_id: number | null;
-  status: "active" | "paused" | "ended";
+  status: ClassStatus;
   notes: string | null;
   created_at: string;
 }
@@ -123,7 +124,7 @@ export interface AttendanceRow {
   lesson_content: string | null;
   is_trial: number;
   note: string | null;
-  // Only meaningful when status === "rescheduled": the date/time the
+  // Only meaningful when hasRescheduleInfo(status): the date/time the
   // teacher and student agreed to move this session to.
   rescheduled_to_date: string | null;
   rescheduled_to_time: string | null;
@@ -155,6 +156,12 @@ export const SCHEDULE_TYPE_LABELS: Record<ClassScheduleType, string> = {
   flexible: "Linh động (hẹn từng buổi)",
 };
 
+export const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
+  active: "Đang học",
+  paused: "Tạm dừng",
+  ended: "Đã kết thúc",
+};
+
 /** Human-readable weekly slot, or "Linh động" for a class with no fixed day/time. */
 export function formatClassSchedule(
   cls: Pick<ClassRow, "schedule_type" | "day_of_week" | "start_time" | "duration_minutes">
@@ -183,3 +190,8 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   student_absent: "HS vắng",
   rescheduled: "Dời lịch",
 };
+
+/** Any status but "completed" can carry an agreed makeup date/time (a miss still needs one). */
+export function hasRescheduleInfo(status: AttendanceStatus): boolean {
+  return status !== "completed";
+}

@@ -1,8 +1,9 @@
 import { getSession } from "@/lib/auth";
 import { listAttendance, listClassesForTeacher } from "@/lib/queries";
 import { addDays, toISODate, todayISO } from "@/lib/format";
-import { ATTENDANCE_STATUS_LABELS, formatClassSchedule } from "@/lib/types";
+import { formatClassSchedule, CLASS_STATUS_LABELS } from "@/lib/types";
 import MakeupAttendanceForm from "./makeup-attendance-form";
+import TeacherAttendanceHistoryRow from "./history-row";
 
 export default async function TeacherAttendanceHistoryPage({
   searchParams,
@@ -15,12 +16,14 @@ export default async function TeacherAttendanceHistoryPage({
   const to = sp.to || todayISO();
 
   const rows = listAttendance({ teacherId: session!.userId, from, to });
-  const myClasses = listClassesForTeacher(session!.userId)
-    .filter((c) => c.status === "active")
-    .map((c) => ({
-      id: c.id,
-      label: `${c.student_name} · ${formatClassSchedule(c)}`,
-    }));
+  // Not filtered to active classes — a teacher may still need to add or
+  // correct attendance for a class that has since paused or ended.
+  const myClasses = listClassesForTeacher(session!.userId).map((c) => ({
+    id: c.id,
+    label: `${c.student_name} · ${formatClassSchedule(c)}${
+      c.status === "active" ? "" : ` (${CLASS_STATUS_LABELS[c.status]})`
+    }`,
+  }));
 
   return (
     <div className="space-y-6">
@@ -70,27 +73,7 @@ export default async function TeacherAttendanceHistoryPage({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((a) => (
-              <tr key={a.id}>
-                <td className="px-4 py-2.5">{a.session_date}</td>
-                <td className="px-4 py-2.5 font-medium text-slate-900">{a.student_name}</td>
-                <td className="px-4 py-2.5">
-                  {ATTENDANCE_STATUS_LABELS[a.status]}
-                  {!!a.is_trial && (
-                    <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
-                      Thử
-                    </span>
-                  )}
-                  {a.status === "rescheduled" && a.rescheduled_to_date && (
-                    <span className="block text-xs text-slate-500">
-                      → {a.rescheduled_to_date}
-                      {a.rescheduled_to_time ? ` ${a.rescheduled_to_time}` : ""}
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-2.5 text-slate-500">{a.check_in_time || "-"}</td>
-                <td className="px-4 py-2.5 text-slate-600">{a.lesson_content || "-"}</td>
-                <td className="px-4 py-2.5 text-slate-500">{a.note || "-"}</td>
-              </tr>
+              <TeacherAttendanceHistoryRow key={a.id} row={a} />
             ))}
             {rows.length === 0 && (
               <tr>

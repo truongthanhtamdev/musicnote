@@ -9,12 +9,8 @@ import {
   getPackageProgress,
   listSiblingClasses,
 } from "@/lib/queries";
-import {
-  ATTENDANCE_STATUS_LABELS,
-  LANGUAGE_LABELS,
-  SOURCE_LABELS,
-  formatClassSchedule,
-} from "@/lib/types";
+import { LANGUAGE_LABELS, SOURCE_LABELS, formatClassSchedule } from "@/lib/types";
+import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 import EditClassForm from "./edit-class-form";
 import ClassActions from "./class-actions";
 import PackageWidget from "./package-widget";
@@ -103,18 +99,7 @@ export default async function ClassDetailPage({
                   <td className="px-4 py-2">{a.session_date}</td>
                   <td className="px-4 py-2">{a.teacher_name}</td>
                   <td className="px-4 py-2">
-                    {ATTENDANCE_STATUS_LABELS[a.status]}
-                    {!!a.is_trial && (
-                      <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
-                        Thử
-                      </span>
-                    )}
-                    {a.status === "rescheduled" && a.rescheduled_to_date && (
-                      <span className="block text-xs text-slate-500">
-                        → {a.rescheduled_to_date}
-                        {a.rescheduled_to_time ? ` ${a.rescheduled_to_time}` : ""}
-                      </span>
-                    )}
+                    <AttendanceStatusCell row={a} />
                   </td>
                   <td className="px-4 py-2">{a.fb_checkin_confirmed ? "✔" : "-"}</td>
                   <td className="px-4 py-2 text-slate-600">{a.lesson_content || "-"}</td>

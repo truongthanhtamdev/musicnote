@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { getAttendance } from "@/lib/queries";
-import type { AttendanceStatus } from "@/lib/types";
+import { hasRescheduleInfo, type AttendanceStatus } from "@/lib/types";
 import type { FormState } from "./teachers";
 
 const VALID_STATUS: AttendanceStatus[] = [
@@ -28,9 +28,9 @@ export async function markAttendanceAction(
   const isTrial = formData.get("is_trial") ? 1 : 0;
   const note = String(formData.get("note") || "").trim();
   const rescheduledToDate =
-    status === "rescheduled" ? String(formData.get("rescheduled_to_date") || "").trim() : "";
+    hasRescheduleInfo(status) ? String(formData.get("rescheduled_to_date") || "").trim() : "";
   const rescheduledToTime =
-    status === "rescheduled" ? String(formData.get("rescheduled_to_time") || "").trim() : "";
+    hasRescheduleInfo(status) ? String(formData.get("rescheduled_to_time") || "").trim() : "";
 
   if (!classId || !sessionDate || !VALID_STATUS.includes(status)) {
     return { error: "Dữ liệu điểm danh không hợp lệ" };
@@ -100,9 +100,9 @@ export async function correctAttendanceAction(
   const isTrial = formData.get("is_trial") ? 1 : 0;
   const note = String(formData.get("note") || "").trim();
   const rescheduledToDate =
-    status === "rescheduled" ? String(formData.get("rescheduled_to_date") || "").trim() : "";
+    hasRescheduleInfo(status) ? String(formData.get("rescheduled_to_date") || "").trim() : "";
   const rescheduledToTime =
-    status === "rescheduled" ? String(formData.get("rescheduled_to_time") || "").trim() : "";
+    hasRescheduleInfo(status) ? String(formData.get("rescheduled_to_time") || "").trim() : "";
 
   if (!id || !VALID_STATUS.includes(status)) {
     return { error: "Dữ liệu không hợp lệ" };

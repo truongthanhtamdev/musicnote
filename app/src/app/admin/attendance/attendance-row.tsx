@@ -5,9 +5,11 @@ import { correctAttendanceAction } from "@/actions/attendance";
 import type { FormState } from "@/actions/teachers";
 import {
   ATTENDANCE_STATUS_LABELS,
+  hasRescheduleInfo,
   type AttendanceRow as AttendanceRowType,
   type AttendanceStatus,
 } from "@/lib/types";
+import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 
 const initialState: FormState = {};
 
@@ -49,7 +51,7 @@ export default function AttendanceRow({
                 </option>
               ))}
             </select>
-            {status === "rescheduled" && (
+            {hasRescheduleInfo(status) && (
               <>
                 <input
                   name="rescheduled_to_date"
@@ -113,18 +115,7 @@ export default function AttendanceRow({
       <td className="px-4 py-2 font-medium text-slate-900">{row.student_name}</td>
       <td className="px-4 py-2">{row.teacher_name}</td>
       <td className="px-4 py-2">
-        {ATTENDANCE_STATUS_LABELS[row.status]}
-        {!!row.is_trial && (
-          <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
-            Thử
-          </span>
-        )}
-        {row.status === "rescheduled" && row.rescheduled_to_date && (
-          <span className="block text-xs text-slate-500">
-            → {row.rescheduled_to_date}
-            {row.rescheduled_to_time ? ` ${row.rescheduled_to_time}` : ""}
-          </span>
-        )}
+        <AttendanceStatusCell row={row} />
       </td>
       <td className="px-4 py-2">{row.fb_checkin_confirmed ? "✔" : "-"}</td>
       <td className="px-4 py-2 text-slate-500">{row.check_in_time || "-"}</td>

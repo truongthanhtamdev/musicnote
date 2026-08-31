@@ -3,7 +3,12 @@
 import { useActionState, useState } from "react";
 import { markAttendanceAction } from "@/actions/attendance";
 import type { FormState } from "@/actions/teachers";
-import { ATTENDANCE_STATUS_LABELS, type AttendanceRow, type AttendanceStatus } from "@/lib/types";
+import {
+  ATTENDANCE_STATUS_LABELS,
+  hasRescheduleInfo,
+  type AttendanceRow,
+  type AttendanceStatus,
+} from "@/lib/types";
 
 const initialState: FormState = {};
 
@@ -19,16 +24,27 @@ export default function AttendanceForm({
   sessionDate,
   existing,
   defaultTrial = false,
+  onSuccess,
 }: {
   classId: number;
   sessionDate: string;
   existing?: AttendanceRow;
   /** Pre-check "Buổi học thử" when this is the class's very first session ever. */
   defaultTrial?: boolean;
+  /** Called once after a save succeeds, e.g. to collapse an inline edit view. */
+  onSuccess?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(markAttendanceAction, initialState);
   const defaultStatus = existing?.status || "completed";
   const [status, setStatus] = useState<AttendanceStatus>(defaultStatus);
+
+  // Adjusting state during render (rather than in an effect) avoids an
+  // extra commit-then-rerender pass.
+  const [handledState, setHandledState] = useState(state);
+  if (state !== handledState) {
+    setHandledState(state);
+    if (state.success) onSuccess?.();
+  }
 
   return (
     <form action={formAction} className="space-y-3">
@@ -58,7 +74,7 @@ export default function AttendanceForm({
             )
           )}
         </div>
-        {status === "rescheduled" && (
+        {hasRescheduleInfo(status) && (
           <div className="grid grid-cols-2 gap-2 mt-2">
             <div>
               <label className="block text-xs text-slate-500 mb-1">Ngày học bù đã chốt</label>

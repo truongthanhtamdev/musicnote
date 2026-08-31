@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { markAttendanceAction } from "@/actions/attendance";
 import type { FormState } from "@/actions/teachers";
-import { ATTENDANCE_STATUS_LABELS, type AttendanceStatus } from "@/lib/types";
+import { ATTENDANCE_STATUS_LABELS, hasRescheduleInfo, type AttendanceStatus } from "@/lib/types";
 import { todayISO } from "@/lib/format";
 
 const initialState: FormState = {};
@@ -47,9 +47,10 @@ export default function MakeupAttendanceForm({
         </button>
       </div>
       <p className="text-sm text-slate-500 mb-3">
-        Dùng khi buổi học bị dời qua ngày khác với lịch cố định hàng tuần, hoặc để điểm danh
-        từng buổi của lớp Linh động (không có lịch cố định) — chọn đúng lớp và ngày dạy thực
-        tế, buổi này vẫn tính vào gói học của học viên.
+        Dùng khi buổi học bị dời qua ngày khác với lịch cố định hàng tuần, để điểm danh từng
+        buổi của lớp Linh động (không có lịch cố định), hoặc để bổ sung/sửa điểm danh cho lớp
+        cũ đã tạm dừng/kết thúc — chọn đúng lớp và ngày dạy thực tế, buổi này vẫn tính vào gói
+        học của học viên.
       </p>
       <form action={formAction} className="space-y-3">
         <div className="grid sm:grid-cols-2 gap-3">
@@ -95,7 +96,7 @@ export default function MakeupAttendanceForm({
               )
             )}
           </div>
-          {status === "rescheduled" && (
+          {hasRescheduleInfo(status) && (
             <div className="grid grid-cols-2 gap-2 mt-2">
               <div>
                 <label className="block text-xs text-slate-500 mb-1">Ngày học bù đã chốt</label>
