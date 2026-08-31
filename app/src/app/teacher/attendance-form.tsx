@@ -18,10 +18,13 @@ export default function AttendanceForm({
   classId,
   sessionDate,
   existing,
+  defaultTrial = false,
 }: {
   classId: number;
   sessionDate: string;
   existing?: AttendanceRow;
+  /** Pre-check "Buổi học thử" when this is the class's very first session ever. */
+  defaultTrial?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(markAttendanceAction, initialState);
   const defaultStatus = existing?.status || "completed";
@@ -69,7 +72,7 @@ export default function AttendanceForm({
         <input
           type="checkbox"
           name="is_trial"
-          defaultChecked={!!existing?.is_trial}
+          defaultChecked={existing ? !!existing.is_trial : defaultTrial}
           className="w-4 h-4 rounded border-slate-300"
         />
         Buổi học thử (tính lương 50.000đ/tiết, không theo đơn giá thường)

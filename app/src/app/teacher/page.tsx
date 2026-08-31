@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth";
-import { listClassesForTeacher, getAttendance, getPackageProgress } from "@/lib/queries";
+import { listClassesForTeacher, getAttendance, getPackageProgress, listAttendance } from "@/lib/queries";
 import { formatTimeRange, todayISO } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 import AttendanceForm from "./attendance-form";
@@ -39,6 +39,7 @@ export default async function TeacherTodayPage() {
           {classes.map((c) => {
             const existing = getAttendance(c.id, todayStr);
             const progress = getPackageProgress(c);
+            const isFirstSessionEver = listAttendance({ classId: c.id }).length === 0;
             return (
               <div
                 key={c.id}
@@ -68,6 +69,7 @@ export default async function TeacherTodayPage() {
                         }`}
                       >
                         Gói {progress.total} tiết · Đã học {progress.used} · Còn {progress.remaining}
+                        {!existing && ` · Hôm nay là buổi thứ ${progress.used + 1}`}
                       </p>
                     )}
                   </div>
@@ -77,7 +79,12 @@ export default async function TeacherTodayPage() {
                     </span>
                   )}
                 </div>
-                <AttendanceForm classId={c.id} sessionDate={todayStr} existing={existing} />
+                <AttendanceForm
+                  classId={c.id}
+                  sessionDate={todayStr}
+                  existing={existing}
+                  defaultTrial={isFirstSessionEver}
+                />
               </div>
             );
           })}
