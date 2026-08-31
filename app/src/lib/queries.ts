@@ -2,6 +2,7 @@ import { db } from "./db";
 import { nextOccurrence, mostRecentOccurrence, toISODate, todayISO } from "./format";
 import {
   parseLanguages,
+  parseSubjects,
   TRIAL_SESSION_RATE,
   type AttendanceRow,
   type AvailabilityRow,
@@ -98,6 +99,14 @@ export function listClassesByDay(dayOfWeek: number): ClassWithTeacher[] {
 
 export function teacherSpeaksLanguage(teacher: UserRow, language: string): boolean {
   return parseLanguages(teacher.languages).includes(language as "vi" | "en");
+}
+
+// Teachers created before the subjects field existed have it empty, which
+// we treat as "not specified" rather than "teaches nothing" — otherwise
+// every pre-existing teacher would suddenly look unfit for every class.
+export function teacherTeachesSubject(teacher: UserRow, subject: string): boolean {
+  const subjects = parseSubjects(teacher.subjects);
+  return subjects.length === 0 || subjects.includes(subject);
 }
 
 export function listStudents(): UserRow[] {

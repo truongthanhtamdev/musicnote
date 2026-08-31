@@ -11,6 +11,15 @@ export interface FormState {
   success?: boolean;
 }
 
+function formatSubjects(formData: FormData): string {
+  const checked = formData.getAll("subjects").map(String);
+  const other = String(formData.get("subjects_other") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  return Array.from(new Set([...checked, ...other])).join(",");
+}
+
 export async function createTeacherAction(
   _prev: FormState,
   formData: FormData
@@ -23,6 +32,7 @@ export async function createTeacherAction(
   const password = String(formData.get("password") || "");
   const payPerSession = Number(formData.get("pay_per_session") || 0);
   const languages = formData.getAll("languages").join(",") || "vi";
+  const subjects = formatSubjects(formData);
 
   if (!name || !email || !password) {
     return { error: "Vui lòng nhập đầy đủ tên, email, mật khẩu" };
@@ -35,9 +45,17 @@ export async function createTeacherAction(
   }
 
   db.prepare(
-    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, languages, active)
-     VALUES (?, ?, ?, 'teacher', ?, ?, ?, 1)`
-  ).run(name, email, bcrypt.hashSync(password, 10), phone || null, payPerSession || null, languages);
+    `INSERT INTO users (name, email, password_hash, role, phone, pay_per_session, languages, subjects, active)
+     VALUES (?, ?, ?, 'teacher', ?, ?, ?, ?, 1)`
+  ).run(
+    name,
+    email,
+    bcrypt.hashSync(password, 10),
+    phone || null,
+    payPerSession || null,
+    languages,
+    subjects
+  );
 
   revalidatePath("/admin/teachers");
   return { success: true };
@@ -54,12 +72,13 @@ export async function updateTeacherAction(
   const phone = String(formData.get("phone") || "").trim();
   const payPerSession = Number(formData.get("pay_per_session") || 0);
   const languages = formData.getAll("languages").join(",") || "vi";
+  const subjects = formatSubjects(formData);
 
   if (!id || !name) return { error: "Thiếu thông tin" };
 
   db.prepare(
-    `UPDATE users SET name = ?, phone = ?, pay_per_session = ?, languages = ? WHERE id = ? AND role = 'teacher'`
-  ).run(name, phone || null, payPerSession || null, languages, id);
+    `UPDATE users SET name = ?, phone = ?, pay_per_session = ?, languages = ?, subjects = ? WHERE id = ? AND role = 'teacher'`
+  ).run(name, phone || null, payPerSession || null, languages, subjects, id);
 
   revalidatePath("/admin/teachers");
   revalidatePath(`/admin/teachers/${id}`);

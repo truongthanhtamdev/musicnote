@@ -2,7 +2,13 @@ import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getTeacher, listAvailability, listClassesForTeacher, listAttendance } from "@/lib/queries";
 import { formatTimeRange } from "@/lib/format";
-import { DAY_LABELS, ATTENDANCE_STATUS_LABELS, LANGUAGE_LABELS, parseLanguages } from "@/lib/types";
+import {
+  DAY_LABELS,
+  ATTENDANCE_STATUS_LABELS,
+  LANGUAGE_LABELS,
+  parseLanguages,
+  parseSubjects,
+} from "@/lib/types";
 import { AvailabilityGrid } from "@/components/availability-grid";
 import EditTeacherForm from "./edit-teacher-form";
 import ToggleActiveButton from "./toggle-active-button";
@@ -49,6 +55,10 @@ export default async function TeacherDetailPage({
             <h2 className="font-semibold text-slate-900 mb-2">Thông tin</h2>
             <p>
               <span className="text-slate-500">SĐT:</span> {teacher.phone || "-"}
+            </p>
+            <p>
+              <span className="text-slate-500">Chuyên môn:</span>{" "}
+              {parseSubjects(teacher.subjects).join(", ") || "Chưa khai báo"}
             </p>
             <p>
               <span className="text-slate-500">Ngôn ngữ dạy:</span>{" "}

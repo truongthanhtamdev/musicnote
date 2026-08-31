@@ -15,6 +15,7 @@ export interface UserRow {
   phone: string | null;
   pay_per_session: number | null;
   languages: string; // comma-separated: "vi" | "vi,en"
+  subjects: string; // comma-separated free text, e.g. "Guitar,Piano"; empty = not specified (matches any)
   active: number;
   created_at: string;
 }
@@ -121,7 +122,7 @@ export interface AttendanceRow {
 export const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Violin", "Thanh nhạc"];
+export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Violin", "Saxophone", "Thanh nhạc"];
 
 export const PACKAGE_OPTIONS = [20, 50, 100];
 
@@ -143,6 +144,13 @@ export function parseLanguages(csv: string): ClassLanguage[] {
     .split(",")
     .map((s) => s.trim())
     .filter((s): s is ClassLanguage => s === "vi" || s === "en");
+}
+
+export function parseSubjects(csv: string): string[] {
+  return csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {

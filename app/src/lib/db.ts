@@ -41,6 +41,7 @@ function migrate() {
       phone TEXT,
       pay_per_session INTEGER,
       languages TEXT NOT NULL DEFAULT 'vi',
+      subjects TEXT NOT NULL DEFAULT '',
       active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -139,6 +140,7 @@ function migrate() {
   ensureColumn("classes", "package_started_at", "TEXT");
   ensureColumn("classes", "package_id", "INTEGER REFERENCES packages(id) ON DELETE SET NULL");
   ensureColumn("users", "languages", "TEXT NOT NULL DEFAULT 'vi'");
+  ensureColumn("users", "subjects", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("attendance", "lesson_content", "TEXT");
   ensureColumn("attendance", "is_trial", "INTEGER NOT NULL DEFAULT 0");
   ensureStudentRoleSupported();
@@ -198,6 +200,7 @@ function ensureStudentRoleSupported() {
         phone TEXT,
         pay_per_session INTEGER,
         languages TEXT NOT NULL DEFAULT 'vi',
+        subjects TEXT NOT NULL DEFAULT '',
         active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );

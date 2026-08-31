@@ -2,13 +2,15 @@
 
 import { useActionState } from "react";
 import { updateTeacherAction, type FormState } from "@/actions/teachers";
-import { parseLanguages, type UserRow } from "@/lib/types";
+import { parseLanguages, parseSubjects, SUBJECT_SUGGESTIONS, type UserRow } from "@/lib/types";
 
 const initialState: FormState = {};
 
 export default function EditTeacherForm({ teacher }: { teacher: UserRow }) {
   const [state, formAction, pending] = useActionState(updateTeacherAction, initialState);
   const langs = parseLanguages(teacher.languages);
+  const subjects = parseSubjects(teacher.subjects);
+  const otherSubjects = subjects.filter((s) => !SUBJECT_SUGGESTIONS.includes(s));
 
   return (
     <form action={formAction} className="space-y-3">
@@ -50,6 +52,22 @@ export default function EditTeacherForm({ teacher }: { teacher: UserRow }) {
             <input type="checkbox" name="languages" value="en" defaultChecked={langs.includes("en")} /> Tiếng Anh
           </label>
         </div>
+      </div>
+      <div>
+        <label className="block text-xs text-slate-500 mb-1">Chuyên môn (chọn được nhiều môn)</label>
+        <div className="flex flex-wrap gap-4 text-sm">
+          {SUBJECT_SUGGESTIONS.map((s) => (
+            <label key={s} className="flex items-center gap-1.5">
+              <input type="checkbox" name="subjects" value={s} defaultChecked={subjects.includes(s)} /> {s}
+            </label>
+          ))}
+        </div>
+        <input
+          name="subjects_other"
+          defaultValue={otherSubjects.join(", ")}
+          placeholder="Môn khác (nếu có, cách nhau bởi dấu phẩy)"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        />
       </div>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state.success && <p className="text-sm text-emerald-600">Đã lưu thay đổi.</p>}

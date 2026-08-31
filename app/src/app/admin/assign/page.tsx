@@ -1,4 +1,10 @@
-import { listClasses, listTeachers, isTeacherAvailable, teacherSpeaksLanguage } from "@/lib/queries";
+import {
+  listClasses,
+  listTeachers,
+  isTeacherAvailable,
+  teacherSpeaksLanguage,
+  teacherTeachesSubject,
+} from "@/lib/queries";
 import { formatTimeRange } from "@/lib/format";
 import { DAY_LABELS, LANGUAGE_LABELS } from "@/lib/types";
 import AssignRow from "./assign-row";
@@ -30,10 +36,12 @@ export default async function AssignPage() {
               name: t.name,
               available: isTeacherAvailable(t.id, c.day_of_week, c.start_time, c.duration_minutes),
               speaksLanguage: teacherSpeaksLanguage(t, c.language),
+              teachesSubject: teacherTeachesSubject(t, c.subject),
             }));
             options.sort(
               (a, b) =>
-                Number(b.available && b.speaksLanguage) - Number(a.available && a.speaksLanguage) ||
+                Number(b.available && b.speaksLanguage && b.teachesSubject) -
+                  Number(a.available && a.speaksLanguage && a.teachesSubject) ||
                 Number(b.available) - Number(a.available)
             );
             return (
@@ -52,7 +60,12 @@ export default async function AssignPage() {
                     </p>
                   </div>
                 </div>
-                <AssignRow classId={c.id} teachers={options} needsLanguage={c.language === "en"} />
+                <AssignRow
+                  classId={c.id}
+                  teachers={options}
+                  needsLanguage={c.language === "en"}
+                  subject={c.subject}
+                />
               </div>
             );
           })}

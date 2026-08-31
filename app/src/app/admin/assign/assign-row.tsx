@@ -8,23 +8,26 @@ interface TeacherOption {
   name: string;
   available: boolean;
   speaksLanguage: boolean;
+  teachesSubject: boolean;
 }
 
 export default function AssignRow({
   classId,
   teachers,
   needsLanguage,
+  subject,
 }: {
   classId: number;
   teachers: TeacherOption[];
   needsLanguage: boolean;
+  subject: string;
 }) {
   const [isPending, startTransition] = useTransition();
 
   return (
     <div className="flex flex-wrap gap-2">
       {teachers.map((t) => {
-        const fits = t.available && t.speaksLanguage;
+        const fits = t.available && t.speaksLanguage && t.teachesSubject;
         return (
           <button
             key={t.id}
@@ -39,10 +42,11 @@ export default function AssignRow({
           >
             {fits ? "✓ " : ""}
             {t.name}
+            {!t.teachesSubject && <span className="text-amber-600"> (chưa dạy {subject})</span>}
             {needsLanguage && !t.speaksLanguage && (
               <span className="text-amber-600"> (chưa dạy được tiếng Anh)</span>
             )}
-            {!t.available && t.speaksLanguage && <span> (bận giờ này)</span>}
+            {!t.available && t.speaksLanguage && t.teachesSubject && <span> (bận giờ này)</span>}
           </button>
         );
       })}
