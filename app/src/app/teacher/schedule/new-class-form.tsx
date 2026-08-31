@@ -3,7 +3,15 @@
 import { useActionState, useRef, useEffect, useState } from "react";
 import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
-import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, SOURCE_LABELS } from "@/lib/types";
+import {
+  DAY_LABELS,
+  DAY_ORDER,
+  SUBJECT_SUGGESTIONS,
+  LANGUAGE_LABELS,
+  SOURCE_LABELS,
+  SCHEDULE_TYPE_LABELS,
+  type ClassScheduleType,
+} from "@/lib/types";
 
 const initialState: FormState = {};
 
@@ -11,13 +19,17 @@ export default function NewClassForm() {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(createClassAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  const [scheduleType, setScheduleType] = useState<ClassScheduleType>("fixed");
 
   // Close the panel once a save succeeds. Adjusting state during render
   // (rather than in an effect) avoids an extra commit-then-rerender pass.
   const [handledState, setHandledState] = useState(state);
   if (state !== handledState) {
     setHandledState(state);
-    if (state.success) setOpen(false);
+    if (state.success) {
+      setOpen(false);
+      setScheduleType("fixed");
+    }
   }
 
   useEffect(() => {
@@ -125,33 +137,56 @@ export default function NewClassForm() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Thứ học</label>
-            <select
-              name="day_of_week"
-              required
-              defaultValue=""
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
-            >
-              <option value="" disabled>
-                Chọn thứ
-              </option>
-              {DAY_ORDER.map((d) => (
-                <option key={d} value={d}>
-                  {DAY_LABELS[d]}
-                </option>
-              ))}
-            </select>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Lịch học</label>
+            <div className="flex gap-4 text-sm">
+              {(Object.entries(SCHEDULE_TYPE_LABELS) as [ClassScheduleType, string][]).map(
+                ([v, label]) => (
+                  <label key={v} className="flex items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="schedule_type"
+                      value={v}
+                      checked={scheduleType === v}
+                      onChange={() => setScheduleType(v)}
+                    />{" "}
+                    {label}
+                  </label>
+                )
+              )}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Giờ bắt đầu</label>
-            <input
-              name="start_time"
-              type="time"
-              required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
-            />
-          </div>
+          {scheduleType === "fixed" && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Thứ học</label>
+                <select
+                  name="day_of_week"
+                  required
+                  defaultValue=""
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+                >
+                  <option value="" disabled>
+                    Chọn thứ
+                  </option>
+                  {DAY_ORDER.map((d) => (
+                    <option key={d} value={d}>
+                      {DAY_LABELS[d]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Giờ bắt đầu</label>
+                <input
+                  name="start_time"
+                  type="time"
+                  required
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+                />
+              </div>
+            </>
+          )}
           <div className="col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">Thời lượng</label>
             <select

@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { listAttendance, listClassesForTeacher } from "@/lib/queries";
 import { addDays, toISODate, todayISO } from "@/lib/format";
-import { ATTENDANCE_STATUS_LABELS, DAY_LABELS } from "@/lib/types";
+import { ATTENDANCE_STATUS_LABELS, formatClassSchedule } from "@/lib/types";
 import MakeupAttendanceForm from "./makeup-attendance-form";
 
 export default async function TeacherAttendanceHistoryPage({
@@ -19,7 +19,7 @@ export default async function TeacherAttendanceHistoryPage({
     .filter((c) => c.status === "active")
     .map((c) => ({
       id: c.id,
-      label: `${c.student_name} · ${DAY_LABELS[c.day_of_week]} ${c.start_time}`,
+      label: `${c.student_name} · ${formatClassSchedule(c)}`,
     }));
 
   return (

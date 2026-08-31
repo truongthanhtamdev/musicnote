@@ -9,7 +9,12 @@ import {
   getPackageProgress,
   listSiblingClasses,
 } from "@/lib/queries";
-import { DAY_LABELS, ATTENDANCE_STATUS_LABELS, LANGUAGE_LABELS, SOURCE_LABELS } from "@/lib/types";
+import {
+  ATTENDANCE_STATUS_LABELS,
+  LANGUAGE_LABELS,
+  SOURCE_LABELS,
+  formatClassSchedule,
+} from "@/lib/types";
 import EditClassForm from "./edit-class-form";
 import ClassActions from "./class-actions";
 import PackageWidget from "./package-widget";
@@ -30,7 +35,9 @@ export default async function ClassDetailPage({
 
   const teachers = listTeachers(false).map((t) => ({
     ...t,
-    available: isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes),
+    available:
+      cls.schedule_type === "flexible" ||
+      isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes),
   }));
   const history = listAttendance({ classId }).slice(0, 30);
   const students = listStudents();
@@ -39,7 +46,7 @@ export default async function ClassDetailPage({
     .filter((s) => s.package_id)
     .map((s) => ({
       id: s.id,
-      label: `${DAY_LABELS[s.day_of_week]} ${s.start_time}`,
+      label: formatClassSchedule(s),
       progress: getPackageProgress(s)!,
     }));
 
@@ -52,8 +59,8 @@ export default async function ClassDetailPage({
             <p className="text-slate-500 text-sm">Phụ huynh: {cls.guardian_name}</p>
           )}
           <p className="text-slate-500 text-sm">
-            {DAY_LABELS[cls.day_of_week]} {cls.start_time} · {cls.duration_minutes} phút ·{" "}
-            {cls.subject} · {LANGUAGE_LABELS[cls.language]} · {SOURCE_LABELS[cls.source]}
+            {formatClassSchedule(cls)} · {cls.subject} · {LANGUAGE_LABELS[cls.language]} ·{" "}
+            {SOURCE_LABELS[cls.source]}
           </p>
         </div>
         <ClassActions classId={cls.id} status={cls.status} teacherId={cls.teacher_id} teachers={teachers} canDelete={isAdmin} />

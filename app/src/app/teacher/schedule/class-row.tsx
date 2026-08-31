@@ -1,16 +1,26 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { updateClassAction } from "@/actions/classes";
+import { useActionState, useState, useTransition } from "react";
+import { updateClassAction, deleteClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
-import { formatTimeRange } from "@/lib/format";
-import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, type ClassRow } from "@/lib/types";
+import {
+  DAY_LABELS,
+  DAY_ORDER,
+  SUBJECT_SUGGESTIONS,
+  LANGUAGE_LABELS,
+  SCHEDULE_TYPE_LABELS,
+  formatClassSchedule,
+  type ClassRow,
+  type ClassScheduleType,
+} from "@/lib/types";
 
 const initialState: FormState = {};
 
 export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
   const [editing, setEditing] = useState(false);
+  const [scheduleType, setScheduleType] = useState<ClassScheduleType>(cls.schedule_type);
   const [state, formAction, pending] = useActionState(updateClassAction, initialState);
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   const [handledState, setHandledState] = useState(state);
   if (state !== handledState) {
@@ -29,9 +39,7 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
           </span>
         </span>
         <div className="flex items-center gap-3">
-          <span className="text-slate-500 text-sm">
-            {formatTimeRange(cls.start_time, cls.duration_minutes)}
-          </span>
+          <span className="text-slate-500 text-sm">{formatClassSchedule(cls)}</span>
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -56,24 +64,44 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
           placeholder="Tên học sinh"
         />
         <div className="grid grid-cols-2 gap-2">
-          <select
-            name="day_of_week"
-            defaultValue={cls.day_of_week}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            {DAY_ORDER.map((d) => (
-              <option key={d} value={d}>
-                {DAY_LABELS[d]}
-              </option>
-            ))}
-          </select>
-          <input
-            name="start_time"
-            type="time"
-            defaultValue={cls.start_time}
-            required
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
+          <div className="col-span-2 flex gap-4 text-sm">
+            {(Object.entries(SCHEDULE_TYPE_LABELS) as [ClassScheduleType, string][]).map(
+              ([v, label]) => (
+                <label key={v} className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="schedule_type"
+                    value={v}
+                    checked={scheduleType === v}
+                    onChange={() => setScheduleType(v)}
+                  />{" "}
+                  {label}
+                </label>
+              )
+            )}
+          </div>
+          {scheduleType === "fixed" && (
+            <>
+              <select
+                name="day_of_week"
+                defaultValue={cls.day_of_week}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              >
+                {DAY_ORDER.map((d) => (
+                  <option key={d} value={d}>
+                    {DAY_LABELS[d]}
+                  </option>
+                ))}
+              </select>
+              <input
+                name="start_time"
+                type="time"
+                defaultValue={cls.start_time}
+                required
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </>
+          )}
           <select
             name="duration_minutes"
             defaultValue={String(cls.duration_minutes)}
@@ -147,6 +175,18 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
             className="text-sm text-slate-500 hover:text-slate-700"
           >
             Huỷ
+          </button>
+          <button
+            type="button"
+            disabled={isDeleting}
+            onClick={() => {
+              if (confirm("Xoá lớp học này? Toàn bộ lịch sử điểm danh của lớp sẽ mất.")) {
+                startDeleteTransition(() => deleteClassAction(cls.id));
+              }
+            }}
+            className="text-sm text-red-600 hover:underline ml-auto disabled:opacity-60"
+          >
+            {isDeleting ? "Đang xoá..." : "Xoá lớp"}
           </button>
         </div>
       </form>

@@ -1,14 +1,23 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
-import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, type ClassRow } from "@/lib/types";
+import {
+  DAY_LABELS,
+  DAY_ORDER,
+  SUBJECT_SUGGESTIONS,
+  LANGUAGE_LABELS,
+  SCHEDULE_TYPE_LABELS,
+  type ClassRow,
+  type ClassScheduleType,
+} from "@/lib/types";
 
 const initialState: FormState = {};
 
 export default function EditClassForm({ cls }: { cls: ClassRow }) {
   const [state, formAction, pending] = useActionState(updateClassAction, initialState);
+  const [scheduleType, setScheduleType] = useState<ClassScheduleType>(cls.schedule_type);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -62,24 +71,47 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
             </option>
           ))}
         </select>
-        <select
-          name="day_of_week"
-          defaultValue={cls.day_of_week}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        >
-          {DAY_ORDER.map((d) => (
-            <option key={d} value={d}>
-              {DAY_LABELS[d]}
-            </option>
-          ))}
-        </select>
-        <input
-          name="start_time"
-          type="time"
-          defaultValue={cls.start_time}
-          required
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        />
+        <div className="col-span-2">
+          <label className="block text-xs text-slate-500 mb-1">Lịch học</label>
+          <div className="flex gap-4 text-sm">
+            {(Object.entries(SCHEDULE_TYPE_LABELS) as [ClassScheduleType, string][]).map(
+              ([v, label]) => (
+                <label key={v} className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="schedule_type"
+                    value={v}
+                    checked={scheduleType === v}
+                    onChange={() => setScheduleType(v)}
+                  />{" "}
+                  {label}
+                </label>
+              )
+            )}
+          </div>
+        </div>
+        {scheduleType === "fixed" && (
+          <>
+            <select
+              name="day_of_week"
+              defaultValue={cls.day_of_week}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              {DAY_ORDER.map((d) => (
+                <option key={d} value={d}>
+                  {DAY_LABELS[d]}
+                </option>
+              ))}
+            </select>
+            <input
+              name="start_time"
+              type="time"
+              defaultValue={cls.start_time}
+              required
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </>
+        )}
         <select
           name="duration_minutes"
           defaultValue={String(cls.duration_minutes)}

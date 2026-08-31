@@ -5,8 +5,7 @@ import {
   teacherSpeaksLanguage,
   teacherTeachesSubject,
 } from "@/lib/queries";
-import { formatTimeRange } from "@/lib/format";
-import { DAY_LABELS, LANGUAGE_LABELS } from "@/lib/types";
+import { formatClassSchedule, LANGUAGE_LABELS } from "@/lib/types";
 import AssignRow from "./assign-row";
 
 export default async function AssignPage() {
@@ -34,7 +33,11 @@ export default async function AssignPage() {
             const options = teachers.map((t) => ({
               id: t.id,
               name: t.name,
-              available: isTeacherAvailable(t.id, c.day_of_week, c.start_time, c.duration_minutes),
+              // A flexible class has no fixed weekly slot to check against —
+              // every session is scheduled ad-hoc, so availability doesn't apply.
+              available:
+                c.schedule_type === "flexible" ||
+                isTeacherAvailable(t.id, c.day_of_week, c.start_time, c.duration_minutes),
               speaksLanguage: teacherSpeaksLanguage(t, c.language),
               teachesSubject: teacherTeachesSubject(t, c.subject),
             }));
@@ -50,7 +53,7 @@ export default async function AssignPage() {
                   <div>
                     <p className="font-medium text-slate-900">{c.student_name}</p>
                     <p className="text-sm text-slate-500">
-                      {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
+                      {formatClassSchedule(c)}
                       {c.level ? ` · ${c.level}` : ""} · {c.subject}
                       {c.language === "en" && (
                         <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">

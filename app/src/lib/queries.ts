@@ -213,6 +213,12 @@ export function annotateSchedule(classes: ClassWithTeacher[]): ClassWithSchedule
   const today = new Date();
   const todayStr = todayISO();
   return classes.map((c) => {
+    // Flexible classes have no fixed weekly day, so "next session" and
+    // "missed last session" (both computed from weekly recurrence) don't
+    // apply — every session is scheduled and checked in ad-hoc instead.
+    if (c.schedule_type === "flexible") {
+      return { ...c, nextSessionDate: "", missedLastSession: false, lastDueDate: "" };
+    }
     const nextSessionDate = toISODate(nextOccurrence(c.day_of_week, today));
     const lastDueDate = toISODate(mostRecentOccurrence(c.day_of_week, today));
     const createdDate = c.created_at.slice(0, 10);

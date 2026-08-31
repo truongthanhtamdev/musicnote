@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { assertRole } from "@/lib/guard";
+import { assertRole, ForbiddenError } from "@/lib/guard";
 import { todayISO } from "@/lib/format";
 import type { FormState } from "./teachers";
 
@@ -18,8 +18,9 @@ export async function createClassAction(
   const level = String(formData.get("level") || "").trim();
   const subject = String(formData.get("subject") || "").trim() || "Guitar";
   const language = String(formData.get("language") || "vi") === "en" ? "en" : "vi";
-  const dayOfWeek = Number(formData.get("day_of_week"));
-  const startTime = String(formData.get("start_time") || "");
+  const scheduleType = String(formData.get("schedule_type") || "fixed") === "flexible" ? "flexible" : "fixed";
+  const dayOfWeek = scheduleType === "flexible" ? -1 : Number(formData.get("day_of_week"));
+  const startTime = scheduleType === "flexible" ? "" : String(formData.get("start_time") || "");
   const durationMinutes = Number(formData.get("duration_minutes") || 60);
   const notes = String(formData.get("notes") || "").trim();
   const packageRaw = String(formData.get("package_total_sessions") || "");
@@ -40,7 +41,7 @@ export async function createClassAction(
     teacherId = teacherIdRaw ? Number(teacherIdRaw) : null;
   }
 
-  if (!studentName || Number.isNaN(dayOfWeek) || !startTime) {
+  if (!studentName || (scheduleType === "fixed" && (Number.isNaN(dayOfWeek) || !startTime))) {
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
   }
 
@@ -53,8 +54,8 @@ export async function createClassAction(
   }
 
   db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, package_id, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   ).run(
     studentName,
     studentPhone || null,
@@ -64,6 +65,7 @@ export async function createClassAction(
     language,
     source,
     packageId,
+    scheduleType,
     dayOfWeek,
     startTime,
     durationMinutes || 60,
@@ -91,18 +93,19 @@ export async function updateClassAction(
   const level = String(formData.get("level") || "").trim();
   const subject = String(formData.get("subject") || "").trim() || "Guitar";
   const language = String(formData.get("language") || "vi") === "en" ? "en" : "vi";
-  const dayOfWeek = Number(formData.get("day_of_week"));
-  const startTime = String(formData.get("start_time") || "");
+  const scheduleType = String(formData.get("schedule_type") || "fixed") === "flexible" ? "flexible" : "fixed";
+  const dayOfWeek = scheduleType === "flexible" ? -1 : Number(formData.get("day_of_week"));
+  const startTime = scheduleType === "flexible" ? "" : String(formData.get("start_time") || "");
   const durationMinutes = Number(formData.get("duration_minutes") || 60);
   const notes = String(formData.get("notes") || "").trim();
 
-  if (!id || !studentName || Number.isNaN(dayOfWeek) || !startTime) {
+  if (!id || !studentName || (scheduleType === "fixed" && (Number.isNaN(dayOfWeek) || !startTime))) {
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
   }
 
   const result = db
     .prepare(
-      `UPDATE classes SET student_name=?, student_phone=?, guardian_name=?, level=?, subject=?, language=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?
+      `UPDATE classes SET student_name=?, student_phone=?, guardian_name=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?
        WHERE id = ? ${session.role === "teacher" ? "AND teacher_id = ?" : ""}`
     )
     .run(
@@ -113,6 +116,7 @@ export async function updateClassAction(
         level || null,
         subject,
         language,
+        scheduleType,
         dayOfWeek,
         startTime,
         durationMinutes || 60,
@@ -197,8 +201,17 @@ export async function setClassStatusAction(
 }
 
 export async function deleteClassAction(classId: number) {
-  await assertRole(["admin"]);
-  db.prepare("DELETE FROM classes WHERE id = ?").run(classId);
+  const session = await assertRole(["admin", "teacher"]);
+  const result = db
+    .prepare(
+      `DELETE FROM classes WHERE id = ? ${session.role === "teacher" ? "AND teacher_id = ?" : ""}`
+    )
+    .run(...(session.role === "teacher" ? [classId, session.userId] : [classId]));
+  if (result.changes === 0 && session.role === "teacher") {
+    throw new ForbiddenError("Không tìm thấy lớp học hoặc bạn không có quyền xoá");
+  }
   revalidatePath("/admin/classes");
   revalidatePath("/admin/assign");
+  revalidatePath("/teacher/schedule");
+  revalidatePath("/teacher");
 }

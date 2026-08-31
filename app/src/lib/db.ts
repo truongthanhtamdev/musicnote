@@ -61,6 +61,7 @@ function migrate() {
       student_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
       level TEXT,
       subject TEXT NOT NULL DEFAULT 'Guitar',
+      schedule_type TEXT NOT NULL DEFAULT 'fixed' CHECK(schedule_type IN ('fixed','flexible')),
       language TEXT NOT NULL DEFAULT 'vi' CHECK(language IN ('vi','en')),
       source TEXT NOT NULL DEFAULT 'center' CHECK(source IN ('center','self')),
       package_total_sessions INTEGER,
@@ -133,6 +134,7 @@ function migrate() {
   // one of them.
   ensureColumn("classes", "guardian_name", "TEXT");
   ensureColumn("classes", "subject", "TEXT NOT NULL DEFAULT 'Guitar'");
+  ensureColumn("classes", "schedule_type", "TEXT NOT NULL DEFAULT 'fixed'");
   ensureColumn("classes", "language", "TEXT NOT NULL DEFAULT 'vi'");
   ensureColumn("classes", "source", "TEXT NOT NULL DEFAULT 'center'");
   ensureColumn("classes", "student_user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL");

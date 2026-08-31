@@ -1,15 +1,31 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
-import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS, LANGUAGE_LABELS, PACKAGE_OPTIONS, type UserRow } from "@/lib/types";
+import {
+  DAY_LABELS,
+  DAY_ORDER,
+  SUBJECT_SUGGESTIONS,
+  LANGUAGE_LABELS,
+  PACKAGE_OPTIONS,
+  SCHEDULE_TYPE_LABELS,
+  type ClassScheduleType,
+  type UserRow,
+} from "@/lib/types";
 
 const initialState: FormState = {};
 
 export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
   const [state, formAction, pending] = useActionState(createClassAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  const [scheduleType, setScheduleType] = useState<ClassScheduleType>("fixed");
+
+  const [handledState, setHandledState] = useState(state);
+  if (state !== handledState) {
+    setHandledState(state);
+    if (state.success) setScheduleType("fixed");
+  }
 
   useEffect(() => {
     if (state.success) formRef.current?.reset();
@@ -58,27 +74,50 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
             </option>
           ))}
         </select>
-        <select
-          name="day_of_week"
-          required
-          defaultValue=""
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        >
-          <option value="" disabled>
-            Thứ học
-          </option>
-          {DAY_ORDER.map((d) => (
-            <option key={d} value={d}>
-              {DAY_LABELS[d]}
-            </option>
-          ))}
-        </select>
-        <input
-          name="start_time"
-          type="time"
-          required
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        />
+        <div className="col-span-2">
+          <label className="block text-xs text-slate-500 mb-1">Lịch học</label>
+          <div className="flex gap-4 text-sm">
+            {(Object.entries(SCHEDULE_TYPE_LABELS) as [ClassScheduleType, string][]).map(
+              ([v, label]) => (
+                <label key={v} className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="schedule_type"
+                    value={v}
+                    checked={scheduleType === v}
+                    onChange={() => setScheduleType(v)}
+                  />{" "}
+                  {label}
+                </label>
+              )
+            )}
+          </div>
+        </div>
+        {scheduleType === "fixed" && (
+          <>
+            <select
+              name="day_of_week"
+              required
+              defaultValue=""
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              <option value="" disabled>
+                Thứ học
+              </option>
+              {DAY_ORDER.map((d) => (
+                <option key={d} value={d}>
+                  {DAY_LABELS[d]}
+                </option>
+              ))}
+            </select>
+            <input
+              name="start_time"
+              type="time"
+              required
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </>
+        )}
         <select
           name="duration_minutes"
           defaultValue="60"

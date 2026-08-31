@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { listClasses, listTeachers, getPackageProgress, annotateSchedule } from "@/lib/queries";
-import { formatTimeRange } from "@/lib/format";
-import { DAY_LABELS } from "@/lib/types";
+import { formatClassSchedule } from "@/lib/types";
 import NewClassForm from "./new-class-form";
 import ClassStatusBadge from "./status-badge";
 
@@ -53,11 +52,11 @@ export default async function ClassesPage() {
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-slate-600">{c.level || "-"}</td>
-                    <td className="px-4 py-2.5 text-slate-600">
-                      {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
-                    </td>
+                    <td className="px-4 py-2.5 text-slate-600">{formatClassSchedule(c)}</td>
                     <td className="px-4 py-2.5">
-                      <span className="text-slate-600">{c.nextSessionDate}</span>
+                      <span className="text-slate-600">
+                        {c.schedule_type === "flexible" ? "-" : c.nextSessionDate}
+                      </span>
                       {c.missedLastSession && (
                         <span className="block text-xs font-medium text-red-600">
                           ⚠ Chưa điểm danh buổi {c.lastDueDate}

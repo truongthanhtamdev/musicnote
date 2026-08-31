@@ -1,13 +1,12 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getTeacher, listAvailability, listClassesForTeacher, listAttendance } from "@/lib/queries";
-import { formatTimeRange } from "@/lib/format";
 import {
-  DAY_LABELS,
   ATTENDANCE_STATUS_LABELS,
   LANGUAGE_LABELS,
   parseLanguages,
   parseSubjects,
+  formatClassSchedule,
 } from "@/lib/types";
 import { AvailabilityGrid } from "@/components/availability-grid";
 import EditTeacherForm from "./edit-teacher-form";
@@ -78,9 +77,7 @@ export default async function TeacherDetailPage({
               {classes.map((c) => (
                 <li key={c.id} className="flex justify-between">
                   <span>{c.student_name}</span>
-                  <span className="text-slate-500">
-                    {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)}
-                  </span>
+                  <span className="text-slate-500">{formatClassSchedule(c)}</span>
                 </li>
               ))}
             </ul>

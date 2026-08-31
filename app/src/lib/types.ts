@@ -1,3 +1,5 @@
+import { formatTimeRange } from "./format";
+
 export type Role = "admin" | "coordinator" | "teacher" | "student";
 
 export function roleHomePath(role: Role): string {
@@ -22,6 +24,7 @@ export interface UserRow {
 
 export type ClassLanguage = "vi" | "en";
 export type ClassSource = "center" | "self";
+export type ClassScheduleType = "fixed" | "flexible";
 
 export interface ClassRow {
   id: number;
@@ -34,6 +37,10 @@ export interface ClassRow {
   language: ClassLanguage;
   source: ClassSource;
   package_id: number | null;
+  schedule_type: ClassScheduleType;
+  // For schedule_type === "flexible" these are placeholders (day_of_week: -1,
+  // start_time: "") — there is no fixed weekly slot, so every session is
+  // checked in ad-hoc via the "buổi học bù" flow instead of the daily list.
   day_of_week: number; // 0=CN..6=T7 (JS getDay convention)
   start_time: string; // HH:MM
   duration_minutes: number;
@@ -138,6 +145,19 @@ export const SOURCE_LABELS: Record<ClassSource, string> = {
   center: "Trung tâm giao",
   self: "GV tự tìm học viên",
 };
+
+export const SCHEDULE_TYPE_LABELS: Record<ClassScheduleType, string> = {
+  fixed: "Cố định hàng tuần",
+  flexible: "Linh động (hẹn từng buổi)",
+};
+
+/** Human-readable weekly slot, or "Linh động" for a class with no fixed day/time. */
+export function formatClassSchedule(
+  cls: Pick<ClassRow, "schedule_type" | "day_of_week" | "start_time" | "duration_minutes">
+): string {
+  if (cls.schedule_type === "flexible") return "Linh động";
+  return `${DAY_LABELS[cls.day_of_week]} ${formatTimeRange(cls.start_time, cls.duration_minutes)}`;
+}
 
 export function parseLanguages(csv: string): ClassLanguage[] {
   return csv

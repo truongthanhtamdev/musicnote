@@ -74,7 +74,13 @@ Gợi ý:
 ## Các luồng chính
 
 - **Admin/Giáo vụ → Lớp học**: thêm lớp mới (học sinh, thứ/giờ học cố
-  định hàng tuần, thời lượng), sửa thông tin, tạm dừng/kết thúc lớp.
+  định hàng tuần, thời lượng), sửa thông tin, tạm dừng/kết thúc lớp. Lớp có
+  thể chọn **Linh động** (không có lịch cố định hàng tuần) thay vì cố định —
+  lớp linh động không hiện trong "Hôm nay"/"Buổi tiếp theo" (vì không có
+  ngày cố định để tính), giáo viên điểm danh từng buổi qua "Lịch sử điểm
+  danh → + Điểm danh buổi học bù" mỗi khi có buổi học thực tế. Giáo viên tự
+  thêm lớp của mình cũng sửa/xoá được lớp đó (ví dụ thêm nhầm hoặc cần cập
+  nhật lại lịch đã điền).
 - **Admin/Giáo vụ → Giao lớp**: danh sách lớp chưa có giáo viên; hệ thống
   gợi ý giáo viên có khung giờ rảnh trùng lịch lớp (đánh dấu ✓), bấm để giao
   ngay.

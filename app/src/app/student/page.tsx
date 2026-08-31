@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { listClassesForStudent, getPackageProgress, listAttendance } from "@/lib/queries";
-import { formatTimeRange } from "@/lib/format";
-import { DAY_LABELS, ATTENDANCE_STATUS_LABELS } from "@/lib/types";
+import { ATTENDANCE_STATUS_LABELS, formatClassSchedule } from "@/lib/types";
 
 export default async function StudentHomePage() {
   const session = await getSession();
@@ -34,8 +33,7 @@ export default async function StudentHomePage() {
                     {c.level ? ` · ${c.level}` : ""}
                   </p>
                   <p className="text-sm text-slate-500">
-                    {DAY_LABELS[c.day_of_week]} {formatTimeRange(c.start_time, c.duration_minutes)} ·
-                    GV: {c.teacher_name || "Chưa xếp"}
+                    {formatClassSchedule(c)} · GV: {c.teacher_name || "Chưa xếp"}
                   </p>
                 </div>
 

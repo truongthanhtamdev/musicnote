@@ -46,8 +46,9 @@ export default function MakeupAttendanceForm({
         </button>
       </div>
       <p className="text-sm text-slate-500 mb-3">
-        Dùng khi buổi học bị dời qua ngày khác với lịch cố định hàng tuần — chọn đúng lớp và
-        ngày dạy bù thực tế, buổi này vẫn tính vào gói học của học viên.
+        Dùng khi buổi học bị dời qua ngày khác với lịch cố định hàng tuần, hoặc để điểm danh
+        từng buổi của lớp Linh động (không có lịch cố định) — chọn đúng lớp và ngày dạy thực
+        tế, buổi này vẫn tính vào gói học của học viên.
       </p>
       <form action={formAction} className="space-y-3">
         <div className="grid sm:grid-cols-2 gap-3">
