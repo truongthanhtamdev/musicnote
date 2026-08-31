@@ -60,7 +60,11 @@ npm run start -- -p 3000
 
 Gợi ý:
 - Chạy phía sau Nginx/Caddy với HTTPS, và dùng `pm2` hoặc systemd để tự khởi
-  động lại khi máy chủ reboot.
+  động lại khi máy chủ reboot. Khi đã có HTTPS thật, đặt thêm biến môi trường
+  `COOKIE_SECURE=true` để cookie đăng nhập chỉ gửi qua kết nối mã hoá. **Nếu
+  chưa có HTTPS (chạy tạm qua `http://ip:port`), để trống biến này** — đặt
+  `true` khi chưa có HTTPS sẽ khiến trình duyệt từ chối lưu cookie và liên
+  tục bị đá về trang đăng nhập.
 - Sao lưu định kỳ thư mục `DATA_DIR` (chính là toàn bộ dữ liệu: giáo viên,
   lớp học, điểm danh, lịch rảnh).
 - Đặt `AUTH_SECRET` là một chuỗi ngẫu nhiên dài, giữ bí mật và **không đổi**
