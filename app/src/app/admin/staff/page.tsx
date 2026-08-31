@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/guard";
 import { listStaff } from "@/lib/queries";
 import NewCoordinatorForm from "./new-coordinator-form";
+import ResetPasswordButton from "@/components/reset-password-button";
 
 export default async function StaffPage() {
   await requireRole(["admin"]);
@@ -22,6 +23,7 @@ export default async function StaffPage() {
               <th className="px-4 py-2.5 font-medium">Tên</th>
               <th className="px-4 py-2.5 font-medium">Email</th>
               <th className="px-4 py-2.5 font-medium">Vai trò</th>
+              <th className="px-4 py-2.5 font-medium"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -31,6 +33,9 @@ export default async function StaffPage() {
                 <td className="px-4 py-2.5 text-slate-600">{s.email}</td>
                 <td className="px-4 py-2.5 text-slate-600">
                   {s.role === "admin" ? "Admin" : "Giáo vụ"}
+                </td>
+                <td className="px-4 py-2.5">
+                  <ResetPasswordButton userId={s.id} />
                 </td>
               </tr>
             ))}

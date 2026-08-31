@@ -28,3 +28,9 @@ export async function assertRole(roles: Role[]): Promise<SessionPayload> {
   if (!roles.includes(session.role)) throw new ForbiddenError();
   return session;
 }
+
+export async function assertSession(): Promise<SessionPayload> {
+  const session = await getSession();
+  if (!session) throw new ForbiddenError("Chưa đăng nhập");
+  return session;
+}

@@ -63,6 +63,12 @@ export function TopNav({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <span className="text-sm text-neutral-400 hidden sm:inline">{userName}</span>
+            <Link
+              href="/account/password"
+              className="text-sm text-neutral-400 hover:text-gold-400 border border-neutral-700 hover:border-gold-700 rounded-md px-3 py-1.5 transition"
+            >
+              Đổi mật khẩu
+            </Link>
             <form action={logoutAction}>
               <button
                 type="submit"

@@ -44,10 +44,6 @@ export default function LoginForm({ next }: { next: string }) {
       >
         {pending ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
-      <div className="text-xs text-slate-400 pt-2 border-t border-slate-100 space-y-0.5">
-        <p>Tài khoản admin mặc định: admin@musicnote.local / admin123</p>
-        <p>Đổi mật khẩu này ngay sau khi đăng nhập lần đầu.</p>
-      </div>
     </form>
   );
 }

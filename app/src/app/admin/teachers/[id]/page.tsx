@@ -6,6 +6,7 @@ import { DAY_LABELS, ATTENDANCE_STATUS_LABELS, LANGUAGE_LABELS, parseLanguages }
 import { AvailabilityGrid } from "@/components/availability-grid";
 import EditTeacherForm from "./edit-teacher-form";
 import ToggleActiveButton from "./toggle-active-button";
+import ResetPasswordButton from "@/components/reset-password-button";
 
 export default async function TeacherDetailPage({
   params,
@@ -39,6 +40,9 @@ export default async function TeacherDetailPage({
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <h2 className="font-semibold text-slate-900 mb-3">Thông tin</h2>
             <EditTeacherForm teacher={teacher} />
+            <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+              <ResetPasswordButton userId={teacher.id} />
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm space-y-2">
