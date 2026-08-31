@@ -80,6 +80,12 @@ export default async function TeacherAttendanceHistoryPage({
                       Thử
                     </span>
                   )}
+                  {a.status === "rescheduled" && a.rescheduled_to_date && (
+                    <span className="block text-xs text-slate-500">
+                      → {a.rescheduled_to_date}
+                      {a.rescheduled_to_time ? ` ${a.rescheduled_to_time}` : ""}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-2.5 text-slate-500">{a.check_in_time || "-"}</td>
                 <td className="px-4 py-2.5 text-slate-600">{a.lesson_content || "-"}</td>

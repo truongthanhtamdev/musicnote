@@ -3,7 +3,11 @@
 import { useActionState, useState } from "react";
 import { correctAttendanceAction } from "@/actions/attendance";
 import type { FormState } from "@/actions/teachers";
-import { ATTENDANCE_STATUS_LABELS, type AttendanceRow as AttendanceRowType } from "@/lib/types";
+import {
+  ATTENDANCE_STATUS_LABELS,
+  type AttendanceRow as AttendanceRowType,
+  type AttendanceStatus,
+} from "@/lib/types";
 
 const initialState: FormState = {};
 
@@ -13,6 +17,7 @@ export default function AttendanceRow({
   row: AttendanceRowType & { student_name: string; teacher_name: string };
 }) {
   const [editing, setEditing] = useState(false);
+  const [status, setStatus] = useState<AttendanceStatus>(row.status);
   const [state, formAction, pending] = useActionState(correctAttendanceAction, initialState);
 
   // Close the edit form once a save succeeds. Adjusting state during render
@@ -35,6 +40,7 @@ export default function AttendanceRow({
             <select
               name="status"
               defaultValue={row.status}
+              onChange={(e) => setStatus(e.target.value as AttendanceStatus)}
               className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
             >
               {Object.entries(ATTENDANCE_STATUS_LABELS).map(([v, label]) => (
@@ -43,6 +49,22 @@ export default function AttendanceRow({
                 </option>
               ))}
             </select>
+            {status === "rescheduled" && (
+              <>
+                <input
+                  name="rescheduled_to_date"
+                  type="date"
+                  defaultValue={row.rescheduled_to_date || ""}
+                  className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                />
+                <input
+                  name="rescheduled_to_time"
+                  type="time"
+                  defaultValue={row.rescheduled_to_time || ""}
+                  className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                />
+              </>
+            )}
             <input
               name="lesson_content"
               defaultValue={row.lesson_content || ""}
@@ -95,6 +117,12 @@ export default function AttendanceRow({
         {!!row.is_trial && (
           <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
             Thử
+          </span>
+        )}
+        {row.status === "rescheduled" && row.rescheduled_to_date && (
+          <span className="block text-xs text-slate-500">
+            → {row.rescheduled_to_date}
+            {row.rescheduled_to_time ? ` ${row.rescheduled_to_time}` : ""}
           </span>
         )}
       </td>

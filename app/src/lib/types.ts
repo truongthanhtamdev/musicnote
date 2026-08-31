@@ -123,6 +123,10 @@ export interface AttendanceRow {
   lesson_content: string | null;
   is_trial: number;
   note: string | null;
+  // Only meaningful when status === "rescheduled": the date/time the
+  // teacher and student agreed to move this session to.
+  rescheduled_to_date: string | null;
+  rescheduled_to_time: string | null;
   created_at: string;
 }
 

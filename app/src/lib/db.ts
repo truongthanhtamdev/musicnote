@@ -97,6 +97,8 @@ function migrate() {
       lesson_content TEXT,
       is_trial INTEGER NOT NULL DEFAULT 0,
       note TEXT,
+      rescheduled_to_date TEXT,
+      rescheduled_to_time TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(class_id, session_date)
     );
@@ -145,6 +147,8 @@ function migrate() {
   ensureColumn("users", "subjects", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("attendance", "lesson_content", "TEXT");
   ensureColumn("attendance", "is_trial", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn("attendance", "rescheduled_to_date", "TEXT");
+  ensureColumn("attendance", "rescheduled_to_time", "TEXT");
   ensureStudentRoleSupported();
   migratePackagesToTable();
 }

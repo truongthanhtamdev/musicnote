@@ -109,6 +109,12 @@ export default async function ClassDetailPage({
                         Thử
                       </span>
                     )}
+                    {a.status === "rescheduled" && a.rescheduled_to_date && (
+                      <span className="block text-xs text-slate-500">
+                        → {a.rescheduled_to_date}
+                        {a.rescheduled_to_time ? ` ${a.rescheduled_to_time}` : ""}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2">{a.fb_checkin_confirmed ? "✔" : "-"}</td>
                   <td className="px-4 py-2 text-slate-600">{a.lesson_content || "-"}</td>

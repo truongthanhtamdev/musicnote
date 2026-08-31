@@ -27,6 +27,10 @@ export async function markAttendanceAction(
   const lessonContent = String(formData.get("lesson_content") || "").trim();
   const isTrial = formData.get("is_trial") ? 1 : 0;
   const note = String(formData.get("note") || "").trim();
+  const rescheduledToDate =
+    status === "rescheduled" ? String(formData.get("rescheduled_to_date") || "").trim() : "";
+  const rescheduledToTime =
+    status === "rescheduled" ? String(formData.get("rescheduled_to_time") || "").trim() : "";
 
   if (!classId || !sessionDate || !VALID_STATUS.includes(status)) {
     return { error: "Dữ liệu điểm danh không hợp lệ" };
@@ -45,12 +49,22 @@ export async function markAttendanceAction(
 
   if (existing) {
     db.prepare(
-      `UPDATE attendance SET status=?, fb_checkin_confirmed=?, lesson_content=?, is_trial=?, note=?, check_out_time=? WHERE id=?`
-    ).run(status, fbConfirmed, lessonContent || null, isTrial, note || null, nowStr, existing.id);
+      `UPDATE attendance SET status=?, fb_checkin_confirmed=?, lesson_content=?, is_trial=?, note=?, rescheduled_to_date=?, rescheduled_to_time=?, check_out_time=? WHERE id=?`
+    ).run(
+      status,
+      fbConfirmed,
+      lessonContent || null,
+      isTrial,
+      note || null,
+      rescheduledToDate || null,
+      rescheduledToTime || null,
+      nowStr,
+      existing.id
+    );
   } else {
     db.prepare(
-      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note, rescheduled_to_date, rescheduled_to_time)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       classId,
       session.userId,
@@ -61,7 +75,9 @@ export async function markAttendanceAction(
       fbConfirmed,
       lessonContent || null,
       isTrial,
-      note || null
+      note || null,
+      rescheduledToDate || null,
+      rescheduledToTime || null
     );
   }
 
@@ -83,14 +99,26 @@ export async function correctAttendanceAction(
   const lessonContent = String(formData.get("lesson_content") || "").trim();
   const isTrial = formData.get("is_trial") ? 1 : 0;
   const note = String(formData.get("note") || "").trim();
+  const rescheduledToDate =
+    status === "rescheduled" ? String(formData.get("rescheduled_to_date") || "").trim() : "";
+  const rescheduledToTime =
+    status === "rescheduled" ? String(formData.get("rescheduled_to_time") || "").trim() : "";
 
   if (!id || !VALID_STATUS.includes(status)) {
     return { error: "Dữ liệu không hợp lệ" };
   }
 
   db.prepare(
-    "UPDATE attendance SET status = ?, lesson_content = ?, is_trial = ?, note = ? WHERE id = ?"
-  ).run(status, lessonContent || null, isTrial, note || null, id);
+    `UPDATE attendance SET status = ?, lesson_content = ?, is_trial = ?, note = ?, rescheduled_to_date = ?, rescheduled_to_time = ? WHERE id = ?`
+  ).run(
+    status,
+    lessonContent || null,
+    isTrial,
+    note || null,
+    rescheduledToDate || null,
+    rescheduledToTime || null,
+    id
+  );
 
   revalidatePath("/admin/attendance");
   return { success: true };

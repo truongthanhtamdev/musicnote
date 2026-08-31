@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { markAttendanceAction } from "@/actions/attendance";
 import type { FormState } from "@/actions/teachers";
 import { ATTENDANCE_STATUS_LABELS, type AttendanceRow, type AttendanceStatus } from "@/lib/types";
@@ -28,6 +28,7 @@ export default function AttendanceForm({
 }) {
   const [state, formAction, pending] = useActionState(markAttendanceAction, initialState);
   const defaultStatus = existing?.status || "completed";
+  const [status, setStatus] = useState<AttendanceStatus>(defaultStatus);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -45,6 +46,7 @@ export default function AttendanceForm({
                   name="status"
                   value={value}
                   defaultChecked={defaultStatus === value}
+                  onChange={() => setStatus(value)}
                   className="peer sr-only"
                 />
                 <span
@@ -56,6 +58,28 @@ export default function AttendanceForm({
             )
           )}
         </div>
+        {status === "rescheduled" && (
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Ngày học bù đã chốt</label>
+              <input
+                name="rescheduled_to_date"
+                type="date"
+                defaultValue={existing?.rescheduled_to_date || ""}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Giờ đã chốt</label>
+              <input
+                name="rescheduled_to_time"
+                type="time"
+                defaultValue={existing?.rescheduled_to_time || ""}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-700 py-1">

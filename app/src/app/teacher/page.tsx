@@ -76,6 +76,12 @@ export default async function TeacherTodayPage() {
                   {existing && (
                     <span className="shrink-0 text-xs font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">
                       ✓ Đã điểm danh {existing.check_in_time}
+                      {existing.status === "rescheduled" && existing.rescheduled_to_date && (
+                        <span className="block font-normal text-slate-500">
+                          → {existing.rescheduled_to_date}
+                          {existing.rescheduled_to_time ? ` ${existing.rescheduled_to_time}` : ""}
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>

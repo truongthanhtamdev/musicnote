@@ -15,6 +15,7 @@ export default function MakeupAttendanceForm({
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(markAttendanceAction, initialState);
+  const [status, setStatus] = useState<AttendanceStatus>("completed");
 
   // Closing the panel unmounts the form, so there's nothing to reset —
   // adjusting state during render (rather than in an effect) avoids an
@@ -84,6 +85,7 @@ export default function MakeupAttendanceForm({
                     name="status"
                     value={value}
                     defaultChecked={value === "completed"}
+                    onChange={() => setStatus(value)}
                     className="peer sr-only"
                   />
                   <span className="block text-center border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 peer-checked:bg-gold-600 peer-checked:border-gold-600 peer-checked:text-white transition cursor-pointer">
@@ -93,6 +95,26 @@ export default function MakeupAttendanceForm({
               )
             )}
           </div>
+          {status === "rescheduled" && (
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Ngày học bù đã chốt</label>
+                <input
+                  name="rescheduled_to_date"
+                  type="date"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Giờ đã chốt</label>
+                <input
+                  name="rescheduled_to_time"
+                  type="time"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <label className="flex items-center gap-2 text-sm text-slate-700 py-1">
