@@ -2,6 +2,8 @@ import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
+import { DAY_ORDER, TIME_SLOTS } from "./types";
+import { addMinutesToTime } from "./format";
 
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
 if (!fs.existsSync(/* turbopackIgnore: true */ DATA_DIR)) {
@@ -228,37 +230,25 @@ function invertAvailabilityToBusyOnce() {
   const name = "invert_availability_to_busy";
   if (db.prepare("SELECT 1 FROM schema_migrations WHERE name = ?").get(name)) return;
 
-  const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
-  const TIME_SLOTS: string[] = [];
-  for (let h = 7; h < 22; h++) {
-    TIME_SLOTS.push(`${String(h).padStart(2, "0")}:00`, `${String(h).padStart(2, "0")}:30`);
-  }
-  const addMinutes = (time: string, minutes: number) => {
-    const [h, m] = time.split(":").map(Number);
-    const total = h * 60 + m + minutes;
-    return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
-  };
-
   const run = db.transaction(() => {
-    const teacherIds = (
-      db.prepare("SELECT DISTINCT teacher_id FROM availability").all() as { teacher_id: number }[]
-    ).map((r) => r.teacher_id);
+    const wasFreeByTeacher = new Map<number, Set<string>>();
+    for (const r of db
+      .prepare("SELECT teacher_id, day_of_week, start_time FROM availability")
+      .all() as { teacher_id: number; day_of_week: number; start_time: string }[]) {
+      const set = wasFreeByTeacher.get(r.teacher_id) ?? new Set<string>();
+      set.add(`${r.day_of_week}-${r.start_time}`);
+      wasFreeByTeacher.set(r.teacher_id, set);
+    }
+
+    db.prepare("DELETE FROM availability").run();
     const insert = db.prepare(
       "INSERT INTO availability (teacher_id, day_of_week, start_time, end_time) VALUES (?, ?, ?, ?)"
     );
-    for (const teacherId of teacherIds) {
-      const wasFree = new Set(
-        (
-          db
-            .prepare("SELECT day_of_week, start_time FROM availability WHERE teacher_id = ?")
-            .all(teacherId) as { day_of_week: number; start_time: string }[]
-        ).map((s) => `${s.day_of_week}-${s.start_time}`)
-      );
-      db.prepare("DELETE FROM availability WHERE teacher_id = ?").run(teacherId);
+    for (const [teacherId, wasFree] of wasFreeByTeacher) {
       for (const day of DAY_ORDER) {
         for (const time of TIME_SLOTS) {
           if (!wasFree.has(`${day}-${time}`)) {
-            insert.run(teacherId, day, time, addMinutes(time, 30));
+            insert.run(teacherId, day, time, addMinutesToTime(time, 30));
           }
         }
       }

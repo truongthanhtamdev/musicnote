@@ -37,7 +37,7 @@ export default async function AssignPage() {
               // every session is scheduled ad-hoc, so availability doesn't apply.
               available:
                 c.schedule_type === "flexible" ||
-                isTeacherAvailable(t.id, c.day_of_week, c.start_time, c.duration_minutes),
+                isTeacherAvailable(t.id, c.day_of_week, c.start_time, c.duration_minutes, c.id),
               speaksLanguage: teacherSpeaksLanguage(t, c.language),
               teachesSubject: teacherTeachesSubject(t, c.subject),
             }));

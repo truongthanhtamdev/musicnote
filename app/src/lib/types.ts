@@ -55,8 +55,10 @@ export interface PackageRow {
   id: number;
   total_sessions: number;
   started_at: string;
-  /** Manual correction for "sessions used" when the auto-count is wrong; null = use the computed count. */
+  /** A manually-entered baseline for "sessions used"; null = use the plain computed count. */
   used_override: number | null;
+  /** When used_override was last set — completed attendance recorded after this counts on top of it. Null when used_override is null. */
+  used_override_set_at: string | null;
   created_at: string;
 }
 

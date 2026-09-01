@@ -33,7 +33,7 @@ export default async function ClassDetailPage({
     ...t,
     available:
       cls.schedule_type === "flexible" ||
-      isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes),
+      isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes, cls.id),
   }));
   const history = listAttendance({ classId }).slice(0, 30);
   const students = listStudents();

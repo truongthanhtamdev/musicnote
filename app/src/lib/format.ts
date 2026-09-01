@@ -23,6 +23,13 @@ export function nowHHMM(): string {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+/** Add minutes to an "HH:MM" time-of-day string, wrapping past midnight. */
+export function addMinutesToTime(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + minutes;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 export function startOfWeekMonday(d: Date): Date {
   const date = new Date(d);
   const day = date.getDay(); // 0=Sun

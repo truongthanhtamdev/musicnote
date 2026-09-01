@@ -87,10 +87,6 @@ export default async function TeacherDetailPage({
 
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <h2 className="font-semibold text-slate-900 mb-3">Bảng lịch</h2>
-        <p className="text-xs text-slate-500 mb-3">
-          Ô vàng là lớp đang dạy (bấm để xem chi tiết), ô xám là giáo viên tự đánh dấu bận, ô
-          trống là rảnh — bấm vào ô trống để thêm lớp mới ngay khung giờ đó.
-        </p>
         <TeacherScheduleGrid
           teacherId={teacher.id}
           classes={classes}

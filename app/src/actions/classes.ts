@@ -274,8 +274,15 @@ export async function linkStudentAccountAction(classId: number, studentUserId: n
 
 export async function assignTeacherAction(classId: number, teacherId: number | null) {
   await assertRole(["admin", "coordinator"]);
+  // Only a class that had no teacher yet counts as "được giao lớp mới" — a
+  // straight swap to a different teacher on an ongoing class is a routine
+  // reassignment, not a new assignment, and shouldn't notify or re-arm the
+  // trial-session flag on whatever session comes next.
+  const before = db.prepare("SELECT teacher_id FROM classes WHERE id = ?").get(classId) as
+    | { teacher_id: number | null }
+    | undefined;
   db.prepare("UPDATE classes SET teacher_id = ? WHERE id = ?").run(teacherId, classId);
-  if (teacherId) {
+  if (teacherId && !before?.teacher_id) {
     const cls = getClass(classId);
     if (cls) {
       notifyTeacherOfAssignment({

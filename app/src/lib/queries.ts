@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { nextOccurrence, mostRecentOccurrence, toISODate, todayISO } from "./format";
+import { addMinutesToTime, nextOccurrence, mostRecentOccurrence, toISODate, todayISO } from "./format";
 import {
   parseLanguages,
   parseSubjects,
@@ -161,7 +161,14 @@ function getPackageProgressBatch(packageIds: number[]): Map<number, PackageProgr
   // computedUsed counts completed attendance since the package started, but
   // only from after used_override_set_at when a baseline is set — so a
   // manually-entered baseline (e.g. backfilling an old class already at
-  // session 15) keeps counting up from there instead of freezing.
+  // session 15) keeps counting up from there instead of freezing. The cutoff
+  // compares against a.created_at (insertion order), not a.session_date —
+  // deliberately: it needs to count a same-day check-in made right after the
+  // baseline was typed, which session_date alone can't distinguish from one
+  // made earlier the same day. The tradeoff is a rare edge case the other
+  // way: backfilling a session dated *before* the baseline was set, via
+  // "Điểm danh buổi học bù", after that baseline already exists, still adds
+  // to the count even though it may already be reflected in the baseline.
   const rows = db
     .prepare(
       `SELECT p.id as packageId, p.total_sessions as total, p.started_at as startedAt, p.used_override as usedOverride,
@@ -300,25 +307,52 @@ export function listBusySlots(teacherId: number): BusySlotRow[] {
     .all(teacherId) as BusySlotRow[];
 }
 
-/** Free unless the requested time range overlaps a slot the teacher marked busy (a class already on the grid counts as busy via its own check, not this). */
+function timeRangesOverlap(
+  aStart: string,
+  aEnd: string,
+  bStart: string,
+  bEnd: string
+): boolean {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+  return toMin(aStart) < toMin(bEnd) && toMin(aEnd) > toMin(bStart);
+}
+
+/**
+ * Free unless the requested time range overlaps a slot the teacher marked
+ * busy, or a class they already teach. `excludeClassId` leaves out one
+ * class from the "already teaching" check — pass the class being edited so
+ * its own currently-assigned teacher doesn't show as unavailable for it.
+ */
 export function isTeacherAvailable(
   teacherId: number,
   dayOfWeek: number,
   startTime: string,
-  durationMinutes: number
+  durationMinutes: number,
+  excludeClassId?: number
 ): boolean {
+  const endTime = addMinutesToTime(startTime, durationMinutes);
+
   const busySlots = listBusySlots(teacherId).filter((s) => s.day_of_week === dayOfWeek);
-  if (busySlots.length === 0) return true;
-  const [sh, sm] = startTime.split(":").map(Number);
-  const startMin = sh * 60 + sm;
-  const endMin = startMin + durationMinutes;
-  return !busySlots.some((s) => {
-    const [ah, am] = s.start_time.split(":").map(Number);
-    const [bh, bm] = s.end_time.split(":").map(Number);
-    const aMin = ah * 60 + am;
-    const bMin = bh * 60 + bm;
-    return startMin < bMin && endMin > aMin;
-  });
+  if (busySlots.some((s) => timeRangesOverlap(startTime, endTime, s.start_time, s.end_time))) {
+    return false;
+  }
+
+  const existingClasses = db
+    .prepare(
+      `SELECT start_time, duration_minutes FROM classes
+       WHERE teacher_id = ? AND day_of_week = ? AND schedule_type = 'fixed' AND status = 'active'
+         AND id != ?`
+    )
+    .all(teacherId, dayOfWeek, excludeClassId ?? -1) as {
+    start_time: string;
+    duration_minutes: number;
+  }[];
+  return !existingClasses.some((c) =>
+    timeRangesOverlap(startTime, endTime, c.start_time, addMinutesToTime(c.start_time, c.duration_minutes))
+  );
 }
 
 export function getAttendance(classId: number, sessionDate: string): AttendanceRow | undefined {

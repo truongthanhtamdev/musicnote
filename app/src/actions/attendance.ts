@@ -36,8 +36,8 @@ export async function markAttendanceAction(
   }
 
   const owned = db
-    .prepare("SELECT id FROM classes WHERE id = ? AND teacher_id = ?")
-    .get(classId, session.userId);
+    .prepare("SELECT trial_pending FROM classes WHERE id = ? AND teacher_id = ?")
+    .get(classId, session.userId) as { trial_pending: number } | undefined;
   if (!owned) {
     return { error: "Bạn không phụ trách lớp này" };
   }
@@ -68,10 +68,7 @@ export async function markAttendanceAction(
     // the center actually assigning the class to a teacher (never for a
     // teacher's own self-added/backfilled classes). Consumed immediately so
     // only that one session counts as trial.
-    const cls = db.prepare("SELECT trial_pending FROM classes WHERE id = ?").get(classId) as
-      | { trial_pending: number }
-      | undefined;
-    const isTrial = cls?.trial_pending ? 1 : 0;
+    const isTrial = owned.trial_pending ? 1 : 0;
     if (isTrial) {
       db.prepare("UPDATE classes SET trial_pending = 0 WHERE id = ?").run(classId);
     }

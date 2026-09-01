@@ -195,22 +195,20 @@ export function TeacherScheduleGrid({
 
   return (
     <div>
-      {mode === "self" && (
-        <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3.5 h-3.5 rounded bg-gold-100 border border-gold-300" />{" "}
-            Lớp học
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3.5 h-3.5 rounded bg-slate-200 border border-slate-300" />{" "}
-            Bận (cá nhân)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3.5 h-3.5 rounded bg-white border border-slate-200" /> Rảnh
-            — bấm để đánh dấu bận
-          </span>
-        </div>
-      )}
+      <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3.5 h-3.5 rounded bg-gold-100 border border-gold-300" />{" "}
+          Lớp học
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3.5 h-3.5 rounded bg-slate-200 border border-slate-300" />{" "}
+          Bận (cá nhân)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3.5 h-3.5 rounded bg-white border border-slate-200" /> Rảnh
+          — {mode === "self" ? "bấm để đánh dấu bận" : "bấm để thêm lớp mới"}
+        </span>
+      </div>
       <div className="overflow-x-auto">
         <table className="border-collapse text-xs w-full">
           <thead>
