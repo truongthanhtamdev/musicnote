@@ -9,7 +9,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
     { href: "/teacher", label: "Hôm nay" },
     { href: "/teacher/schedule", label: "Lịch dạy" },
     { href: "/teacher/attendance", label: "Lịch sử điểm danh" },
-    { href: "/teacher/availability", label: "Khung giờ rảnh" },
+    { href: "/teacher/availability", label: "Lịch tuần" },
     { href: "/teacher/earnings", label: "Thu nhập" },
   ];
 

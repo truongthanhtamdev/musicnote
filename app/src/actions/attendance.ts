@@ -25,7 +25,6 @@ export async function markAttendanceAction(
   const status = String(formData.get("status") || "completed") as AttendanceStatus;
   const fbConfirmed = formData.get("fb_checkin_confirmed") ? 1 : 0;
   const lessonContent = String(formData.get("lesson_content") || "").trim();
-  const isTrial = formData.get("is_trial") ? 1 : 0;
   const note = String(formData.get("note") || "").trim();
   const rescheduledToDate =
     hasRescheduleInfo(status) ? String(formData.get("rescheduled_to_date") || "").trim() : "";
@@ -48,13 +47,15 @@ export async function markAttendanceAction(
   const nowStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
   if (existing) {
+    // is_trial isn't in this SET list on purpose — it's only ever set
+    // automatically (see the insert branch below), never edited from this
+    // form, so a correction here shouldn't touch whatever was already saved.
     db.prepare(
-      `UPDATE attendance SET status=?, fb_checkin_confirmed=?, lesson_content=?, is_trial=?, note=?, rescheduled_to_date=?, rescheduled_to_time=?, check_out_time=? WHERE id=?`
+      `UPDATE attendance SET status=?, fb_checkin_confirmed=?, lesson_content=?, note=?, rescheduled_to_date=?, rescheduled_to_time=?, check_out_time=? WHERE id=?`
     ).run(
       status,
       fbConfirmed,
       lessonContent || null,
-      isTrial,
       note || null,
       rescheduledToDate || null,
       rescheduledToTime || null,
@@ -62,6 +63,18 @@ export async function markAttendanceAction(
       existing.id
     );
   } else {
+    // Trial status isn't a manual checkbox — it auto-fires for a class's
+    // very first recorded session, but only when trial_pending was set by
+    // the center actually assigning the class to a teacher (never for a
+    // teacher's own self-added/backfilled classes). Consumed immediately so
+    // only that one session counts as trial.
+    const cls = db.prepare("SELECT trial_pending FROM classes WHERE id = ?").get(classId) as
+      | { trial_pending: number }
+      | undefined;
+    const isTrial = cls?.trial_pending ? 1 : 0;
+    if (isTrial) {
+      db.prepare("UPDATE classes SET trial_pending = 0 WHERE id = ?").run(classId);
+    }
     db.prepare(
       `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note, rescheduled_to_date, rescheduled_to_time)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`

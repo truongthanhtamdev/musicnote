@@ -5,7 +5,7 @@ import {
   parseSubjects,
   TRIAL_SESSION_RATE,
   type AttendanceRow,
-  type AvailabilityRow,
+  type BusySlotRow,
   type ClassRow,
   type ExpenseRow,
   type NotificationRow,
@@ -158,11 +158,16 @@ function getPackageProgressBatch(packageIds: number[]): Map<number, PackageProgr
   const map = new Map<number, PackageProgress>();
   if (packageIds.length === 0) return map;
   const placeholders = packageIds.map(() => "?").join(",");
+  // computedUsed counts completed attendance since the package started, but
+  // only from after used_override_set_at when a baseline is set — so a
+  // manually-entered baseline (e.g. backfilling an old class already at
+  // session 15) keeps counting up from there instead of freezing.
   const rows = db
     .prepare(
       `SELECT p.id as packageId, p.total_sessions as total, p.started_at as startedAt, p.used_override as usedOverride,
         (SELECT COUNT(*) FROM attendance a JOIN classes c ON c.id = a.class_id
-         WHERE c.package_id = p.id AND a.status = 'completed' AND a.session_date >= p.started_at) as computedUsed
+         WHERE c.package_id = p.id AND a.status = 'completed' AND a.session_date >= p.started_at
+           AND (p.used_override_set_at IS NULL OR a.created_at > p.used_override_set_at)) as computedUsed
        FROM packages p WHERE p.id IN (${placeholders})`
     )
     .all(...packageIds) as {
@@ -173,7 +178,7 @@ function getPackageProgressBatch(packageIds: number[]): Map<number, PackageProgr
     computedUsed: number;
   }[];
   for (const r of rows) {
-    const used = r.usedOverride ?? r.computedUsed;
+    const used = r.usedOverride != null ? r.usedOverride + r.computedUsed : r.computedUsed;
     map.set(r.packageId, {
       packageId: r.packageId,
       total: r.total,
@@ -286,31 +291,33 @@ export function annotateSchedule(classes: ClassWithTeacher[]): ClassWithSchedule
   });
 }
 
-export function listAvailability(teacherId: number): AvailabilityRow[] {
+/** Half-hour blocks the teacher has marked BUSY — everything not listed here defaults to free. */
+export function listBusySlots(teacherId: number): BusySlotRow[] {
   return db
     .prepare(
       "SELECT * FROM availability WHERE teacher_id = ? ORDER BY day_of_week, start_time"
     )
-    .all(teacherId) as AvailabilityRow[];
+    .all(teacherId) as BusySlotRow[];
 }
 
+/** Free unless the requested time range overlaps a slot the teacher marked busy (a class already on the grid counts as busy via its own check, not this). */
 export function isTeacherAvailable(
   teacherId: number,
   dayOfWeek: number,
   startTime: string,
   durationMinutes: number
 ): boolean {
-  const slots = listAvailability(teacherId).filter((s) => s.day_of_week === dayOfWeek);
-  if (slots.length === 0) return false;
+  const busySlots = listBusySlots(teacherId).filter((s) => s.day_of_week === dayOfWeek);
+  if (busySlots.length === 0) return true;
   const [sh, sm] = startTime.split(":").map(Number);
   const startMin = sh * 60 + sm;
   const endMin = startMin + durationMinutes;
-  return slots.some((s) => {
+  return !busySlots.some((s) => {
     const [ah, am] = s.start_time.split(":").map(Number);
     const [bh, bm] = s.end_time.split(":").map(Number);
     const aMin = ah * 60 + am;
     const bMin = bh * 60 + bm;
-    return startMin >= aMin && endMin <= bMin;
+    return startMin < bMin && endMin > aMin;
   });
 }
 

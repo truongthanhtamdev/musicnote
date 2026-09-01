@@ -122,10 +122,6 @@ export default function MakeupAttendanceForm({
           <input type="checkbox" name="fb_checkin_confirmed" className="w-4 h-4 rounded border-slate-300" />
           Đã điểm danh trên nhóm Facebook
         </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700 py-1">
-          <input type="checkbox" name="is_trial" className="w-4 h-4 rounded border-slate-300" />
-          Buổi học thử (tính lương 50.000đ/tiết)
-        </label>
 
         <textarea
           name="lesson_content"

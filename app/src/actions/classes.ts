@@ -16,6 +16,11 @@ function notifyTeacherOfAssignment(params: {
   /** One formatted schedule string per weekly slot, so a 2-3 buổi/tuần class lists all of them. */
   schedules: string[];
 }) {
+  // Marks that this class's next recorded attendance should auto-count as
+  // the trial session — only reached via the center-assigns-a-teacher flow,
+  // never a teacher's own self-add, so backfilled old classes never get
+  // flagged as trials.
+  db.prepare("UPDATE classes SET trial_pending = 1 WHERE id = ?").run(params.classId);
   const scheduleNote =
     params.schedules.length > 1 ? params.schedules.join(", ") : params.schedules[0];
   notifyUser(
@@ -193,8 +198,14 @@ export async function updateClassAction(
   return { success: true };
 }
 
-/** Detach from any shared pool and start a fresh own package for this class, or clear it entirely (totalSessions = null). */
-/** Manually correct a package's "sessions used" count when the auto-count (from attendance) is wrong. `used: null` reverts to the auto-count. */
+/**
+ * Set (or clear) a manual baseline for a package's "sessions used" — e.g.
+ * entering an old class into the system that already had N sessions before
+ * today. From this moment the count becomes the baseline plus whatever gets
+ * checked in afterward, so it keeps counting up on its own rather than
+ * freezing. `used: null` clears the baseline and reverts to the plain
+ * computed count (every completed session since the package started).
+ */
 export async function adjustPackageUsedAction(packageId: number, used: number | null) {
   const session = await assertRole(["admin", "coordinator", "teacher"]);
   if (session.role === "teacher") {
@@ -203,7 +214,15 @@ export async function adjustPackageUsedAction(packageId: number, used: number | 
       .get(packageId, session.userId);
     if (!owned) throw new ForbiddenError("Bạn không phụ trách lớp dùng gói này");
   }
-  db.prepare("UPDATE packages SET used_override = ? WHERE id = ?").run(used, packageId);
+  if (used === null) {
+    db.prepare("UPDATE packages SET used_override = NULL, used_override_set_at = NULL WHERE id = ?").run(
+      packageId
+    );
+  } else {
+    db.prepare(
+      "UPDATE packages SET used_override = ?, used_override_set_at = datetime('now') WHERE id = ?"
+    ).run(used, packageId);
+  }
   revalidatePath("/admin/classes");
   revalidatePath("/teacher");
   revalidatePath("/teacher/schedule");

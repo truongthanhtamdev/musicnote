@@ -12,7 +12,8 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
-export async function toggleAvailabilitySlotAction(dayOfWeek: number, startTime: string) {
+/** Toggle a half-hour slot between free (default) and marked busy. */
+export async function toggleBusySlotAction(dayOfWeek: number, startTime: string) {
   const session = await assertRole(["teacher"]);
   const teacherId = session.userId;
   const endTime = addMinutes(startTime, 30);
@@ -35,7 +36,8 @@ export async function toggleAvailabilitySlotAction(dayOfWeek: number, startTime:
   revalidatePath("/admin/assign");
 }
 
-export async function clearDayAvailabilityAction(dayOfWeek: number) {
+/** Clear every busy mark for one day, i.e. mark the whole day free. */
+export async function clearDayBusyAction(dayOfWeek: number) {
   const session = await assertRole(["teacher"]);
   db.prepare("DELETE FROM availability WHERE teacher_id = ? AND day_of_week = ?").run(
     session.userId,

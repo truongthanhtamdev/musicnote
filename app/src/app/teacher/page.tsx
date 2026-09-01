@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { listClassesForTeacher, getPackageProgress, listAttendance } from "@/lib/queries";
 import { formatTimeRange, todayISO } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
+import { UsedSessionsEditor } from "@/components/used-sessions-editor";
 import AttendanceForm from "./attendance-form";
 
 export default async function TeacherTodayPage() {
@@ -55,7 +56,6 @@ export default async function TeacherTodayPage() {
         <div className="space-y-4">
           {pendingClasses.map((c) => {
             const progress = getPackageProgress(c);
-            const isFirstSessionEver = listAttendance({ classId: c.id }).length === 0;
             return (
               <div key={c.id} className="bg-white rounded-xl border border-slate-200 p-4">
                 <div className="mb-3">
@@ -73,21 +73,17 @@ export default async function TeacherTodayPage() {
                     {c.guardian_name ? ` · PH: ${c.guardian_name}` : ""}
                   </p>
                   {progress && (
-                    <p
+                    <div
                       className={`text-xs mt-0.5 ${
                         progress.remaining <= 3 ? "text-amber-600 font-medium" : "text-slate-400"
                       }`}
                     >
-                      Gói {progress.total} tiết · Đã học {progress.used} · Còn {progress.remaining} ·
-                      Hôm nay là buổi thứ {progress.used + 1}
-                    </p>
+                      <UsedSessionsEditor progress={progress} size="xs" /> · Hôm nay là buổi thứ{" "}
+                      {progress.used + 1}
+                    </div>
                   )}
                 </div>
-                <AttendanceForm
-                  classId={c.id}
-                  sessionDate={todayStr}
-                  defaultTrial={isFirstSessionEver}
-                />
+                <AttendanceForm classId={c.id} sessionDate={todayStr} />
               </div>
             );
           })}

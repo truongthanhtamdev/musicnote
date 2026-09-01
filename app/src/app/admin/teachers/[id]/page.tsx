@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { getTeacher, listAvailability, listClassesForTeacher, listAttendance } from "@/lib/queries";
+import { getTeacher, listBusySlots, listClassesForTeacher, listAttendance } from "@/lib/queries";
 import {
   ATTENDANCE_STATUS_LABELS,
   LANGUAGE_LABELS,
@@ -8,8 +8,7 @@ import {
   parseSubjects,
   formatClassSchedule,
 } from "@/lib/types";
-import { AvailabilityGrid } from "@/components/availability-grid";
-import { TeacherClassGrid } from "@/components/teacher-class-grid";
+import { TeacherScheduleGrid } from "@/components/teacher-schedule-grid";
 import EditTeacherForm from "./edit-teacher-form";
 import ToggleActiveButton from "./toggle-active-button";
 import ResetPasswordButton from "@/components/reset-password-button";
@@ -27,7 +26,7 @@ export default async function TeacherDetailPage({
   const session = await getSession();
   const isAdmin = session?.role === "admin";
 
-  const availability = listAvailability(teacherId);
+  const busySlots = listBusySlots(teacherId);
   const classes = listClassesForTeacher(teacherId);
   const attendance = listAttendance({ teacherId }).slice(0, 20);
 
@@ -87,16 +86,17 @@ export default async function TeacherDetailPage({
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <h2 className="font-semibold text-slate-900 mb-3">Bảng lịch dạy</h2>
+        <h2 className="font-semibold text-slate-900 mb-3">Bảng lịch</h2>
         <p className="text-xs text-slate-500 mb-3">
-          Bấm vào ô lớp để xem chi tiết; bấm vào ô trống để thêm lớp mới ngay khung giờ đó.
+          Ô vàng là lớp đang dạy (bấm để xem chi tiết), ô xám là giáo viên tự đánh dấu bận, ô
+          trống là rảnh — bấm vào ô trống để thêm lớp mới ngay khung giờ đó.
         </p>
-        <TeacherClassGrid teacherId={teacher.id} classes={classes} />
-      </div>
-
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <h2 className="font-semibold text-slate-900 mb-3">Lịch rảnh</h2>
-        <AvailabilityGrid slots={availability} interactive={false} />
+        <TeacherScheduleGrid
+          teacherId={teacher.id}
+          classes={classes}
+          busySlots={busySlots}
+          mode="admin"
+        />
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">

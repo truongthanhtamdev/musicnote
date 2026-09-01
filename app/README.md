@@ -11,7 +11,7 @@ một VPS nhỏ, không cần dịch vụ ngoài.
 |---|---|
 | **Admin** | Toàn quyền: tạo tài khoản cho Giáo vụ/Giáo viên/Học viên, quản lý giáo viên & lương/buổi, quản lý lớp, giao lớp, sửa điểm danh, xem/xuất báo cáo lương, quản lý doanh thu & lợi nhuận. |
 | **Giáo vụ** (coordinator) | Tạo/sửa lớp học, giao lớp cho giáo viên, xem & sửa nhật ký điểm danh. Không xem/sửa được lương hay tài khoản. |
-| **Giáo viên** | Xem lớp được giao, **tự thêm lớp mới của mình** (học sinh + thứ/giờ học) và sửa lịch lớp mình đang dạy, điểm danh buổi học hôm nay (kèm nội dung bài học + tick "đã điểm danh trên Facebook"), cập nhật khung giờ rảnh theo tuần, xem lịch dạy & thu nhập của mình. |
+| **Giáo viên** | Xem lớp được giao, **tự thêm lớp mới của mình** (học sinh + thứ/giờ học) và sửa lịch lớp mình đang dạy, điểm danh buổi học hôm nay (kèm nội dung bài học + tick "đã điểm danh trên Facebook"), đánh dấu khung giờ bận trong tuần, xem lịch dạy & thu nhập của mình. |
 | **Học viên** | Đăng nhập xem lớp học của mình: tiến độ gói học (đã học/còn lại bao nhiêu tiết) và nội dung các buổi học gần đây. Chỉ xem, không sửa được gì. |
 
 Lưu ý: hệ thống **không thay thế** việc điểm danh trên nhóm Facebook — giáo
@@ -82,14 +82,17 @@ Gợi ý:
   thêm lớp của mình cũng sửa/xoá được lớp đó (ví dụ thêm nhầm hoặc cần cập
   nhật lại lịch đã điền).
 - **Admin/Giáo vụ → Giao lớp**: danh sách lớp chưa có giáo viên; hệ thống
-  gợi ý giáo viên có khung giờ rảnh trùng lịch lớp (đánh dấu ✓), bấm để giao
-  ngay. Khi giao lớp (hoặc thêm lớp mới rồi gán luôn giáo viên), hệ thống gửi
-  **thông báo** cho giáo viên đó (hiện ở đầu trang khi họ đăng nhập, bấm "Đã
-  đọc" để ẩn) nhắc buổi đầu tiên tính là buổi học thử (50.000đ/tiết).
-- **Admin → Chi tiết giáo viên**: ngoài thông tin & khung giờ rảnh, có
-  **bảng lịch dạy dạng lưới** theo ngày/giờ — nhìn được cả tuần giáo viên đó
-  dạy gì, giờ nào; bấm vào lớp để xem chi tiết, bấm vào ô trống để thêm lớp
-  mới ngay khung giờ đó (tự gán cho giáo viên này).
+  gợi ý giáo viên đang rảnh khung giờ đó (đánh dấu ✓), bấm để giao ngay. Khi
+  admin/Giáo vụ **tạo lớp mới rồi gán luôn giáo viên**, hoặc giao một lớp có
+  sẵn cho giáo viên ở trang này, hệ thống tự gửi **thông báo** cho giáo viên
+  đó (hiện ở đầu trang khi họ đăng nhập, bấm "Đã đọc" để ẩn) và **tự động
+  tính buổi đầu tiên là buổi học thử** (50.000đ/tiết, không cần tick tay) —
+  chỉ áp dụng cho lớp đi qua luồng này; lớp giáo viên **tự thêm** (thường là
+  lớp cũ đang backfill dữ liệu) không tự tính buổi thử.
+- **Admin → Chi tiết giáo viên**: có **1 bảng lịch dạng lưới** theo ngày/giờ
+  gộp chung lớp đang dạy và khung giờ bận — ô vàng là lớp (bấm để xem chi
+  tiết), ô xám là giáo viên tự đánh dấu bận, ô trống là rảnh (bấm để thêm lớp
+  mới ngay khung giờ đó, tự gán cho giáo viên này).
 - **Giáo viên → Lịch dạy**: tự thêm lớp học mới của mình (tên học sinh, thứ/giờ
   học cố định hàng tuần, môn học, ngôn ngữ giảng dạy, và nguồn lớp — "Trung tâm
   giao" hay "GV tự tìm học viên") — hệ thống tự gán lớp cho chính giáo viên đó,
@@ -111,9 +114,12 @@ Gợi ý:
   mua gói mới — chỉ tính lại từ ngày gia hạn, không xoá lịch sử cũ. Trang
   Tổng quan của Admin có mục **"Học viên sắp hết khóa"** liệt kê tất cả học
   viên còn ≤ 3 tiết trên toàn hệ thống. Số buổi "Đã học" tự đếm được, nhưng
-  nếu sai lệch, Admin (ở trang chi tiết lớp) hoặc Giáo viên (ở trang Lịch
-  dạy) đều bấm **"Sửa"/"Sửa số buổi"** để nhập tay lại số đúng — bấm lần nữa
-  để bỏ chỉnh tay, quay về tính tự động theo điểm danh.
+  Admin (trang chi tiết lớp) hoặc Giáo viên (trang Lịch dạy, hoặc ngay trên
+  thẻ điểm danh ở "Hôm nay") đều bấm **"Sửa"** để nhập tay một mốc — ví dụ
+  nhập lớp cũ vào hệ thống mà học viên đã học sẵn 15 buổi thì nhập "15" —
+  **từ lúc đó số buổi tự cộng thêm mỗi khi điểm danh mới**, không bị đứng yên
+  ở mốc đã nhập. Bấm nút bên cạnh để bỏ mốc tay, quay về tính tự động hoàn
+  toàn theo điểm danh từ ngày bắt đầu gói.
 - **Học nhiều buổi/tuần**: khi thêm lớp mới (cả ở trang Admin/Giáo vụ và
   trang Giáo viên tự thêm), bấm **"+ Thêm buổi/tuần"** để khai nhiều Thứ/giờ
   cùng lúc cho 1 học viên — ví dụ học Thứ 2 và Thứ 5 mỗi tuần — hệ thống tự
@@ -124,10 +130,11 @@ Gợi ý:
   định hàng tuần, giáo viên vào **Lịch sử điểm danh → "+ Điểm danh buổi học
   bù"**, chọn đúng lớp và ngày dạy bù thực tế để điểm danh — buổi này vẫn
   tính vào gói học của học viên như bình thường.
-- **Buổi học thử**: tick "Buổi học thử" khi điểm danh để tính lương buổi đó
-  theo giá cố định 50.000đ/tiết, không theo đơn giá/buổi thường của giáo
-  viên. Trang Chấm công/Lương và file CSV xuất ra có cột riêng đếm số buổi
-  thử.
+- **Buổi học thử**: tự động, không cần tick tay — buổi điểm danh đầu tiên của
+  một lớp vừa được center tạo/giao cho giáo viên (mục Giao lớp ở trên) tính
+  lương theo giá cố định 50.000đ/tiết, không theo đơn giá/buổi thường của
+  giáo viên; các buổi sau đó tính lương bình thường. Trang Chấm công/Lương và
+  file CSV xuất ra có cột riêng đếm số buổi thử.
 - **Buổi tiếp theo & cảnh báo quên điểm danh**: trang Lớp học hiện cột "Buổi
   tiếp theo" (ngày của buổi kế tiếp theo lịch cố định hàng tuần) và tô đỏ
   dòng nào đã quá lịch tuần này mà chưa có điểm danh. Trang Tổng quan cũng tô
@@ -139,8 +146,11 @@ Gợi ý:
 - **Tài khoản Học viên**: Admin tạo tài khoản rồi gắn vào lớp (ở trang chi
   tiết lớp học) để học viên tự đăng nhập xem tiến độ gói học và nội dung các
   buổi học gần đây. Đăng nhập bằng Email hoặc SĐT tuỳ theo cách tạo tài khoản.
-- **Giáo viên → Khung giờ rảnh**: lưới theo tuần (30 phút/ô, 07:00–22:00),
-  bấm để bật/tắt khung giờ có thể nhận lớp.
+- **Giáo viên → Lịch tuần**: lưới theo tuần (30 phút/ô, 07:00–22:00) gộp
+  chung lớp đang dạy (ô vàng, chỉ xem) và khung giờ bận cá nhân (ô xám) —
+  **mặc định mọi ô đều rảnh**, chỉ cần bấm đánh dấu những khung giờ mình bận
+  (không nhận lớp được); bấm lại để bỏ đánh dấu, hoặc "rảnh cả ngày" ở đầu
+  cột để bỏ hết trong 1 ngày.
 - **Admin/Giáo vụ → Nhập dữ liệu**: tải lên file CSV để tạo hàng loạt
   giáo viên/lớp học một lần (hữu ích khi đưa ~200 lớp có sẵn vào hệ thống),
   có file mẫu tải sẵn và báo lỗi theo từng dòng.

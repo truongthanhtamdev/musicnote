@@ -109,7 +109,8 @@ export function getSuggestedPackagePrice(
   return null;
 }
 
-export interface AvailabilityRow {
+/** A half-hour block a teacher has marked BUSY (personal, not a class) — everything else on the grid defaults to free. */
+export interface BusySlotRow {
   id: number;
   teacher_id: number;
   day_of_week: number;

@@ -23,14 +23,11 @@ export default function AttendanceForm({
   classId,
   sessionDate,
   existing,
-  defaultTrial = false,
   onSuccess,
 }: {
   classId: number;
   sessionDate: string;
   existing?: AttendanceRow;
-  /** Pre-check "Buổi học thử" when this is the class's very first session ever. */
-  defaultTrial?: boolean;
   /** Called once after a save succeeds, e.g. to collapse an inline edit view. */
   onSuccess?: () => void;
 }) {
@@ -106,16 +103,6 @@ export default function AttendanceForm({
           className="w-4 h-4 rounded border-slate-300"
         />
         Đã điểm danh trên nhóm Facebook
-      </label>
-
-      <label className="flex items-center gap-2 text-sm text-slate-700 py-1">
-        <input
-          type="checkbox"
-          name="is_trial"
-          defaultChecked={existing ? !!existing.is_trial : defaultTrial}
-          className="w-4 h-4 rounded border-slate-300"
-        />
-        Buổi học thử (tính lương 50.000đ/tiết, không theo đơn giá thường)
       </label>
 
       <div>
