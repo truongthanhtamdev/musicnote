@@ -3,9 +3,8 @@
 import { useActionState, useRef, useEffect, useState } from "react";
 import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
+import { SlotsField } from "@/components/slots-field";
 import {
-  DAY_LABELS,
-  DAY_ORDER,
   SUBJECT_SUGGESTIONS,
   LANGUAGE_LABELS,
   PACKAGE_OPTIONS,
@@ -20,11 +19,15 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
   const [state, formAction, pending] = useActionState(createClassAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const [scheduleType, setScheduleType] = useState<ClassScheduleType>("fixed");
+  const [slotsKey, setSlotsKey] = useState(0);
 
   const [handledState, setHandledState] = useState(state);
   if (state !== handledState) {
     setHandledState(state);
-    if (state.success) setScheduleType("fixed");
+    if (state.success) {
+      setScheduleType("fixed");
+      setSlotsKey((k) => k + 1);
+    }
   }
 
   useEffect(() => {
@@ -93,41 +96,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
             )}
           </div>
         </div>
-        {scheduleType === "fixed" && (
-          <>
-            <select
-              name="day_of_week"
-              required
-              defaultValue=""
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="" disabled>
-                Thứ học
-              </option>
-              {DAY_ORDER.map((d) => (
-                <option key={d} value={d}>
-                  {DAY_LABELS[d]}
-                </option>
-              ))}
-            </select>
-            <input
-              name="start_time"
-              type="time"
-              required
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
-          </>
-        )}
-        <select
-          name="duration_minutes"
-          defaultValue="60"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        >
-          <option value="30">30 phút</option>
-          <option value="45">45 phút</option>
-          <option value="60">60 phút</option>
-          <option value="90">90 phút</option>
-        </select>
+        {scheduleType === "fixed" && <SlotsField key={slotsKey} />}
         <select
           name="teacher_id"
           defaultValue=""

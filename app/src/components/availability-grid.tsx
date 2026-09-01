@@ -1,14 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { DAY_LABELS, DAY_ORDER, type AvailabilityRow } from "@/lib/types";
+import { DAY_LABELS, DAY_ORDER, TIME_SLOTS, type AvailabilityRow } from "@/lib/types";
 import { toggleAvailabilitySlotAction, clearDayAvailabilityAction } from "@/actions/availability";
-
-const SLOTS: string[] = [];
-for (let h = 7; h < 22; h++) {
-  SLOTS.push(`${String(h).padStart(2, "0")}:00`);
-  SLOTS.push(`${String(h).padStart(2, "0")}:30`);
-}
 
 export function AvailabilityGrid({
   slots,
@@ -60,7 +54,7 @@ export function AvailabilityGrid({
           </tr>
         </thead>
         <tbody>
-          {SLOTS.map((time) => (
+          {TIME_SLOTS.map((time) => (
             <tr key={time}>
               <td className="text-slate-500 pr-2 text-right sticky left-0 bg-white">{time}</td>
               {DAY_ORDER.map((d) => {

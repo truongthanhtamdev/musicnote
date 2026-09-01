@@ -9,6 +9,7 @@ import {
   formatClassSchedule,
 } from "@/lib/types";
 import { AvailabilityGrid } from "@/components/availability-grid";
+import { TeacherClassGrid } from "@/components/teacher-class-grid";
 import EditTeacherForm from "./edit-teacher-form";
 import ToggleActiveButton from "./toggle-active-button";
 import ResetPasswordButton from "@/components/reset-password-button";
@@ -83,6 +84,14 @@ export default async function TeacherDetailPage({
             </ul>
           )}
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <h2 className="font-semibold text-slate-900 mb-3">Bảng lịch dạy</h2>
+        <p className="text-xs text-slate-500 mb-3">
+          Bấm vào ô lớp để xem chi tiết; bấm vào ô trống để thêm lớp mới ngay khung giờ đó.
+        </p>
+        <TeacherClassGrid teacherId={teacher.id} classes={classes} />
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 p-4">

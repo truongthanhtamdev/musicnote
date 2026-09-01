@@ -1,12 +1,17 @@
 import { getSession } from "@/lib/auth";
-import { listClassesForTeacher } from "@/lib/queries";
+import { listClassesForTeacher, getPackageProgressForClasses } from "@/lib/queries";
 import { DAY_LABELS, DAY_ORDER } from "@/lib/types";
 import NewClassForm from "./new-class-form";
 import TeacherClassRow from "./class-row";
 
 export default async function TeacherSchedulePage() {
   const session = await getSession();
-  const classes = listClassesForTeacher(session!.userId).filter((c) => c.status === "active");
+  const activeClasses = listClassesForTeacher(session!.userId).filter((c) => c.status === "active");
+  const progressByPackage = getPackageProgressForClasses(activeClasses);
+  const classes = activeClasses.map((c) => ({
+    ...c,
+    progress: c.package_id ? (progressByPackage.get(c.package_id) ?? null) : null,
+  }));
   const flexibleClasses = classes.filter((c) => c.schedule_type === "flexible");
 
   return (
@@ -32,7 +37,7 @@ export default async function TeacherSchedulePage() {
           </p>
           <ul className="divide-y divide-slate-100">
             {flexibleClasses.map((c) => (
-              <TeacherClassRow key={c.id} cls={c} />
+              <TeacherClassRow key={c.id} cls={c} progress={c.progress} />
             ))}
           </ul>
         </div>
@@ -49,7 +54,7 @@ export default async function TeacherSchedulePage() {
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {dayClasses.map((c) => (
-                    <TeacherClassRow key={c.id} cls={c} />
+                    <TeacherClassRow key={c.id} cls={c} progress={c.progress} />
                   ))}
                 </ul>
               )}

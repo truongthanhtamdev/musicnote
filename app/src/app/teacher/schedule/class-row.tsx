@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import Link from "next/link";
 import { updateClassAction, deleteClassAction } from "@/actions/classes";
+import { UsedSessionsEditor } from "@/components/used-sessions-editor";
 import type { FormState } from "@/actions/teachers";
 import {
   DAY_LABELS,
@@ -13,10 +15,17 @@ import {
   type ClassRow,
   type ClassScheduleType,
 } from "@/lib/types";
+import type { PackageProgress } from "@/lib/queries";
 
 const initialState: FormState = {};
 
-export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
+export default function TeacherClassRow({
+  cls,
+  progress,
+}: {
+  cls: ClassRow;
+  progress?: PackageProgress | null;
+}) {
   const [editing, setEditing] = useState(false);
   const [scheduleType, setScheduleType] = useState<ClassScheduleType>(cls.schedule_type);
   const [state, formAction, pending] = useActionState(updateClassAction, initialState);
@@ -30,24 +39,39 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
 
   if (!editing) {
     return (
-      <li className="flex items-center justify-between gap-3 py-2">
-        <span className="text-slate-800">
-          {cls.student_name}
-          <span className="text-slate-400 text-xs ml-1.5">
-            {cls.subject}
-            {cls.language === "en" ? " · EN" : ""}
+      <li className="py-2">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-slate-800">
+            {cls.student_name}
+            <span className="text-slate-400 text-xs ml-1.5">
+              {cls.subject}
+              {cls.language === "en" ? " · EN" : ""}
+            </span>
           </span>
-        </span>
-        <div className="flex items-center gap-3">
-          <span className="text-slate-500 text-sm">{formatClassSchedule(cls)}</span>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="text-gold-600 hover:underline text-sm"
-          >
-            Sửa
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-slate-500 text-sm">{formatClassSchedule(cls)}</span>
+            <Link
+              href={`/teacher/attendance?classId=${cls.id}`}
+              className="text-gold-600 hover:underline text-sm"
+            >
+              Lịch sử
+            </Link>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-gold-600 hover:underline text-sm"
+            >
+              Sửa
+            </button>
+          </div>
         </div>
+        {progress && (
+          <div
+            className={`text-xs mt-0.5 ${progress.remaining <= 3 ? "text-amber-600 font-medium" : "text-slate-500"}`}
+          >
+            <UsedSessionsEditor progress={progress} size="xs" /> · Còn {progress.remaining}
+          </div>
+        )}
       </li>
     );
   }

@@ -55,6 +55,8 @@ export interface PackageRow {
   id: number;
   total_sessions: number;
   started_at: string;
+  /** Manual correction for "sessions used" when the auto-count is wrong; null = use the computed count. */
+  used_override: number | null;
   created_at: string;
 }
 
@@ -73,6 +75,15 @@ export interface ExpenseRow {
   amount: number;
   expense_date: string;
   note: string | null;
+  created_at: string;
+}
+
+export interface NotificationRow {
+  id: number;
+  user_id: number;
+  message: string;
+  class_id: number | null;
+  read_at: string | null;
   created_at: string;
 }
 
@@ -133,6 +144,18 @@ export interface AttendanceRow {
 
 export const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+/** 30-min time-of-day labels from 07:00 to 21:30, shared by every day×time schedule grid. */
+export const TIME_SLOTS: string[] = (() => {
+  const slots: string[] = [];
+  for (let h = 7; h < 22; h++) {
+    slots.push(`${String(h).padStart(2, "0")}:00`);
+    slots.push(`${String(h).padStart(2, "0")}:30`);
+  }
+  return slots;
+})();
+
+export const DURATION_OPTIONS = [30, 45, 60, 90];
 
 export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Violin", "Saxophone", "Thanh nhạc"];
 

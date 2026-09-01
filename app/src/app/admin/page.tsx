@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { listClassesByDay, listAttendance } from "@/lib/queries";
+import { listClassesByDay, listAttendance, listPackagesNearingCompletion } from "@/lib/queries";
 import { formatTimeRange, todayISO } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 
@@ -37,6 +37,7 @@ export default async function AdminDashboard() {
   const todaysAttendance = listAttendance({ from: todayStr, to: todayStr });
   const markedClassIds = new Set(todaysAttendance.map((a) => a.class_id));
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
+  const nearingCompletion = listPackagesNearingCompletion();
 
   return (
     <div className="space-y-6">
@@ -103,6 +104,40 @@ export default async function AdminDashboard() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="px-4 py-3 border-b border-slate-200">
+          <h2 className="font-semibold text-slate-900">
+            Học viên sắp hết khóa ({nearingCompletion.length})
+          </h2>
+        </div>
+        {nearingCompletion.length === 0 ? (
+          <p className="text-sm text-slate-500 px-4 py-6 text-center">
+            Chưa có học viên nào sắp hết gói học (còn ≤ 3 tiết).
+          </p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {nearingCompletion.map((row) => (
+              <Link
+                key={row.packageId}
+                href={`/admin/classes/${row.id}`}
+                className="px-4 py-3 flex items-center justify-between text-sm hover:bg-slate-50"
+              >
+                <div>
+                  <p className="font-medium text-slate-900">{row.student_name}</p>
+                  <p className="text-slate-500">
+                    {row.subject} · GV: {row.teacher_name || "Chưa xếp"} · Đã học {row.used}/
+                    {row.total} tiết
+                  </p>
+                </div>
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-amber-50 text-amber-700">
+                  Còn {row.remaining} tiết
+                </span>
+              </Link>
+            ))}
           </div>
         )}
       </div>

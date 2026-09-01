@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { listAttendance, listClassesForTeacher } from "@/lib/queries";
+import { listAttendance, listClassesForTeacher, getClass } from "@/lib/queries";
 import { addDays, toISODate, todayISO } from "@/lib/format";
 import { formatClassSchedule, CLASS_STATUS_LABELS } from "@/lib/types";
 import MakeupAttendanceForm from "./makeup-attendance-form";
@@ -8,14 +9,19 @@ import TeacherAttendanceHistoryRow from "./history-row";
 export default async function TeacherAttendanceHistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; classId?: string }>;
 }) {
   const session = await getSession();
   const sp = await searchParams;
-  const from = sp.from || toISODate(addDays(new Date(), -30));
+  const classId = sp.classId ? Number(sp.classId) : undefined;
+  // Filtering to one student's own history should show all of it, not
+  // just the default 30-day window everyone else's combined log uses —
+  // omitting `from` entirely (rather than a fake early sentinel date)
+  // already means "no lower bound" to listAttendance.
+  const from = sp.from || (classId ? undefined : toISODate(addDays(new Date(), -30)));
   const to = sp.to || todayISO();
 
-  const rows = listAttendance({ teacherId: session!.userId, from, to });
+  const rows = listAttendance({ teacherId: session!.userId, from, to, classId });
   // Not filtered to active classes — a teacher may still need to add or
   // correct attendance for a class that has since paused or ended.
   const myClasses = listClassesForTeacher(session!.userId).map((c) => ({
@@ -24,21 +30,40 @@ export default async function TeacherAttendanceHistoryPage({
       c.status === "active" ? "" : ` (${CLASS_STATUS_LABELS[c.status]})`
     }`,
   }));
+  // The filtered rows already carry the student's name; only fall back to
+  // a lookup when there's no attendance yet to read it from.
+  const filteredStudentName = classId ? (rows[0]?.student_name ?? getClass(classId)?.student_name) : null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-xl font-bold text-slate-900">Lịch sử điểm danh</h1>
-        <MakeupAttendanceForm classes={myClasses} />
+        <h1 className="text-xl font-bold text-slate-900">
+          Lịch sử điểm danh
+          {filteredStudentName && (
+            <>
+              {" · "}
+              <span className="text-gold-700">{filteredStudentName}</span>
+            </>
+          )}
+        </h1>
+        <div className="flex items-center gap-3">
+          {classId && (
+            <Link href="/teacher/attendance" className="text-sm text-slate-500 hover:underline">
+              Xem tất cả học viên
+            </Link>
+          )}
+          <MakeupAttendanceForm classes={myClasses} />
+        </div>
       </div>
 
       <form className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap gap-3 items-end">
+        {classId && <input type="hidden" name="classId" value={classId} />}
         <div>
           <label className="block text-xs text-slate-500 mb-1">Từ ngày</label>
           <input
             type="date"
             name="from"
-            defaultValue={from}
+            defaultValue={from || ""}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
         </div>

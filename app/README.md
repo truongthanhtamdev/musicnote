@@ -83,11 +83,19 @@ Gợi ý:
   nhật lại lịch đã điền).
 - **Admin/Giáo vụ → Giao lớp**: danh sách lớp chưa có giáo viên; hệ thống
   gợi ý giáo viên có khung giờ rảnh trùng lịch lớp (đánh dấu ✓), bấm để giao
-  ngay.
+  ngay. Khi giao lớp (hoặc thêm lớp mới rồi gán luôn giáo viên), hệ thống gửi
+  **thông báo** cho giáo viên đó (hiện ở đầu trang khi họ đăng nhập, bấm "Đã
+  đọc" để ẩn) nhắc buổi đầu tiên tính là buổi học thử (50.000đ/tiết).
+- **Admin → Chi tiết giáo viên**: ngoài thông tin & khung giờ rảnh, có
+  **bảng lịch dạy dạng lưới** theo ngày/giờ — nhìn được cả tuần giáo viên đó
+  dạy gì, giờ nào; bấm vào lớp để xem chi tiết, bấm vào ô trống để thêm lớp
+  mới ngay khung giờ đó (tự gán cho giáo viên này).
 - **Giáo viên → Lịch dạy**: tự thêm lớp học mới của mình (tên học sinh, thứ/giờ
   học cố định hàng tuần, môn học, ngôn ngữ giảng dạy, và nguồn lớp — "Trung tâm
   giao" hay "GV tự tìm học viên") — hệ thống tự gán lớp cho chính giáo viên đó,
-  và có thể sửa lại lớp mình đang dạy nếu nhập sai.
+  và có thể sửa lại/xoá lớp mình đang dạy nếu nhập sai. Bấm "Lịch sử" trên
+  từng lớp để xem riêng lịch sử điểm danh của học viên đó (không lẫn với các
+  học viên khác).
 - **Môn học & ngôn ngữ**: mỗi lớp có môn học (Guitar/Piano/Violin/Saxophone/
   Thanh nhạc — hoặc tự gõ môn khác) và ngôn ngữ giảng dạy (Tiếng Việt/Tiếng
   Anh). Mỗi giáo viên khai báo chuyên môn (chọn được nhiều môn) và ngôn ngữ
@@ -100,11 +108,18 @@ Gợi ý:
 - **Gói học (20/50/100 tiết)**: mỗi lớp có thể gắn 1 gói học; hệ thống tự đếm
   số buổi "Đã dạy" tính từ ngày bắt đầu gói để ra số tiết đã học/còn lại
   (cảnh báo màu cam khi còn ≤ 3 tiết). Bấm "Gia hạn (làm mới)" khi học viên
-  mua gói mới — chỉ tính lại từ ngày gia hạn, không xoá lịch sử cũ. Học viên
-  học 2-3 buổi/tuần (nhiều lịch cố định khác ngày) có thể **dùng chung 1 gói**
-  cho các lịch đó — ở trang chi tiết lớp, chọn "dùng chung gói với" một lịch
-  học khác của cùng học viên, tất cả buổi học ở các lịch đó cùng trừ vào 1
-  gói duy nhất.
+  mua gói mới — chỉ tính lại từ ngày gia hạn, không xoá lịch sử cũ. Trang
+  Tổng quan của Admin có mục **"Học viên sắp hết khóa"** liệt kê tất cả học
+  viên còn ≤ 3 tiết trên toàn hệ thống. Số buổi "Đã học" tự đếm được, nhưng
+  nếu sai lệch, Admin (ở trang chi tiết lớp) hoặc Giáo viên (ở trang Lịch
+  dạy) đều bấm **"Sửa"/"Sửa số buổi"** để nhập tay lại số đúng — bấm lần nữa
+  để bỏ chỉnh tay, quay về tính tự động theo điểm danh.
+- **Học nhiều buổi/tuần**: khi thêm lớp mới (cả ở trang Admin/Giáo vụ và
+  trang Giáo viên tự thêm), bấm **"+ Thêm buổi/tuần"** để khai nhiều Thứ/giờ
+  cùng lúc cho 1 học viên — ví dụ học Thứ 2 và Thứ 5 mỗi tuần — hệ thống tự
+  tạo các lịch học riêng và **dùng chung 1 gói** cho tất cả (nếu chọn gói).
+  Sau này vẫn có thể dùng chung/tách gói thủ công ở trang chi tiết lớp như
+  trước.
 - **Buổi học bù / dời lịch**: khi 1 buổi bị dời qua ngày khác với lịch cố
   định hàng tuần, giáo viên vào **Lịch sử điểm danh → "+ Điểm danh buổi học
   bù"**, chọn đúng lớp và ngày dạy bù thực tế để điểm danh — buổi này vẫn

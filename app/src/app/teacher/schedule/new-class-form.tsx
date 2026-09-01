@@ -3,9 +3,8 @@
 import { useActionState, useRef, useEffect, useState } from "react";
 import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
+import { SlotsField } from "@/components/slots-field";
 import {
-  DAY_LABELS,
-  DAY_ORDER,
   SUBJECT_SUGGESTIONS,
   LANGUAGE_LABELS,
   SOURCE_LABELS,
@@ -20,6 +19,7 @@ export default function NewClassForm() {
   const [state, formAction, pending] = useActionState(createClassAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const [scheduleType, setScheduleType] = useState<ClassScheduleType>("fixed");
+  const [slotsKey, setSlotsKey] = useState(0);
 
   // Close the panel once a save succeeds. Adjusting state during render
   // (rather than in an effect) avoids an extra commit-then-rerender pass.
@@ -29,6 +29,7 @@ export default function NewClassForm() {
     if (state.success) {
       setOpen(false);
       setScheduleType("fixed");
+      setSlotsKey((k) => k + 1);
     }
   }
 
@@ -157,49 +158,13 @@ export default function NewClassForm() {
             </div>
           </div>
           {scheduleType === "fixed" && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Thứ học</label>
-                <select
-                  name="day_of_week"
-                  required
-                  defaultValue=""
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
-                >
-                  <option value="" disabled>
-                    Chọn thứ
-                  </option>
-                  {DAY_ORDER.map((d) => (
-                    <option key={d} value={d}>
-                      {DAY_LABELS[d]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Giờ bắt đầu</label>
-                <input
-                  name="start_time"
-                  type="time"
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
-                />
-              </div>
-            </>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Thứ/giờ học (học nhiều buổi/tuần thì thêm từng buổi)
+              </label>
+              <SlotsField key={slotsKey} />
+            </div>
           )}
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Thời lượng</label>
-            <select
-              name="duration_minutes"
-              defaultValue="60"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
-            >
-              <option value="30">30 phút</option>
-              <option value="45">45 phút</option>
-              <option value="60">60 phút</option>
-              <option value="90">90 phút</option>
-            </select>
-          </div>
           <div className="col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">Ghi chú</label>
             <input

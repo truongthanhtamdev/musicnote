@@ -50,6 +50,10 @@ function migrate() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       total_sessions INTEGER NOT NULL,
       started_at TEXT NOT NULL,
+      -- Overrides the computed "sessions used" count (from counting
+      -- completed attendance) when the auto-count is wrong. NULL means
+      -- use the computed count as-is.
+      used_override INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -121,8 +125,18 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      message TEXT NOT NULL,
+      class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
+      read_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);
     CREATE INDEX IF NOT EXISTS idx_attendance_teacher_date ON attendance(teacher_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_availability_teacher ON availability(teacher_id);
@@ -143,6 +157,7 @@ function migrate() {
   ensureColumn("classes", "package_total_sessions", "INTEGER");
   ensureColumn("classes", "package_started_at", "TEXT");
   ensureColumn("classes", "package_id", "INTEGER REFERENCES packages(id) ON DELETE SET NULL");
+  ensureColumn("packages", "used_override", "INTEGER");
   ensureColumn("users", "languages", "TEXT NOT NULL DEFAULT 'vi'");
   ensureColumn("users", "subjects", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("attendance", "lesson_content", "TEXT");

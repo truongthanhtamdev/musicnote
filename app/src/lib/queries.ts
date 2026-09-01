@@ -8,6 +8,7 @@ import {
   type AvailabilityRow,
   type ClassRow,
   type ExpenseRow,
+  type NotificationRow,
   type PackageRow,
   type PaymentRow,
   type UserRow,
@@ -136,12 +137,54 @@ export interface PackageProgress {
   used: number;
   remaining: number;
   startedAt: string;
+  /** True when `used` came from a manual correction rather than counting attendance. */
+  isManuallyAdjusted: boolean;
   /** Other classes (weekly slots) drawing from this same package pool, if any. */
   sharedWith: { id: number; day_of_week: number; start_time: string }[];
 }
 
 export function getPackage(id: number): PackageRow | undefined {
   return db.prepare("SELECT * FROM packages WHERE id = ?").get(id) as PackageRow | undefined;
+}
+
+/**
+ * Sessions used/remaining for a batch of packages in one query each (not one
+ * per package) — `used` is a correlated subquery SQLite evaluates per row
+ * server-side, still a single round-trip from the app's side. `sharedWith`
+ * is left empty here; only `getPackageProgress` (below) fills it in, since
+ * it's the only caller that renders it.
+ */
+function getPackageProgressBatch(packageIds: number[]): Map<number, PackageProgress> {
+  const map = new Map<number, PackageProgress>();
+  if (packageIds.length === 0) return map;
+  const placeholders = packageIds.map(() => "?").join(",");
+  const rows = db
+    .prepare(
+      `SELECT p.id as packageId, p.total_sessions as total, p.started_at as startedAt, p.used_override as usedOverride,
+        (SELECT COUNT(*) FROM attendance a JOIN classes c ON c.id = a.class_id
+         WHERE c.package_id = p.id AND a.status = 'completed' AND a.session_date >= p.started_at) as computedUsed
+       FROM packages p WHERE p.id IN (${placeholders})`
+    )
+    .all(...packageIds) as {
+    packageId: number;
+    total: number;
+    startedAt: string;
+    usedOverride: number | null;
+    computedUsed: number;
+  }[];
+  for (const r of rows) {
+    const used = r.usedOverride ?? r.computedUsed;
+    map.set(r.packageId, {
+      packageId: r.packageId,
+      total: r.total,
+      used,
+      remaining: Math.max(0, r.total - used),
+      startedAt: r.startedAt,
+      isManuallyAdjusted: r.usedOverride != null,
+      sharedWith: [],
+    });
+  }
+  return map;
 }
 
 /**
@@ -153,31 +196,44 @@ export function getPackage(id: number): PackageRow | undefined {
  */
 export function getPackageProgress(cls: ClassRow): PackageProgress | null {
   if (!cls.package_id) return null;
-  const pkg = getPackage(cls.package_id);
-  if (!pkg) return null;
-
-  const used = (
-    db
-      .prepare(
-        `SELECT COUNT(*) as c FROM attendance a
-         JOIN classes c ON c.id = a.class_id
-         WHERE c.package_id = ? AND a.status = 'completed' AND a.session_date >= ?`
-      )
-      .get(pkg.id, pkg.started_at) as { c: number }
-  ).c;
+  const base = getPackageProgressBatch([cls.package_id]).get(cls.package_id);
+  if (!base) return null;
 
   const sharedWith = db
     .prepare("SELECT id, day_of_week, start_time FROM classes WHERE package_id = ? AND id != ?")
-    .all(pkg.id, cls.id) as { id: number; day_of_week: number; start_time: string }[];
+    .all(cls.package_id, cls.id) as { id: number; day_of_week: number; start_time: string }[];
 
-  return {
-    packageId: pkg.id,
-    total: pkg.total_sessions,
-    used,
-    remaining: Math.max(0, pkg.total_sessions - used),
-    startedAt: pkg.started_at,
-    sharedWith,
-  };
+  return { ...base, sharedWith };
+}
+
+/** Progress for every class in one batch (e.g. a teacher's whole schedule), without the per-package `sharedWith` query. */
+export function getPackageProgressForClasses(classes: ClassRow[]): Map<number, PackageProgress> {
+  const packageIds = [...new Set(classes.map((c) => c.package_id).filter((id): id is number => id != null))];
+  return getPackageProgressBatch(packageIds);
+}
+
+/** Active students whose package is running low (remaining <= threshold), for the admin dashboard. */
+export function listPackagesNearingCompletion(threshold = 3): (ClassWithTeacher & PackageProgress)[] {
+  const classes = db
+    .prepare(
+      `SELECT c.*, u.name as teacher_name
+       FROM classes c
+       LEFT JOIN users u ON u.id = c.teacher_id
+       WHERE c.package_id IS NOT NULL AND c.status = 'active'
+         AND c.id = (SELECT MIN(id) FROM classes WHERE package_id = c.package_id AND status = 'active')`
+    )
+    .all() as ClassWithTeacher[];
+  const progressByPackage = getPackageProgressBatch(
+    classes.map((c) => c.package_id).filter((id): id is number => id != null)
+  );
+
+  return classes
+    .map((cls) => {
+      const progress = cls.package_id ? progressByPackage.get(cls.package_id) : undefined;
+      return progress ? { ...cls, ...progress } : null;
+    })
+    .filter((row): row is ClassWithTeacher & PackageProgress => !!row && row.remaining <= threshold)
+    .sort((a, b) => a.remaining - b.remaining);
 }
 
 /** Other classes (weekly slots) for the same student — used to offer "share this student's existing package". */
@@ -383,4 +439,20 @@ export function getRevenueSummary(from: string, to: string): RevenueSummary {
     totalExpenses,
     profit: totalRevenue - totalPayroll - totalExpenses,
   };
+}
+
+export function listUnreadNotifications(userId: number): NotificationRow[] {
+  return db
+    .prepare(
+      "SELECT * FROM notifications WHERE user_id = ? AND read_at IS NULL ORDER BY created_at DESC"
+    )
+    .all(userId) as NotificationRow[];
+}
+
+export function notifyUser(userId: number, message: string, classId: number | null = null) {
+  db.prepare("INSERT INTO notifications (user_id, message, class_id) VALUES (?, ?, ?)").run(
+    userId,
+    message,
+    classId
+  );
 }

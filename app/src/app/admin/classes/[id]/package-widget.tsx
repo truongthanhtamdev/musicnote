@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { setPackageAction, renewPackageAction, sharePackageAction } from "@/actions/classes";
+import { UsedSessionsEditor } from "@/components/used-sessions-editor";
 import { PACKAGE_OPTIONS } from "@/lib/types";
 import type { PackageProgress } from "@/lib/queries";
 
@@ -22,10 +23,7 @@ export default function PackageWidget({
       {progress ? (
         <div className="mb-3">
           <div className="flex items-baseline justify-between mb-1">
-            <span className="text-sm text-slate-600">
-              Đã học <span className="font-semibold text-slate-900">{progress.used}</span> /{" "}
-              {progress.total} tiết
-            </span>
+            <UsedSessionsEditor progress={progress} size="sm" />
             <span
               className={`text-xs font-medium ${
                 progress.remaining <= 3 ? "text-amber-600" : "text-slate-400"
