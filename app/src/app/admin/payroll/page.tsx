@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { computePayroll } from "@/lib/queries";
 import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
@@ -73,7 +74,15 @@ export default async function PayrollPage({
             <tbody className="divide-y divide-slate-100">
               {rows.map((r) => (
                 <tr key={r.teacher_id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-medium text-slate-900">{r.teacher_name}</td>
+                  <td className="px-4 py-2.5 font-medium">
+                    <Link
+                      href={`/admin/attendance?teacherId=${r.teacher_id}&from=${from}&to=${to}`}
+                      className="text-gold-700 hover:underline"
+                      title="Xem lịch sử điểm danh của giáo viên này trong cùng khoảng ngày"
+                    >
+                      {r.teacher_name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2.5">{r.completed_sessions}</td>
                   <td className="px-4 py-2.5">{r.trial_sessions > 0 ? r.trial_sessions : "-"}</td>
                   <td className="px-4 py-2.5">

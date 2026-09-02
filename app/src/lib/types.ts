@@ -48,6 +48,8 @@ export interface ClassRow {
   teacher_id: number | null;
   status: ClassStatus;
   notes: string | null;
+  /** 1 while the class is still waiting on its first session, which counts as the trial ("buổi 0"). */
+  trial_pending: number;
   created_at: string;
 }
 

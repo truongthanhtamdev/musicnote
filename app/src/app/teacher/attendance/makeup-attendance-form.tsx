@@ -76,6 +76,20 @@ export default function MakeupAttendanceForm({
         </div>
 
         <div>
+          <label className="block text-xs text-slate-500 mb-1">
+            Buổi thứ mấy (không bắt buộc) — điền nếu lớp cũ đã học sẵn nhiều buổi, hệ thống sẽ
+            lấy số này làm mốc rồi tự đếm tiếp. Điền 0 nếu là buổi học thử.
+          </label>
+          <input
+            name="session_number"
+            type="number"
+            min={0}
+            placeholder="VD: 15"
+            className="w-32 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div>
           <p className="text-sm font-medium text-slate-700 mb-1.5">Kết quả buổi học</p>
           <div className="grid grid-cols-2 gap-2">
             {(Object.entries(ATTENDANCE_STATUS_LABELS) as [AttendanceStatus, string][]).map(

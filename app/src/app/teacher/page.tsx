@@ -83,7 +83,13 @@ export default async function TeacherTodayPage() {
                     </div>
                   )}
                 </div>
-                <AttendanceForm classId={c.id} sessionDate={todayStr} />
+                <AttendanceForm
+                  classId={c.id}
+                  sessionDate={todayStr}
+                  // A class still waiting on its trial prefills "buổi 0", so
+                  // the teacher sees the trial rate is what applies today.
+                  sessionNumber={c.trial_pending ? 0 : progress ? progress.used + 1 : undefined}
+                />
               </div>
             );
           })}

@@ -23,11 +23,14 @@ export default function AttendanceForm({
   classId,
   sessionDate,
   existing,
+  sessionNumber,
   onSuccess,
 }: {
   classId: number;
   sessionDate: string;
   existing?: AttendanceRow;
+  /** What number this session is by the current count — shown as a hint in the "buổi thứ mấy" box. */
+  sessionNumber?: number;
   /** Called once after a save succeeds, e.g. to collapse an inline edit view. */
   onSuccess?: () => void;
 }) {
@@ -104,6 +107,21 @@ export default function AttendanceForm({
         />
         Đã điểm danh trên nhóm Facebook
       </label>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          Buổi thứ mấy{" "}
+          <span className="font-normal text-slate-400">— điền 0 nếu là buổi học thử</span>
+        </label>
+        <input
+          name="session_number"
+          type="number"
+          min={0}
+          defaultValue={sessionNumber ?? ""}
+          placeholder="VD: 15"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base"
+        />
+      </div>
 
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1.5">
