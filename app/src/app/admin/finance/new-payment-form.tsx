@@ -43,7 +43,7 @@ export default function NewPaymentForm({
         name="class_id"
         defaultValue=""
         onChange={handleClassChange}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
       >
         <option value="">Không gắn lớp cụ thể</option>
         {classes.map((c) => (
@@ -61,31 +61,31 @@ export default function NewPaymentForm({
           placeholder="Số tiền (VNĐ)"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
         <input
           name="paid_at"
           type="date"
           required
           defaultValue={todayISO()}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
       </div>
-      <p className="text-xs text-slate-400 -mt-1">
+      <p className="text-xs text-ink-400 -mt-1">
         Số tiền tự điền theo giá gói (Guitar 20t: 7.5tr, 50t: 15tr · Piano/Violin/Thanh nhạc 20t:
         8tr, 50t: 16tr) — sửa lại nếu giá khác.
       </p>
       <input
         name="note"
         placeholder="Ghi chú (VD: đóng gói 20 tiết)"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
       />
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state.success && <p className="text-sm text-emerald-600">Đã ghi nhận thanh toán.</p>}
+      {state.error && <p className="text-sm text-coral-600">{state.error}</p>}
+      {state.success && <p className="text-sm text-mint-600">Đã ghi nhận thanh toán.</p>}
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="bg-wood-500 hover:bg-wood-600 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
       >
         {pending ? "Đang lưu..." : "Ghi nhận thanh toán"}
       </button>

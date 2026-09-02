@@ -20,28 +20,28 @@ export default function NewCoordinatorForm() {
         name="name"
         required
         placeholder="Họ tên"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
       />
       <input
         name="email"
         type="email"
         required
         placeholder="Email đăng nhập"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
       />
       <input
         name="password"
         type="password"
         required
         placeholder="Mật khẩu tạm"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
       />
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state.success && <p className="text-sm text-emerald-600">Đã thêm giáo vụ.</p>}
+      {state.error && <p className="text-sm text-coral-600">{state.error}</p>}
+      {state.success && <p className="text-sm text-mint-600">Đã thêm giáo vụ.</p>}
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="bg-wood-500 hover:bg-wood-600 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
       >
         {pending ? "Đang lưu..." : "Thêm"}
       </button>

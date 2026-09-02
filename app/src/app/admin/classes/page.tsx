@@ -1,109 +1,236 @@
 import Link from "next/link";
 import { listClasses, listTeachers, getPackageProgress, annotateSchedule } from "@/lib/queries";
 import { formatClassSchedule } from "@/lib/types";
+import { IconAlert, IconClasses, IconSearch, SubjectIcon } from "@/components/icons";
+import {
+  Avatar,
+  Card,
+  DetailLink,
+  EmptyState,
+  MetricCard,
+  PageHeader,
+  ProgressBar,
+  StatusChip,
+  TableShell,
+  Th,
+  btn,
+  field,
+  packageTone,
+} from "@/components/ui";
 import NewClassForm from "./new-class-form";
 import ClassStatusBadge from "./status-badge";
 
-export default async function ClassesPage() {
-  const classes = annotateSchedule(listClasses());
+type SP = { q?: string; status?: string; teacherId?: string };
+
+export default async function ClassesPage({ searchParams }: { searchParams: Promise<SP> }) {
+  const sp = await searchParams;
   const teachers = listTeachers(false);
+  const all = annotateSchedule(listClasses());
+
+  const q = (sp.q || "").trim().toLowerCase();
+  const classes = all.filter((c) => {
+    if (q && !c.student_name.toLowerCase().includes(q)) return false;
+    if (sp.status && c.status !== sp.status) return false;
+    if (sp.teacherId && String(c.teacher_id ?? "") !== sp.teacherId) return false;
+    return true;
+  });
+
+  const activeCount = all.filter((c) => c.status === "active").length;
+  const missedCount = all.filter((c) => c.missedLastSession).length;
+  const unassigned = all.filter((c) => c.status === "active" && !c.teacher_id).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-900">Lớp học ({classes.length})</h1>
+    <div className="space-y-5">
+      <PageHeader
+        title="Lớp học"
+        subtitle="Toàn bộ lớp theo lịch tuần, kèm tiến độ gói học và cảnh báo chưa điểm danh."
+        action={<NewClassForm teachers={teachers} />}
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <MetricCard
+          label="Tổng số lớp"
+          value={all.length}
+          unit="lớp"
+          icon={<IconClasses className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Đang học"
+          value={activeCount}
+          unit="lớp"
+          tone="mint"
+          icon={<IconClasses className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Chưa xếp giáo viên"
+          value={unassigned}
+          unit="lớp"
+          tone={unassigned ? "amber" : "navy"}
+          href="/admin/assign"
+          icon={<IconClasses className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Chưa điểm danh buổi gần nhất"
+          value={missedCount}
+          unit="lớp"
+          tone={missedCount ? "coral" : "navy"}
+          icon={<IconAlert className="w-5 h-5" />}
+        />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-left">
+      <Card padded={false}>
+        <form className="p-4 border-b border-navy-100 flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+            <input
+              name="q"
+              defaultValue={sp.q || ""}
+              placeholder="Tìm học viên..."
+              className={`${field} pl-9`}
+              aria-label="Tìm học viên"
+            />
+          </div>
+          <select
+            name="status"
+            defaultValue={sp.status || ""}
+            className={`${field} w-auto`}
+            aria-label="Lọc theo trạng thái"
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="active">Đang học</option>
+            <option value="paused">Tạm dừng</option>
+            <option value="ended">Đã kết thúc</option>
+          </select>
+          <select
+            name="teacherId"
+            defaultValue={sp.teacherId || ""}
+            className={`${field} w-auto`}
+            aria-label="Lọc theo giáo viên"
+          >
+            <option value="">Tất cả giáo viên</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <button type="submit" className={btn.primary}>
+            Lọc
+          </button>
+          {(sp.q || sp.status || sp.teacherId) && (
+            <Link href="/admin/classes" className={`${btn.ghost} text-coral-600`}>
+              Xoá lọc
+            </Link>
+          )}
+        </form>
+
+        {classes.length === 0 ? (
+          <EmptyState
+            icon={<IconClasses className="w-6 h-6" />}
+            title="Chưa có lớp học nào"
+            description="Thêm lớp mới hoặc bỏ bớt điều kiện lọc để xem danh sách."
+            action={<NewClassForm teachers={teachers} />}
+          />
+        ) : (
+          <TableShell>
+            <thead>
               <tr>
-                <th className="px-4 py-2.5 font-medium">Học sinh</th>
-                <th className="px-4 py-2.5 font-medium">Môn / Ngôn ngữ</th>
-                <th className="px-4 py-2.5 font-medium">Trình độ</th>
-                <th className="px-4 py-2.5 font-medium">Lịch học</th>
-                <th className="px-4 py-2.5 font-medium">Buổi tiếp theo</th>
-                <th className="px-4 py-2.5 font-medium">Gói học</th>
-                <th className="px-4 py-2.5 font-medium">Giáo viên</th>
-                <th className="px-4 py-2.5 font-medium">Trạng thái</th>
-                <th className="px-4 py-2.5 font-medium"></th>
+                <Th>Học viên</Th>
+                <Th>Bộ môn</Th>
+                <Th>Lịch học</Th>
+                <Th>Buổi tiếp theo</Th>
+                <Th>Gói học</Th>
+                <Th>Giáo viên</Th>
+                <Th>Trạng thái</Th>
+                <Th />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-navy-100">
               {classes.map((c) => {
                 const progress = getPackageProgress(c);
                 return (
-                  <tr key={c.id} className={c.missedLastSession ? "bg-red-50 hover:bg-red-100" : "hover:bg-slate-50"}>
-                    <td className="px-4 py-2.5 font-medium text-slate-900">
-                      {c.student_name}
-                      {c.guardian_name && (
-                        <span className="block text-xs font-normal text-slate-400">
-                          PH: {c.guardian_name}
-                        </span>
-                      )}
+                  <tr
+                    key={c.id}
+                    className={c.missedLastSession ? "bg-coral-50/40" : "hover:bg-ivory-50"}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={c.student_name} className="w-8 h-8 text-[11px]" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-ink-900 truncate">
+                            {c.student_name}
+                            {c.language === "en" && (
+                              <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-navy-50 text-navy-700 align-middle">
+                                EN
+                              </span>
+                            )}
+                          </p>
+                          {c.guardian_name && (
+                            <p className="text-xs text-ink-400 truncate">PH: {c.guardian_name}</p>
+                          )}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-4 py-2.5 text-slate-600">
-                      {c.subject}
-                      {c.language === "en" && (
-                        <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">
-                          EN
-                        </span>
-                      )}
+                    <td className="px-4 py-3 text-ink-700">
+                      <span className="flex items-center gap-1.5 whitespace-nowrap">
+                        <SubjectIcon subject={c.subject} className="w-4 h-4 text-wood-500" />
+                        {c.subject}
+                      </span>
+                      {c.level && <span className="block text-xs text-ink-400">{c.level}</span>}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-600">{c.level || "-"}</td>
-                    <td className="px-4 py-2.5 text-slate-600">{formatClassSchedule(c)}</td>
-                    <td className="px-4 py-2.5">
-                      <span className="text-slate-600">
-                        {c.schedule_type === "flexible" ? "-" : c.nextSessionDate}
+                    <td className="px-4 py-3 text-ink-700 tabular whitespace-nowrap">
+                      {formatClassSchedule(c)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-ink-700 tabular">
+                        {c.schedule_type === "flexible" ? "–" : c.nextSessionDate}
                       </span>
                       {c.missedLastSession && (
-                        <span className="block text-xs font-medium text-red-600">
-                          ⚠ Chưa điểm danh buổi {c.lastDueDate}
+                        <span className="flex items-center gap-1 text-xs font-medium text-coral-600 mt-0.5">
+                          <IconAlert className="w-3.5 h-3.5" />
+                          Chưa điểm danh buổi {c.lastDueDate}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-600">
+                    <td className="px-4 py-3 min-w-[130px]">
                       {progress ? (
-                        <span className={progress.remaining <= 3 ? "text-amber-600 font-medium" : ""}>
-                          {progress.used}/{progress.total} tiết
-                        </span>
+                        <>
+                          <span className="text-xs text-ink-500 tabular">
+                            {progress.used}/{progress.total} tiết · còn {progress.remaining}
+                          </span>
+                          <ProgressBar
+                            value={progress.used}
+                            max={progress.total}
+                            tone={packageTone(progress.remaining)}
+                            className="mt-1"
+                          />
+                        </>
                       ) : (
-                        "-"
+                        <span className="text-ink-400">Không theo gói</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-600">
-                      {c.teacher_name || (
-                        <span className="text-amber-600">Chưa xếp GV</span>
-                      )}
+                    <td className="px-4 py-3 text-ink-700 whitespace-nowrap">
+                      {c.teacher_name || <StatusChip tone="amber">Chưa xếp GV</StatusChip>}
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-3">
                       <ClassStatusBadge status={c.status} />
                     </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <Link href={`/admin/classes/${c.id}`} className="text-gold-600 hover:underline">
-                        Chi tiết
-                      </Link>
+                    <td className="px-4 py-3 text-right">
+                      <DetailLink href={`/admin/classes/${c.id}`} />
                     </td>
                   </tr>
                 );
               })}
-              {classes.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-4 py-6 text-center text-slate-500">
-                    Chưa có lớp học nào.
-                  </td>
-                </tr>
-              )}
             </tbody>
-          </table>
-        </div>
-      </div>
+          </TableShell>
+        )}
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 max-w-xl">
-        <h2 className="font-semibold text-slate-900 mb-3">Thêm lớp học mới</h2>
-        <NewClassForm teachers={teachers} />
-      </div>
+        {classes.length > 0 && (
+          <div className="px-4 py-3 border-t border-navy-100 text-sm text-ink-500 tabular">
+            Hiển thị {classes.length} / {all.length} lớp
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

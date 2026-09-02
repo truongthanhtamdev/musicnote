@@ -72,7 +72,7 @@ export function TopNav({
             <form action={logoutAction}>
               <button
                 type="submit"
-                className="text-sm text-neutral-400 hover:text-red-400 border border-neutral-700 hover:border-red-900 rounded-md px-3 py-1.5 transition"
+                className="text-sm text-neutral-400 hover:text-coral-300 border border-neutral-700 hover:border-coral-700 rounded-md px-3 py-1.5 transition"
               >
                 Đăng xuất
               </button>

@@ -28,32 +28,32 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
           defaultValue={cls.student_name}
           required
           placeholder="Tên học sinh"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm col-span-2"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm col-span-2"
         />
         <input
           name="student_phone"
           defaultValue={cls.student_phone || ""}
           placeholder="SĐT học sinh/PH"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
         <input
           name="guardian_name"
           defaultValue={cls.guardian_name || ""}
           placeholder="Tên phụ huynh (nếu HS là trẻ em)"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
         <input
           name="level"
           defaultValue={cls.level || ""}
           placeholder="Trình độ"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
         <input
           name="subject"
           list="subject-suggestions"
           defaultValue={cls.subject}
           placeholder="Môn học"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
         <datalist id="subject-suggestions">
           {SUBJECT_SUGGESTIONS.map((s) => (
@@ -63,7 +63,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
         <select
           name="language"
           defaultValue={cls.language}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         >
           {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
             <option key={v} value={v}>
@@ -72,7 +72,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
           ))}
         </select>
         <div className="col-span-2">
-          <label className="block text-xs text-slate-500 mb-1">Lịch học</label>
+          <label className="block text-xs text-ink-500 mb-1">Lịch học</label>
           <div className="flex gap-4 text-sm">
             {(Object.entries(SCHEDULE_TYPE_LABELS) as [ClassScheduleType, string][]).map(
               ([v, label]) => (
@@ -95,7 +95,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
             <select
               name="day_of_week"
               defaultValue={cls.day_of_week}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
             >
               {DAY_ORDER.map((d) => (
                 <option key={d} value={d}>
@@ -108,14 +108,14 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
               type="time"
               defaultValue={cls.start_time}
               required
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
             />
           </>
         )}
         <select
           name="duration_minutes"
           defaultValue={String(cls.duration_minutes)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm col-span-2"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm col-span-2"
         >
           <option value="30">30 phút</option>
           <option value="45">45 phút</option>
@@ -126,15 +126,15 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
           name="notes"
           defaultValue={cls.notes || ""}
           placeholder="Ghi chú"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm col-span-2"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm col-span-2"
         />
       </div>
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state.success && <p className="text-sm text-emerald-600">Đã lưu thay đổi.</p>}
+      {state.error && <p className="text-sm text-coral-600">{state.error}</p>}
+      {state.success && <p className="text-sm text-mint-600">Đã lưu thay đổi.</p>}
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="bg-wood-500 hover:bg-wood-600 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
       >
         {pending ? "Đang lưu..." : "Lưu thay đổi"}
       </button>

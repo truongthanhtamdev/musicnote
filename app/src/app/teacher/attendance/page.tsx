@@ -3,6 +3,18 @@ import { getSession } from "@/lib/auth";
 import { listAttendance, listClassesForTeacher, getClass } from "@/lib/queries";
 import { addDays, toISODate, todayISO } from "@/lib/format";
 import { formatClassSchedule, CLASS_STATUS_LABELS } from "@/lib/types";
+import { IconCalendarCheck, IconCheckCircle, IconFilter } from "@/components/icons";
+import {
+  Card,
+  EmptyState,
+  MetricCard,
+  PageHeader,
+  TableShell,
+  Th,
+  btn,
+  field,
+  label,
+} from "@/components/ui";
 import MakeupAttendanceForm from "./makeup-attendance-form";
 import TeacherAttendanceHistoryRow from "./history-row";
 
@@ -32,84 +44,104 @@ export default async function TeacherAttendanceHistoryPage({
   }));
   // The filtered rows already carry the student's name; only fall back to
   // a lookup when there's no attendance yet to read it from.
-  const filteredStudentName = classId ? (rows[0]?.student_name ?? getClass(classId)?.student_name) : null;
+  const filteredStudentName = classId
+    ? (rows[0]?.student_name ?? getClass(classId)?.student_name)
+    : null;
+
+  const taught = rows.filter((r) => r.status === "completed").length;
+  const trials = rows.filter((r) => r.is_trial).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-xl font-bold text-slate-900">
-          Lịch sử điểm danh
-          {filteredStudentName && (
+    <div className="space-y-5">
+      <PageHeader
+        title="Lịch sử điểm danh"
+        subtitle={
+          filteredStudentName ? (
             <>
-              {" · "}
-              <span className="text-gold-700">{filteredStudentName}</span>
+              Đang xem riêng học viên{" "}
+              <span className="font-semibold text-wood-700">{filteredStudentName}</span> ·{" "}
+              <Link href="/teacher/attendance" className="text-wood-600 hover:underline">
+                xem tất cả học viên
+              </Link>
             </>
-          )}
-        </h1>
-        <div className="flex items-center gap-3">
-          {classId && (
-            <Link href="/teacher/attendance" className="text-sm text-slate-500 hover:underline">
-              Xem tất cả học viên
-            </Link>
-          )}
-          <MakeupAttendanceForm classes={myClasses} />
-        </div>
+          ) : (
+            "Toàn bộ buổi bạn đã ghi nhận, kể cả buổi học bù và buổi học thử."
+          )
+        }
+        action={<MakeupAttendanceForm classes={myClasses} />}
+      />
+
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <MetricCard
+          label="Tổng buổi ghi nhận"
+          value={rows.length}
+          unit="buổi"
+          icon={<IconCalendarCheck className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Đã dạy"
+          value={taught}
+          unit="buổi"
+          tone="mint"
+          icon={<IconCheckCircle className="w-5 h-5" />}
+        />
+        <MetricCard label="Buổi học thử" value={trials} unit="buổi" tone="wood" />
       </div>
 
-      <form className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap gap-3 items-end">
-        {classId && <input type="hidden" name="classId" value={classId} />}
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Từ ngày</label>
-          <input
-            type="date"
-            name="from"
-            defaultValue={from || ""}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Đến ngày</label>
-          <input
-            type="date"
-            name="to"
-            defaultValue={to}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-lg px-4 py-2"
-        >
-          Lọc
-        </button>
-      </form>
+      <Card padded={false}>
+        <form className="p-4 border-b border-navy-100 flex flex-wrap gap-3 items-end">
+          {classId && <input type="hidden" name="classId" value={classId} />}
+          <div>
+            <label className={label} htmlFor="t-from">
+              Từ ngày
+            </label>
+            <input
+              id="t-from"
+              type="date"
+              name="from"
+              defaultValue={from || ""}
+              className={`${field} w-auto`}
+            />
+          </div>
+          <div>
+            <label className={label} htmlFor="t-to">
+              Đến ngày
+            </label>
+            <input id="t-to" type="date" name="to" defaultValue={to} className={`${field} w-auto`} />
+          </div>
+          <button type="submit" className={btn.primary}>
+            <IconFilter className="w-4 h-4" />
+            Lọc
+          </button>
+        </form>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600 text-left">
-            <tr>
-              <th className="px-4 py-2.5 font-medium">Ngày</th>
-              <th className="px-4 py-2.5 font-medium">Học sinh</th>
-              <th className="px-4 py-2.5 font-medium">Trạng thái</th>
-              <th className="px-4 py-2.5 font-medium">Giờ</th>
-              <th className="px-4 py-2.5 font-medium">Nội dung bài học</th>
-              <th className="px-4 py-2.5 font-medium">Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.map((a) => (
-              <TeacherAttendanceHistoryRow key={a.id} row={a} />
-            ))}
-            {rows.length === 0 && (
+        {rows.length === 0 ? (
+          <EmptyState
+            icon={<IconCalendarCheck className="w-6 h-6" />}
+            title="Chưa có buổi nào trong khoảng này"
+            description="Thử mở rộng khoảng ngày, hoặc thêm buổi học bù nếu bạn vừa dạy ngoài lịch."
+          />
+        ) : (
+          <TableShell>
+            <thead>
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
-                  Không có dữ liệu.
-                </td>
+                <Th>Ngày</Th>
+                <Th>Học viên</Th>
+                <Th>Trạng thái</Th>
+                <Th>Giờ điểm danh</Th>
+                <Th>Nội dung bài học</Th>
+                <Th>Ghi chú</Th>
+                <Th />
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-navy-100">
+              {rows.map((a) => (
+                <TeacherAttendanceHistoryRow key={a.id} row={a} />
+              ))}
+            </tbody>
+          </TableShell>
+        )}
+      </Card>
     </div>
   );
 }

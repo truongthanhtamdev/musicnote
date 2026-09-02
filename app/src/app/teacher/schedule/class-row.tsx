@@ -8,6 +8,7 @@ import type { FormState } from "@/actions/teachers";
 import {
   DAY_LABELS,
   DAY_ORDER,
+  DURATION_OPTIONS,
   SUBJECT_SUGGESTIONS,
   LANGUAGE_LABELS,
   SCHEDULE_TYPE_LABELS,
@@ -16,6 +17,8 @@ import {
   type ClassScheduleType,
 } from "@/lib/types";
 import type { PackageProgress } from "@/lib/queries";
+import { IconAlert, SubjectIcon } from "@/components/icons";
+import { ProgressBar, btn, field, packageTone } from "@/components/ui";
 
 const initialState: FormState = {};
 
@@ -39,77 +42,105 @@ export default function TeacherClassRow({
 
   if (!editing) {
     return (
-      <li className="py-2">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-800">
-            {cls.student_name}
-            <span className="text-slate-400 text-xs ml-1.5">
+      <li className="px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-medium text-ink-900 truncate">
+              {cls.student_name}
+              {cls.language === "en" && (
+                <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-navy-50 text-navy-700 align-middle">
+                  EN
+                </span>
+              )}
+            </p>
+            <p className="text-sm text-ink-500 flex items-center gap-1.5 mt-0.5">
+              <SubjectIcon subject={cls.subject} className="w-4 h-4 text-wood-500" />
+              <span className="tabular">{formatClassSchedule(cls)}</span>
+              <span className="text-ink-300">·</span>
               {cls.subject}
-              {cls.language === "en" ? " · EN" : ""}
-            </span>
-          </span>
-          <div className="flex items-center gap-3">
-            <span className="text-slate-500 text-sm">{formatClassSchedule(cls)}</span>
+            </p>
+            {progress && (
+              <div className="mt-2 max-w-[220px]">
+                <p className="text-xs text-ink-500 mb-1">
+                  <UsedSessionsEditor progress={progress} size="xs" />
+                  <span
+                    className={
+                      progress.remaining <= 3 ? "text-coral-600 font-medium" : "text-ink-500"
+                    }
+                  >
+                    {" "}
+                    · còn {progress.remaining}
+                  </span>
+                </p>
+                <ProgressBar
+                  value={progress.used}
+                  max={progress.total}
+                  tone={packageTone(progress.remaining)}
+                />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
             <Link
               href={`/teacher/attendance?classId=${cls.id}`}
-              className="text-gold-600 hover:underline text-sm"
+              className="text-sm font-semibold text-ink-500 hover:text-wood-600"
             >
               Lịch sử
             </Link>
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-gold-600 hover:underline text-sm"
+              className="text-sm font-semibold text-wood-600 hover:text-wood-700"
             >
               Sửa
             </button>
           </div>
         </div>
-        {progress && (
-          <div
-            className={`text-xs mt-0.5 ${progress.remaining <= 3 ? "text-amber-600 font-medium" : "text-slate-500"}`}
-          >
-            <UsedSessionsEditor progress={progress} size="xs" /> · Còn {progress.remaining}
-          </div>
-        )}
       </li>
     );
   }
 
   return (
-    <li className="py-3 border-t border-slate-100 first:border-t-0">
-      <form action={formAction} className="space-y-2">
+    <li className="px-4 py-3 bg-ivory-50">
+      <form action={formAction} className="space-y-3">
         <input type="hidden" name="id" value={cls.id} />
         <input
           name="student_name"
           defaultValue={cls.student_name}
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Tên học sinh"
+          className={field}
+          placeholder="Tên học viên"
+          aria-label="Tên học viên"
         />
+
         <div className="grid grid-cols-2 gap-2">
-          <div className="col-span-2 flex gap-4 text-sm">
-            {(Object.entries(SCHEDULE_TYPE_LABELS) as [ClassScheduleType, string][]).map(
-              ([v, label]) => (
-                <label key={v} className="flex items-center gap-1.5">
-                  <input
-                    type="radio"
-                    name="schedule_type"
-                    value={v}
-                    checked={scheduleType === v}
-                    onChange={() => setScheduleType(v)}
-                  />{" "}
-                  {label}
-                </label>
-              )
-            )}
-          </div>
+          {(Object.entries(SCHEDULE_TYPE_LABELS) as [ClassScheduleType, string][]).map(
+            ([v, text]) => (
+              <label key={v} className="block">
+                <input
+                  type="radio"
+                  name="schedule_type"
+                  value={v}
+                  checked={scheduleType === v}
+                  onChange={() => setScheduleType(v)}
+                  className="peer sr-only"
+                />
+                <span className="block text-center border border-navy-200 rounded-xl py-2 px-2 text-xs font-semibold text-ink-700 transition cursor-pointer hover:border-navy-300 peer-checked:border-wood-400 peer-checked:bg-wood-50 peer-checked:text-wood-700">
+                  {text}
+                </span>
+              </label>
+            )
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5">
           {scheduleType === "fixed" && (
             <>
               <select
                 name="day_of_week"
                 defaultValue={cls.day_of_week}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={field}
+                aria-label="Thứ học"
               >
                 {DAY_ORDER.map((d) => (
                   <option key={d} value={d}>
@@ -122,44 +153,51 @@ export default function TeacherClassRow({
                 type="time"
                 defaultValue={cls.start_time}
                 required
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={field}
+                aria-label="Giờ bắt đầu"
               />
             </>
           )}
           <select
             name="duration_minutes"
             defaultValue={String(cls.duration_minutes)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm col-span-2"
+            className={`${field} col-span-2`}
+            aria-label="Thời lượng"
           >
-            <option value="30">30 phút</option>
-            <option value="45">45 phút</option>
-            <option value="60">60 phút</option>
-            <option value="90">90 phút</option>
+            {DURATION_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {n} phút
+              </option>
+            ))}
           </select>
           <input
             name="student_phone"
             defaultValue={cls.student_phone || ""}
             placeholder="SĐT"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={field}
+            aria-label="Số điện thoại"
           />
           <input
             name="guardian_name"
             defaultValue={cls.guardian_name || ""}
             placeholder="Tên phụ huynh"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={field}
+            aria-label="Tên phụ huynh"
           />
           <input
             name="level"
             defaultValue={cls.level || ""}
             placeholder="Trình độ"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={field}
+            aria-label="Trình độ"
           />
           <input
             name="subject"
             list="subject-suggestions"
             defaultValue={cls.subject}
-            placeholder="Môn học"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Bộ môn"
+            className={field}
+            aria-label="Bộ môn"
           />
           <datalist id="subject-suggestions">
             {SUBJECT_SUGGESTIONS.map((s) => (
@@ -169,11 +207,12 @@ export default function TeacherClassRow({
           <select
             name="language"
             defaultValue={cls.language}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={field}
+            aria-label="Ngôn ngữ"
           >
-            {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
+            {Object.entries(LANGUAGE_LABELS).map(([v, text]) => (
               <option key={v} value={v}>
-                {label}
+                {text}
               </option>
             ))}
           </select>
@@ -181,23 +220,23 @@ export default function TeacherClassRow({
             name="notes"
             defaultValue={cls.notes || ""}
             placeholder="Ghi chú"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm col-span-2"
+            className={`${field} col-span-2`}
+            aria-label="Ghi chú"
           />
         </div>
-        {state.error && <p className="text-xs text-red-600">{state.error}</p>}
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={pending}
-            className="text-sm bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white rounded-lg px-3 py-1.5"
-          >
+
+        {state.error && (
+          <p className="text-xs text-coral-700 flex items-center gap-1.5">
+            <IconAlert className="w-3.5 h-3.5" />
+            {state.error}
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="submit" disabled={pending} className={btn.primary}>
             {pending ? "Đang lưu..." : "Lưu"}
           </button>
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="text-sm text-slate-500 hover:text-slate-700"
-          >
+          <button type="button" onClick={() => setEditing(false)} className={btn.ghost}>
             Huỷ
           </button>
           <button
@@ -208,7 +247,7 @@ export default function TeacherClassRow({
                 startDeleteTransition(() => deleteClassAction(cls.id));
               }
             }}
-            className="text-sm text-red-600 hover:underline ml-auto disabled:opacity-60"
+            className={`${btn.danger} ml-auto`}
           >
             {isDeleting ? "Đang xoá..." : "Xoá lớp"}
           </button>

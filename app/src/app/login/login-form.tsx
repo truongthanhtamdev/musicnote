@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { loginAction, type LoginState } from "@/actions/auth";
+import { IconAlert } from "@/components/icons";
+import { btn, field, label } from "@/components/ui";
 
 const initialState: LoginState = {};
 
@@ -12,38 +14,44 @@ export default function LoginForm({ next }: { next: string }) {
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="next" value={next} />
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Email hoặc SĐT</label>
+        <label className={label} htmlFor="login-email">
+          Email hoặc số điện thoại
+        </label>
         <input
+          id="login-email"
           name="email"
           type="text"
           required
           autoFocus
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
+          className={field}
           placeholder="ban@musicnote.local"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Mật khẩu</label>
+        <label className={label} htmlFor="login-password">
+          Mật khẩu
+        </label>
         <input
+          id="login-password"
           name="password"
           type="password"
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
+          className={field}
           placeholder="••••••••"
         />
       </div>
+
       {state.error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <p className="text-sm text-coral-700 bg-coral-50 border border-coral-100 rounded-xl px-3 py-2 flex items-center gap-2">
+          <IconAlert className="w-4 h-4 shrink-0" />
           {state.error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white font-medium rounded-lg px-3 py-2 text-sm transition"
-      >
+
+      <button type="submit" disabled={pending} className={`${btn.primary} w-full py-3 text-base`}>
         {pending ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
+
     </form>
   );
 }

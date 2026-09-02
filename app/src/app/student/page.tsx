@@ -1,88 +1,112 @@
 import { getSession } from "@/lib/auth";
 import { listClassesForStudent, getPackageProgress, listAttendance } from "@/lib/queries";
+import { toISODate, nextOccurrence } from "@/lib/format";
 import { ATTENDANCE_STATUS_LABELS, formatClassSchedule } from "@/lib/types";
+import { IconMusic, SubjectIcon } from "@/components/icons";
+import { Card, EmptyState, ProgressBar, StatusChip, packageTone } from "@/components/ui";
 
 export default async function StudentHomePage() {
   const session = await getSession();
   const classes = listClassesForStudent(session!.userId);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Chào {session!.name} 👋</h1>
-        <p className="text-slate-500 text-sm mt-1">Lịch học, tiến độ và nội dung bài học của bạn.</p>
-      </div>
+    <div className="space-y-5">
+      <section className="rounded-2xl bg-navy-950 text-white px-5 py-6 sm:px-7">
+        <h1 className="text-2xl font-bold tracking-tight">Chào {session!.name}</h1>
+        <p className="text-navy-200 text-sm mt-1">
+          Lịch học, tiến độ gói và nội dung bài học của bạn.
+        </p>
+      </section>
 
       {classes.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-500">
-          <p className="text-3xl mb-2">🎵</p>
-          <p>Chưa có lớp học nào được gắn với tài khoản của bạn. Liên hệ trung tâm để được hỗ trợ.</p>
-        </div>
+        <Card padded={false}>
+          <EmptyState
+            icon={<IconMusic className="w-7 h-7" />}
+            title="Chưa có lớp học nào gắn với tài khoản của bạn"
+            description="Liên hệ trung tâm để được hỗ trợ kết nối lớp học vào tài khoản này."
+          />
+        </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {classes.map((c) => {
             const progress = getPackageProgress(c);
             const history = listAttendance({ classId: c.id })
               .filter((a) => a.lesson_content)
               .slice(0, 8);
+            const nextDate =
+              c.schedule_type === "fixed" ? toISODate(nextOccurrence(c.day_of_week)) : null;
             return (
-              <div key={c.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
-                <div>
-                  <p className="font-semibold text-slate-900">
-                    {c.subject}
-                    {c.level ? ` · ${c.level}` : ""}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {formatClassSchedule(c)} · GV: {c.teacher_name || "Chưa xếp"}
-                  </p>
+              <Card key={c.id} padded={false}>
+                <div className="p-5 flex flex-wrap items-start justify-between gap-3 border-b border-navy-100">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink-900 flex items-center gap-2">
+                      <SubjectIcon subject={c.subject} className="w-5 h-5 text-wood-500" />
+                      {c.subject}
+                      {c.level ? ` · ${c.level}` : ""}
+                    </p>
+                    <p className="text-sm text-ink-500 mt-1 tabular">
+                      {formatClassSchedule(c)} · Giáo viên: {c.teacher_name || "Chưa xếp"}
+                    </p>
+                  </div>
+                  {nextDate ? (
+                    <StatusChip tone="navy">Buổi tới: {nextDate}</StatusChip>
+                  ) : (
+                    <StatusChip tone="neutral">Lịch linh động</StatusChip>
+                  )}
                 </div>
 
                 {progress && (
-                  <div>
-                    <div className="flex items-baseline justify-between mb-1">
-                      <span className="text-sm text-slate-600">
-                        Đã học <span className="font-semibold text-slate-900">{progress.used}</span> /{" "}
+                  <div className="px-5 py-4 border-b border-navy-100">
+                    <div className="flex items-baseline justify-between mb-1.5">
+                      <span className="text-sm text-ink-600 tabular">
+                        Đã học <span className="font-semibold text-ink-900">{progress.used}</span> /{" "}
                         {progress.total} tiết
                       </span>
                       <span
-                        className={`text-xs font-medium ${
-                          progress.remaining <= 3 ? "text-amber-600" : "text-slate-400"
+                        className={`text-sm font-semibold tabular ${
+                          progress.remaining <= 3
+                            ? "text-coral-600"
+                            : progress.remaining <= 5
+                              ? "text-amber-700"
+                              : "text-ink-500"
                         }`}
                       >
                         Còn {progress.remaining} tiết
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${
-                          progress.remaining <= 3 ? "bg-amber-500" : "bg-gold-600"
-                        }`}
-                        style={{ width: `${Math.min(100, (progress.used / progress.total) * 100)}%` }}
-                      />
-                    </div>
+                    <ProgressBar
+                      value={progress.used}
+                      max={progress.total}
+                      tone={packageTone(progress.remaining)}
+                    />
+                    {progress.remaining <= 3 && (
+                      <p className="text-xs text-coral-600 mt-2">
+                        Gói học sắp hết — liên hệ trung tâm để gia hạn.
+                      </p>
+                    )}
                   </div>
                 )}
 
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                <div className="p-5">
+                  <h3 className="text-sm font-semibold text-ink-700 mb-3">
                     Nội dung các buổi học gần đây
                   </h3>
                   {history.length === 0 ? (
-                    <p className="text-sm text-slate-400">Chưa có nội dung nào được ghi lại.</p>
+                    <p className="text-sm text-ink-400">Chưa có nội dung nào được ghi lại.</p>
                   ) : (
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {history.map((a) => (
-                        <li key={a.id} className="text-sm border-l-2 border-gold-200 pl-3">
-                          <p className="text-slate-500 text-xs">
+                        <li key={a.id} className="text-sm border-l-2 border-wood-200 pl-3.5">
+                          <p className="text-ink-400 text-xs tabular">
                             {a.session_date} · {ATTENDANCE_STATUS_LABELS[a.status]}
                           </p>
-                          <p className="text-slate-700">{a.lesson_content}</p>
+                          <p className="text-ink-700 mt-0.5">{a.lesson_content}</p>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

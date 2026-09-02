@@ -12,7 +12,7 @@ export default function DeleteExpenseButton({ id }: { id: number }) {
       onClick={() => {
         if (confirm("Xoá khoản chi phí này?")) startTransition(() => deleteExpenseAction(id));
       }}
-      className="text-xs text-red-600 hover:underline disabled:opacity-60"
+      className="text-xs text-coral-600 hover:underline disabled:opacity-60"
     >
       Xoá
     </button>

@@ -18,38 +18,38 @@ export default function PackageWidget({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <h2 className="font-semibold text-slate-900 mb-3">Gói học</h2>
+    <div className="bg-white rounded-2xl border border-navy-100 p-4">
+      <h2 className="font-semibold text-ink-900 mb-3">Gói học</h2>
       {progress ? (
         <div className="mb-3">
           <div className="flex items-baseline justify-between mb-1">
             <UsedSessionsEditor progress={progress} size="sm" />
             <span
               className={`text-xs font-medium ${
-                progress.remaining <= 3 ? "text-amber-600" : "text-slate-400"
+                progress.remaining <= 3 ? "text-amber-600" : "text-ink-400"
               }`}
             >
               Còn {progress.remaining} tiết
             </span>
           </div>
-          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div className="h-2 rounded-full bg-ivory-200 overflow-hidden">
             <div
               className={`h-full rounded-full ${
-                progress.remaining <= 3 ? "bg-amber-500" : "bg-gold-600"
+                progress.remaining <= 3 ? "bg-amber-500" : "bg-wood-500"
               }`}
               style={{ width: `${Math.min(100, (progress.used / progress.total) * 100)}%` }}
             />
           </div>
-          <p className="text-xs text-slate-400 mt-1">Bắt đầu tính từ {progress.startedAt}</p>
+          <p className="text-xs text-ink-400 mt-1">Bắt đầu tính từ {progress.startedAt}</p>
           {progress.sharedWith.length > 0 && (
-            <p className="text-xs text-gold-600 mt-1">
+            <p className="text-xs text-wood-600 mt-1">
               Dùng chung gói với {progress.sharedWith.length} lịch học khác của học viên này —
               học buổi nào cũng trừ chung vào {progress.total} tiết trên.
             </p>
           )}
         </div>
       ) : (
-        <p className="text-sm text-slate-500 mb-3">Lớp học đều đặn hàng tuần, không theo gói.</p>
+        <p className="text-sm text-ink-500 mb-3">Lớp học đều đặn hàng tuần, không theo gói.</p>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <select
@@ -60,7 +60,7 @@ export default function PackageWidget({
               setPackageAction(classId, e.target.value ? Number(e.target.value) : null)
             )
           }
-          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+          className="rounded-xl border border-navy-200 px-2 py-1.5 text-sm"
         >
           <option value="">
             {progress ? "-- Đổi thành gói riêng mới --" : "Không theo gói"}
@@ -80,7 +80,7 @@ export default function PackageWidget({
                 startTransition(() => renewPackageAction(progress.packageId, progress.total));
               }
             }}
-            className="text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 rounded-lg px-3 py-1.5"
+            className="text-sm border border-navy-200 text-ink-600 hover:bg-ivory-100 rounded-lg px-3 py-1.5"
           >
             Gia hạn (làm mới)
           </button>
@@ -88,8 +88,8 @@ export default function PackageWidget({
       </div>
 
       {siblingsWithPackage.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-slate-100">
-          <label className="block text-xs text-slate-500 mb-1">
+        <div className="mt-3 pt-3 border-t border-navy-100">
+          <label className="block text-xs text-ink-500 mb-1">
             Học viên này có lịch học khác đã có gói — dùng chung gói đó (học 2-3 buổi/tuần
             cùng trừ vào 1 gói):
           </label>
@@ -99,7 +99,7 @@ export default function PackageWidget({
             onChange={(e) => {
               if (e.target.value) startTransition(() => sharePackageAction(classId, Number(e.target.value)));
             }}
-            className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            className="w-full rounded-xl border border-navy-200 px-2 py-1.5 text-sm"
           >
             <option value="">-- Chọn lịch học để dùng chung gói --</option>
             {siblingsWithPackage.map((s) => (

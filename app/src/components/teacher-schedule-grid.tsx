@@ -16,6 +16,8 @@ import {
   type ClassRow,
   type BusySlotRow,
 } from "@/lib/types";
+import { IconAlert, IconPlus, SubjectIcon } from "./icons";
+import { btn, field } from "./ui";
 
 const SLOT_MINUTES = 30;
 
@@ -87,18 +89,20 @@ function QuickAddCell({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full h-6 rounded hover:bg-gold-50 cursor-pointer"
+        className="group w-full h-7 rounded-md hover:bg-wood-50 border border-transparent hover:border-wood-200 transition flex items-center justify-center"
         aria-label={`Thêm lớp ${DAY_LABELS[dayOfWeek]} ${startTime}`}
-      />
+      >
+        <IconPlus className="w-3.5 h-3.5 text-wood-500 opacity-0 group-hover:opacity-100 transition" />
+      </button>
     );
   }
 
   return (
-    <div className="absolute z-10 bg-white border border-gold-300 rounded-lg shadow-lg p-3 w-64 -translate-y-1 text-left">
-      <p className="text-xs font-medium text-slate-700 mb-2">
-        Thêm lớp: {DAY_LABELS[dayOfWeek]} {startTime}
+    <div className="absolute z-20 bg-white border border-wood-300 rounded-2xl shadow-xl p-4 w-64 -translate-y-1 text-left">
+      <p className="text-xs font-semibold text-ink-700 mb-2.5">
+        Thêm lớp · {DAY_LABELS[dayOfWeek]} {startTime}
       </p>
-      <form action={formAction} className="space-y-1.5">
+      <form action={formAction} className="space-y-2">
         <input type="hidden" name="teacher_id" value={teacherId} />
         <input type="hidden" name="schedule_type" value="fixed" />
         <input type="hidden" name="slot_day" value={dayOfWeek} />
@@ -106,15 +110,17 @@ function QuickAddCell({
         <input
           name="student_name"
           required
-          placeholder="Tên học sinh"
-          className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          placeholder="Tên học viên"
+          aria-label="Tên học viên"
+          className={`${field} py-2`}
         />
         <input
           name="subject"
           list="grid-subject-suggestions"
           defaultValue="Guitar"
-          placeholder="Môn học"
-          className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          placeholder="Bộ môn"
+          aria-label="Bộ môn"
+          className={`${field} py-2`}
         />
         <datalist id="grid-subject-suggestions">
           {SUBJECT_SUGGESTIONS.map((s) => (
@@ -124,7 +130,8 @@ function QuickAddCell({
         <select
           name="slot_duration"
           defaultValue="60"
-          className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          aria-label="Thời lượng"
+          className={`${field} py-2`}
         >
           {DURATION_OPTIONS.map((n) => (
             <option key={n} value={n}>
@@ -135,7 +142,8 @@ function QuickAddCell({
         <select
           name="package_total_sessions"
           defaultValue=""
-          className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          aria-label="Gói học"
+          className={`${field} py-2`}
         >
           <option value="">Không theo gói</option>
           {PACKAGE_OPTIONS.map((n) => (
@@ -144,19 +152,24 @@ function QuickAddCell({
             </option>
           ))}
         </select>
-        {state.error && <p className="text-xs text-red-600">{state.error}</p>}
-        <div className="flex gap-1.5 pt-1">
+        {state.error && (
+          <p className="text-xs text-coral-700 flex items-center gap-1.5">
+            <IconAlert className="w-3.5 h-3.5 shrink-0" />
+            {state.error}
+          </p>
+        )}
+        <div className="flex gap-2 pt-0.5">
           <button
             type="submit"
             disabled={pending}
-            className="text-xs bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white rounded px-2 py-1"
+            className={`${btn.primary} px-3 py-1.5 text-xs flex-1`}
           >
-            {pending ? "Đang lưu..." : "Thêm"}
+            {pending ? "Đang lưu..." : "Thêm lớp"}
           </button>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="text-xs text-slate-500 hover:text-slate-700"
+            className={`${btn.ghost} px-2 py-1.5 text-xs`}
           >
             Huỷ
           </button>
@@ -167,7 +180,7 @@ function QuickAddCell({
 }
 
 /**
- * One merged day×time grid per teacher: a class occupies its slot (gold,
+ * One merged day×time grid per teacher: a class occupies its slot (wood,
  * clickable in admin mode), a slot the teacher marked busy shows grey, and
  * everything else is free. In "admin" mode, clicking a free cell quick-adds
  * a class there; in "self" mode (the teacher viewing their own schedule),
@@ -195,34 +208,36 @@ export function TeacherScheduleGrid({
 
   return (
     <div>
-      <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+      {/* Chú giải */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-500 mb-3">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3.5 h-3.5 rounded bg-gold-100 border border-gold-300" />{" "}
+          <span className="inline-block w-3.5 h-3.5 rounded bg-wood-100 border border-wood-300" />
           Lớp học
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3.5 h-3.5 rounded bg-slate-200 border border-slate-300" />{" "}
+          <span className="inline-block w-3.5 h-3.5 rounded bg-ivory-200 border border-navy-100" />
           Bận (cá nhân)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3.5 h-3.5 rounded bg-white border border-slate-200" /> Rảnh
-          — {mode === "self" ? "bấm để đánh dấu bận" : "bấm để thêm lớp mới"}
+          <span className="inline-block w-3.5 h-3.5 rounded bg-white border border-navy-100" />
+          Rảnh — {mode === "self" ? "bấm để đánh dấu bận" : "bấm để thêm lớp mới"}
         </span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-xs w-full">
+
+      <div className="overflow-x-auto scroll-thin rounded-2xl border border-navy-100">
+        <table className="border-collapse text-xs w-full min-w-[640px]">
           <thead>
-            <tr>
-              <th className="w-14 sticky left-0 bg-white"></th>
+            <tr className="bg-ivory-100">
+              <th className="w-16 sticky left-0 bg-ivory-100 z-10" />
               {DAY_ORDER.map((d) => (
-                <th key={d} className="px-1 py-1 font-medium text-slate-600">
+                <th key={d} className="px-1 py-2 font-semibold text-ink-700 border-l border-navy-100">
                   <div className="flex flex-col items-center gap-0.5">
                     <span>{DAY_LABELS[d]}</span>
                     {mode === "self" && (
                       <button
                         type="button"
                         onClick={() => startTransition(() => clearDayBusyAction(d))}
-                        className="text-[10px] text-slate-400 hover:text-red-500"
+                        className="text-[10px] font-medium text-ink-400 hover:text-coral-600 transition"
                         title="Bỏ hết đánh dấu bận trong ngày này"
                       >
                         rảnh cả ngày
@@ -234,87 +249,109 @@ export function TeacherScheduleGrid({
             </tr>
           </thead>
           <tbody>
-            {TIME_SLOTS.map((time, rowIdx) => (
-              <tr key={time}>
-                <td className="text-slate-500 pr-2 text-right sticky left-0 bg-white">{time}</td>
-                {DAY_ORDER.map((d) => {
-                  const cell = grid[d][rowIdx];
-                  if (cell.type === "continuation") return null;
+            {TIME_SLOTS.map((time, rowIdx) => {
+              const isHour = time.endsWith(":00");
+              return (
+                <tr key={time} className={isHour ? "border-t border-navy-100" : ""}>
+                  <td
+                    className={`pr-2 text-right sticky left-0 bg-white tabular ${
+                      isHour ? "text-ink-600 font-medium" : "text-ink-400"
+                    }`}
+                  >
+                    {isHour ? time : ""}
+                  </td>
+                  {DAY_ORDER.map((d) => {
+                    const cell = grid[d][rowIdx];
+                    if (cell.type === "continuation") return null;
 
-                  if (cell.type === "start") {
-                    const content = (
-                      <>
-                        <span className="block font-medium truncate">{cell.cls.student_name}</span>
-                        <span className="block text-[10px] text-gold-700 truncate">
-                          {cell.cls.subject}
-                        </span>
-                      </>
-                    );
+                    if (cell.type === "start") {
+                      const content = (
+                        <>
+                          <span className="flex items-center gap-1 font-semibold truncate">
+                            <SubjectIcon
+                              subject={cell.cls.subject}
+                              className="w-3 h-3 shrink-0 text-wood-600"
+                            />
+                            <span className="truncate">{cell.cls.student_name}</span>
+                          </span>
+                          <span className="block text-[10px] text-wood-700 truncate">
+                            {cell.cls.subject}
+                          </span>
+                        </>
+                      );
+                      return (
+                        <td
+                          key={d}
+                          rowSpan={cell.span}
+                          className="p-0.5 align-top border-l border-navy-100"
+                        >
+                          {mode === "admin" ? (
+                            <Link
+                              href={`/admin/classes/${cell.cls.id}`}
+                              className="block h-full rounded-md bg-wood-100 hover:bg-wood-200 border border-wood-300 px-1.5 py-1 text-wood-900 leading-tight transition"
+                            >
+                              {content}
+                            </Link>
+                          ) : (
+                            <div className="block h-full rounded-md bg-wood-100 border border-wood-300 px-1.5 py-1 text-wood-900 leading-tight">
+                              {content}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    }
+
+                    if (cell.type === "busy") {
+                      return (
+                        <td key={d} className="p-0.5 border-l border-navy-100">
+                          {mode === "self" ? (
+                            <button
+                              type="button"
+                              disabled={isPending}
+                              onClick={() => startTransition(() => toggleBusySlotAction(d, time))}
+                              className="w-full h-7 rounded-md bg-ivory-200 hover:bg-navy-100 border border-navy-100 text-ink-500 text-[10px] font-medium transition disabled:opacity-60"
+                              title="Bấm để bỏ đánh dấu bận"
+                            >
+                              Bận
+                            </button>
+                          ) : (
+                            <div className="w-full h-7 rounded-md bg-ivory-200 border border-navy-100 text-ink-400 text-[10px] font-medium flex items-center justify-center">
+                              Bận
+                            </div>
+                          )}
+                        </td>
+                      );
+                    }
+
                     return (
-                      <td key={d} rowSpan={cell.span} className="p-0.5 align-top">
+                      <td key={d} className="p-0.5 relative border-l border-navy-100">
                         {mode === "admin" ? (
-                          <Link
-                            href={`/admin/classes/${cell.cls.id}`}
-                            className="block h-full rounded bg-gold-100 hover:bg-gold-200 border border-gold-300 px-1.5 py-1 text-gold-900 leading-tight"
-                          >
-                            {content}
-                          </Link>
+                          <QuickAddCell teacherId={teacherId} dayOfWeek={d} startTime={time} />
                         ) : (
-                          <div className="block h-full rounded bg-gold-100 border border-gold-300 px-1.5 py-1 text-gold-900 leading-tight">
-                            {content}
-                          </div>
-                        )}
-                      </td>
-                    );
-                  }
-
-                  if (cell.type === "busy") {
-                    return (
-                      <td key={d} className="p-0.5">
-                        {mode === "self" ? (
                           <button
                             type="button"
                             disabled={isPending}
                             onClick={() => startTransition(() => toggleBusySlotAction(d, time))}
-                            className="w-full h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-500 text-[9px] leading-6"
-                            title="Bấm để bỏ đánh dấu bận"
-                          >
-                            Bận
-                          </button>
-                        ) : (
-                          <div className="w-full h-6 rounded bg-slate-200 text-slate-400 text-[9px] leading-6 text-center">
-                            Bận
-                          </div>
+                            className="w-full h-7 rounded-md border border-transparent hover:bg-ivory-100 hover:border-navy-100 transition disabled:opacity-60"
+                            aria-label={`Đánh dấu bận ${DAY_LABELS[d]} ${time}`}
+                          />
                         )}
                       </td>
                     );
-                  }
-
-                  return (
-                    <td key={d} className="p-0.5 relative">
-                      {mode === "admin" ? (
-                        <QuickAddCell teacherId={teacherId} dayOfWeek={d} startTime={time} />
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() => startTransition(() => toggleBusySlotAction(d, time))}
-                          className="w-full h-6 rounded hover:bg-slate-100 cursor-pointer"
-                          aria-label={`Đánh dấu bận ${DAY_LABELS[d]} ${time}`}
-                        />
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
       {flexibleClasses.length > 0 && (
-        <p className="text-xs text-slate-500 mt-2">
-          + {flexibleClasses.length} lớp Linh động (không có lịch cố định):{" "}
-          {flexibleClasses.map((c) => c.student_name).join(", ")}
+        <p className="text-xs text-ink-500 mt-3">
+          <span className="font-medium text-ink-700">
+            {flexibleClasses.length} lớp linh động
+          </span>{" "}
+          (không có lịch cố định): {flexibleClasses.map((c) => c.student_name).join(", ")}
         </p>
       )}
     </div>

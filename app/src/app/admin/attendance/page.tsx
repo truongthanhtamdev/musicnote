@@ -1,11 +1,24 @@
+import Link from "next/link";
 import { listAttendance, listTeachers } from "@/lib/queries";
 import { todayISO, addDays, toISODate } from "@/lib/format";
+import { IconAlert, IconCalendarCheck, IconCheckCircle, IconFilter } from "@/components/icons";
+import {
+  Card,
+  EmptyState,
+  MetricCard,
+  PageHeader,
+  TableShell,
+  Th,
+  btn,
+  field,
+  label,
+} from "@/components/ui";
 import AttendanceRow from "./attendance-row";
 
 export default async function AttendancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ teacherId?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ teacherId?: string; from?: string; to?: string; status?: string }>;
 }) {
   const sp = await searchParams;
   const teachers = listTeachers(true);
@@ -15,90 +28,155 @@ export default async function AttendancePage({
   const to = sp.to || todayISO();
   const teacherId = sp.teacherId ? Number(sp.teacherId) : undefined;
 
-  const rows = listAttendance({ teacherId, from, to });
+  const all = listAttendance({ teacherId, from, to });
+  const rows = sp.status
+    ? all.filter((a) =>
+        sp.status === "abnormal" ? a.status !== "completed" : a.status === "completed"
+      )
+    : all;
+
+  const doneCount = all.filter((a) => a.status === "completed").length;
+  const abnormal = all.length - doneCount;
+  const noFb = all.filter((a) => a.status === "completed" && !a.fb_checkin_confirmed).length;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Nhật ký điểm danh</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Ghi nhận từ hệ thống. Giáo viên vẫn cần điểm danh song song trên nhóm Facebook như quy định.
-        </p>
+    <div className="space-y-5">
+      <PageHeader
+        title="Lịch & điểm danh"
+        subtitle="Đối chiếu ghi nhận của hệ thống với check-in trên nhóm Facebook. Trang này để kiểm tra, không dùng để duyệt công."
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <MetricCard
+          label="Tổng số tiết ghi nhận"
+          value={all.length}
+          unit="tiết"
+          hint={`${from} → ${to}`}
+          icon={<IconCalendarCheck className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Đã dạy"
+          value={doneCount}
+          unit="tiết"
+          hint={all.length ? `${Math.round((doneCount / all.length) * 100)}% số tiết` : undefined}
+          tone="mint"
+          icon={<IconCheckCircle className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Bất thường"
+          value={abnormal}
+          unit="tiết"
+          hint="GV vắng, HS vắng hoặc dời lịch"
+          tone={abnormal ? "coral" : "navy"}
+          icon={<IconAlert className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Thiếu check-in Facebook"
+          value={noFb}
+          unit="tiết"
+          hint="Đã dạy nhưng chưa xác nhận FB"
+          tone={noFb ? "amber" : "navy"}
+          icon={<IconAlert className="w-5 h-5" />}
+        />
       </div>
 
-      <form className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap gap-3 items-end">
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Giáo viên</label>
-          <select
-            name="teacherId"
-            defaultValue={teacherId || ""}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">Tất cả</option>
-            {teachers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Từ ngày</label>
-          <input
-            type="date"
-            name="from"
-            defaultValue={from}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Đến ngày</label>
-          <input
-            type="date"
-            name="to"
-            defaultValue={to}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-lg px-4 py-2"
-        >
-          Lọc
-        </button>
-      </form>
+      <Card padded={false}>
+        <form className="p-4 border-b border-navy-100 flex flex-wrap gap-3 items-end">
+          <div>
+            <label className={label} htmlFor="f-teacher">
+              Giáo viên
+            </label>
+            <select
+              id="f-teacher"
+              name="teacherId"
+              defaultValue={teacherId || ""}
+              className={`${field} w-auto`}
+            >
+              <option value="">Tất cả</option>
+              {teachers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={label} htmlFor="f-status">
+              Trạng thái
+            </label>
+            <select
+              id="f-status"
+              name="status"
+              defaultValue={sp.status || ""}
+              className={`${field} w-auto`}
+            >
+              <option value="">Tất cả</option>
+              <option value="completed">Đã dạy</option>
+              <option value="abnormal">Bất thường</option>
+            </select>
+          </div>
+          <div>
+            <label className={label} htmlFor="f-from">
+              Từ ngày
+            </label>
+            <input
+              id="f-from"
+              type="date"
+              name="from"
+              defaultValue={from}
+              className={`${field} w-auto`}
+            />
+          </div>
+          <div>
+            <label className={label} htmlFor="f-to">
+              Đến ngày
+            </label>
+            <input id="f-to" type="date" name="to" defaultValue={to} className={`${field} w-auto`} />
+          </div>
+          <button type="submit" className={btn.primary}>
+            <IconFilter className="w-4 h-4" />
+            Lọc
+          </button>
+          <Link href="/admin/attendance" className={btn.ghost}>
+            Xoá lọc
+          </Link>
+        </form>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-left">
+        {rows.length === 0 ? (
+          <EmptyState
+            icon={<IconCalendarCheck className="w-6 h-6" />}
+            title="Không có dữ liệu trong khoảng thời gian này"
+            description="Thử mở rộng khoảng ngày hoặc bỏ bớt bộ lọc giáo viên."
+          />
+        ) : (
+          <TableShell>
+            <thead>
               <tr>
-                <th className="px-4 py-2.5 font-medium">Ngày</th>
-                <th className="px-4 py-2.5 font-medium">Học sinh</th>
-                <th className="px-4 py-2.5 font-medium">Giáo viên</th>
-                <th className="px-4 py-2.5 font-medium">Trạng thái</th>
-                <th className="px-4 py-2.5 font-medium">FB</th>
-                <th className="px-4 py-2.5 font-medium">Giờ điểm danh</th>
-                <th className="px-4 py-2.5 font-medium">Nội dung bài học</th>
-                <th className="px-4 py-2.5 font-medium">Ghi chú</th>
-                <th className="px-4 py-2.5 font-medium"></th>
+                <Th>Ngày</Th>
+                <Th>Học viên</Th>
+                <Th>Giáo viên</Th>
+                <Th>Trạng thái</Th>
+                <Th>Check-in FB</Th>
+                <Th>Giờ điểm danh</Th>
+                <Th>Nội dung bài học</Th>
+                <Th>Ghi chú</Th>
+                <Th />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-navy-100">
               {rows.map((a) => (
                 <AttendanceRow key={a.id} row={a} />
               ))}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-4 py-6 text-center text-slate-500">
-                    Không có dữ liệu trong khoảng thời gian này.
-                  </td>
-                </tr>
-              )}
             </tbody>
-          </table>
-        </div>
-      </div>
+          </TableShell>
+        )}
+
+        {rows.length > 0 && (
+          <div className="px-4 py-3 border-t border-navy-100 text-sm text-ink-500 tabular">
+            Hiển thị {rows.length} bản ghi
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,14 @@
 import { requireRole } from "@/lib/guard";
-import { listPayments, listExpenses, getRevenueSummary, listClasses, getPackage } from "@/lib/queries";
+import {
+  listPayments,
+  listExpenses,
+  getRevenueSummary,
+  listClasses,
+  getPackage,
+} from "@/lib/queries";
 import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
+import { IconChart, IconDownload, IconFilter, IconWallet } from "@/components/icons";
+import { Card, CardHeader, MetricCard, PageHeader, btn, field, label } from "@/components/ui";
 import NewPaymentForm from "./new-payment-form";
 import NewExpenseForm from "./new-expense-form";
 import DeletePaymentButton from "./delete-payment-button";
@@ -27,89 +35,87 @@ export default async function FinancePage({
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Doanh thu</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Lợi nhuận = tổng thanh toán thu được − lương giáo viên − chi phí khác (quảng cáo, vận
-          hành...) trong khoảng ngày đã chọn.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Doanh thu"
+        subtitle="Lợi nhuận = tổng thanh toán thu được − lương giáo viên − chi phí khác (quảng cáo, vận hành...) trong khoảng ngày đã chọn."
+      />
 
-      <form className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap gap-3 items-end">
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Từ ngày</label>
-          <input
-            type="date"
-            name="from"
-            defaultValue={from}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Đến ngày</label>
-          <input
-            type="date"
-            name="to"
-            defaultValue={to}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-lg px-4 py-2"
-        >
-          Xem
-        </button>
-        <a
-          href={`/admin/finance/export?from=${from}&to=${to}`}
-          className="text-sm border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg px-4 py-2"
-        >
-          Xuất CSV
-        </a>
-      </form>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-sm text-slate-500">Doanh thu</p>
-          <p className="text-xl font-bold text-slate-900 mt-1">{formatVND(summary.totalRevenue)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-sm text-slate-500">Lương giáo viên</p>
-          <p className="text-xl font-bold text-slate-900 mt-1">{formatVND(summary.totalPayroll)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-sm text-slate-500">Chi phí khác</p>
-          <p className="text-xl font-bold text-slate-900 mt-1">{formatVND(summary.totalExpenses)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-sm text-slate-500">Lợi nhuận</p>
-          <p
-            className={`text-xl font-bold mt-1 ${summary.profit < 0 ? "text-red-600" : "text-emerald-600"}`}
-          >
-            {formatVND(summary.profit)}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <h2 className="font-semibold text-slate-900 mb-3">Ghi nhận thanh toán</h2>
-            <NewPaymentForm classes={classes} />
+      <Card>
+        <form className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className={label} htmlFor="f-from">
+              Từ ngày
+            </label>
+            <input
+              id="f-from"
+              type="date"
+              name="from"
+              defaultValue={from}
+              className={`${field} w-auto`}
+            />
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200">
-              <h2 className="font-semibold text-slate-900">
-                Danh sách thu ({payments.length})
-              </h2>
+          <div>
+            <label className={label} htmlFor="f-to">
+              Đến ngày
+            </label>
+            <input
+              id="f-to"
+              type="date"
+              name="to"
+              defaultValue={to}
+              className={`${field} w-auto`}
+            />
+          </div>
+          <button type="submit" className={btn.primary}>
+            <IconFilter className="w-4 h-4" />
+            Xem
+          </button>
+          <a href={`/admin/finance/export?from=${from}&to=${to}`} className={btn.secondary}>
+            <IconDownload className="w-4 h-4" />
+            Xuất CSV
+          </a>
+        </form>
+      </Card>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <MetricCard
+          label="Doanh thu"
+          value={formatVND(summary.totalRevenue)}
+          tone="mint"
+          icon={<IconChart className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Lương giáo viên"
+          value={formatVND(summary.totalPayroll)}
+          tone="navy"
+          icon={<IconWallet className="w-5 h-5" />}
+        />
+        <MetricCard label="Chi phí khác" value={formatVND(summary.totalExpenses)} tone="amber" />
+        <MetricCard
+          label="Lợi nhuận"
+          value={formatVND(summary.profit)}
+          tone={summary.profit < 0 ? "coral" : "mint"}
+          hint={summary.profit < 0 ? "Đang lỗ trong khoảng này" : "Đang có lãi"}
+        />
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-5">
+        <div className="space-y-5">
+          <Card padded={false}>
+            <CardHeader title="Ghi nhận thanh toán" />
+            <div className="p-5">
+              <NewPaymentForm classes={classes} />
             </div>
-            <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+          </Card>
+          <Card padded={false}>
+            <CardHeader title="Danh sách thu" count={payments.length} />
+            <div className="divide-y divide-navy-100 max-h-96 overflow-y-auto scroll-thin">
               {payments.map((p) => (
-                <div key={p.id} className="px-4 py-2.5 flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium text-slate-900">{formatVND(p.amount)}</p>
-                    <p className="text-slate-500 text-xs">
+                <div key={p.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink-900 tabular">{formatVND(p.amount)}</p>
+                    <p className="text-ink-500 text-xs truncate">
                       {p.paid_at} · {p.student_name || "Không gắn lớp"}
                       {p.note ? ` · ${p.note}` : ""}
                     </p>
@@ -118,31 +124,29 @@ export default async function FinancePage({
                 </div>
               ))}
               {payments.length === 0 && (
-                <p className="text-sm text-slate-500 px-4 py-6 text-center">
+                <p className="text-sm text-ink-500 px-5 py-8 text-center">
                   Chưa có khoản thu nào trong khoảng ngày này.
                 </p>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <h2 className="font-semibold text-slate-900 mb-3">Thêm chi phí</h2>
-            <NewExpenseForm />
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200">
-              <h2 className="font-semibold text-slate-900">
-                Danh sách chi phí ({expenses.length})
-              </h2>
+        <div className="space-y-5">
+          <Card padded={false}>
+            <CardHeader title="Thêm chi phí" />
+            <div className="p-5">
+              <NewExpenseForm />
             </div>
-            <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+          </Card>
+          <Card padded={false}>
+            <CardHeader title="Danh sách chi phí" count={expenses.length} />
+            <div className="divide-y divide-navy-100 max-h-96 overflow-y-auto scroll-thin">
               {expenses.map((e) => (
-                <div key={e.id} className="px-4 py-2.5 flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium text-slate-900">{formatVND(e.amount)}</p>
-                    <p className="text-slate-500 text-xs">
+                <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink-900 tabular">{formatVND(e.amount)}</p>
+                    <p className="text-ink-500 text-xs truncate">
                       {e.expense_date} · {e.category}
                       {e.note ? ` · ${e.note}` : ""}
                     </p>
@@ -151,12 +155,12 @@ export default async function FinancePage({
                 </div>
               ))}
               {expenses.length === 0 && (
-                <p className="text-sm text-slate-500 px-4 py-6 text-center">
+                <p className="text-sm text-ink-500 px-5 py-8 text-center">
                   Chưa có chi phí nào trong khoảng ngày này.
                 </p>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

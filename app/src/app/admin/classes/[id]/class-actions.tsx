@@ -40,7 +40,7 @@ export default function ClassActions({
             assignTeacherAction(classId, e.target.value ? Number(e.target.value) : null)
           )
         }
-        className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+        className="rounded-xl border border-navy-200 px-2 py-1.5 text-sm"
       >
         <option value="">Chưa xếp GV</option>
         {teachers.map((t) => (
@@ -64,7 +64,7 @@ export default function ClassActions({
           type="button"
           disabled={isPending}
           onClick={() => startTransition(() => setClassStatusAction(classId, "active"))}
-          className="text-sm border border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-lg px-3 py-1.5"
+          className="text-sm border border-mint-100 text-mint-700 hover:bg-mint-50 rounded-lg px-3 py-1.5"
         >
           Kích hoạt
         </button>
@@ -73,7 +73,7 @@ export default function ClassActions({
         type="button"
         disabled={isPending}
         onClick={() => startTransition(() => setClassStatusAction(classId, "ended"))}
-        className="text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 rounded-lg px-3 py-1.5"
+        className="text-sm border border-navy-200 text-ink-600 hover:bg-ivory-100 rounded-lg px-3 py-1.5"
       >
         Kết thúc lớp
       </button>
@@ -89,7 +89,7 @@ export default function ClassActions({
               });
             }
           }}
-          className="text-sm border border-red-200 text-red-600 hover:bg-red-50 rounded-lg px-3 py-1.5"
+          className="text-sm border border-coral-100 text-coral-600 hover:bg-coral-50 rounded-lg px-3 py-1.5"
         >
           Xoá
         </button>

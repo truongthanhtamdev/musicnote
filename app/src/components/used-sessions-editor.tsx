@@ -38,16 +38,17 @@ export function UsedSessionsEditor({
           min={0}
           defaultValue={progress.used}
           autoFocus
-          className={`${inputWidth} rounded border border-slate-300 px-1.5 py-0.5 ${text}`}
+          aria-label="Số buổi đã học"
+          className={`${inputWidth} rounded-lg border border-navy-200 bg-white px-2 py-0.5 tabular focus:border-wood-400 focus:ring-2 focus:ring-wood-500/20 focus:outline-none ${text}`}
         />
         / {progress.total} tiết
-        <button type="submit" className="text-gold-700 hover:underline">
+        <button type="submit" className="font-semibold text-wood-700 hover:text-wood-800">
           Lưu
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="text-slate-400 hover:text-slate-600"
+          className="text-ink-400 hover:text-ink-700"
         >
           Huỷ
         </button>
@@ -56,14 +57,14 @@ export function UsedSessionsEditor({
   }
 
   return (
-    <span className={text}>
-      Đã học <span className="font-semibold text-slate-900">{progress.used}</span> / {progress.total}{" "}
+    <span className={`${text} tabular`}>
+      Đã học <span className="font-semibold text-ink-900">{progress.used}</span> / {progress.total}{" "}
       tiết
       <button
         type="button"
         disabled={isPending}
         onClick={() => setEditing(true)}
-        className="ml-1.5 text-gold-600 hover:underline"
+        className="ml-1.5 font-semibold text-wood-600 hover:text-wood-700 disabled:opacity-60"
       >
         Sửa
       </button>
@@ -72,7 +73,7 @@ export function UsedSessionsEditor({
           type="button"
           disabled={isPending}
           onClick={() => startTransition(() => adjustPackageUsedAction(progress.packageId, null))}
-          className="ml-1.5 text-slate-400 hover:text-slate-600"
+          className="ml-1.5 text-ink-400 hover:text-ink-700 disabled:opacity-60"
           title="Bỏ chỉnh tay, tính lại tự động theo điểm danh"
         >
           (đã chỉnh tay · bấm để tự tính lại)

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   listClasses,
   listTeachers,
@@ -6,6 +7,15 @@ import {
   teacherTeachesSubject,
 } from "@/lib/queries";
 import { formatClassSchedule, LANGUAGE_LABELS } from "@/lib/types";
+import { IconCheckCircle, SubjectIcon } from "@/components/icons";
+import {
+  Avatar,
+  Card,
+  EmptyState,
+  PageHeader,
+  StatusChip,
+  btn,
+} from "@/components/ui";
 import AssignRow from "./assign-row";
 
 export default async function AssignPage() {
@@ -13,20 +23,25 @@ export default async function AssignPage() {
   const teachers = listTeachers(false);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Giao lớp cho giáo viên</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Danh sách lớp chưa có giáo viên ({unassigned.length}). Giáo viên được đánh dấu{" "}
-          <span className="text-emerald-600 font-medium">✓ rảnh</span> nếu khung giờ trống của họ
-          trùng với lịch lớp.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Giao lớp cho giáo viên"
+        subtitle={`${unassigned.length} lớp đang chờ xếp giáo viên. Giáo viên được đánh dấu "rảnh" khi khung giờ trống của họ trùng với lịch lớp.`}
+      />
 
       {unassigned.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
-          Tất cả lớp đang học đều đã có giáo viên phụ trách 🎉
-        </div>
+        <Card padded={false}>
+          <EmptyState
+            icon={<IconCheckCircle className="w-7 h-7" />}
+            title="Tất cả lớp đang học đều đã có giáo viên"
+            description="Khi có lớp mới chưa xếp giáo viên, lớp đó sẽ xuất hiện ở đây."
+            action={
+              <Link href="/admin/classes" className={btn.secondary}>
+                Xem danh sách lớp
+              </Link>
+            }
+          />
+        </Card>
       ) : (
         <div className="space-y-4">
           {unassigned.map((c) => {
@@ -48,17 +63,19 @@ export default async function AssignPage() {
                 Number(b.available) - Number(a.available)
             );
             return (
-              <div key={c.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-medium text-slate-900">{c.student_name}</p>
-                    <p className="text-sm text-slate-500">
-                      {formatClassSchedule(c)}
-                      {c.level ? ` · ${c.level}` : ""} · {c.subject}
+              <Card key={c.id}>
+                <div className="flex items-start gap-3 mb-4">
+                  <Avatar name={c.student_name} className="w-10 h-10 text-xs" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink-900">{c.student_name}</p>
+                    <p className="text-sm text-ink-500 flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-0.5">
+                      <SubjectIcon subject={c.subject} className="w-4 h-4 text-wood-500" />
+                      <span className="tabular">{formatClassSchedule(c)}</span>
+                      <span className="text-ink-300">·</span>
+                      {c.subject}
+                      {c.level ? ` · ${c.level}` : ""}
                       {c.language === "en" && (
-                        <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">
-                          Dạy bằng {LANGUAGE_LABELS.en}
-                        </span>
+                        <StatusChip tone="navy">Dạy bằng {LANGUAGE_LABELS.en}</StatusChip>
                       )}
                     </p>
                   </div>
@@ -69,7 +86,7 @@ export default async function AssignPage() {
                   needsLanguage={c.language === "en"}
                   subject={c.subject}
                 />
-              </div>
+              </Card>
             );
           })}
         </div>

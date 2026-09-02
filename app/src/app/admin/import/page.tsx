@@ -9,20 +9,20 @@ export default async function ImportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Nhập dữ liệu hàng loạt</h1>
-        <p className="text-slate-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-ink-900 tracking-tight">Nhập dữ liệu hàng loạt</h1>
+        <p className="text-ink-500 text-sm mt-1">
           Dùng khi cần đưa nhiều giáo viên/lớp học có sẵn (VD từ Excel) vào hệ thống một lần,
           thay vì thêm tay từng dòng.
         </p>
       </div>
 
       {isAdmin && (
-        <div className="bg-white rounded-xl border border-slate-200 p-4 max-w-2xl">
+        <div className="bg-white rounded-2xl border border-navy-100 p-4 max-w-2xl">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-slate-900">Nhập giáo viên từ CSV</h2>
+            <h2 className="font-semibold text-ink-900">Nhập giáo viên từ CSV</h2>
             <a
               href="/admin/import/templates/teachers"
-              className="text-sm text-gold-600 hover:underline"
+              className="text-sm text-wood-600 hover:underline"
             >
               Tải file mẫu
             </a>
@@ -31,12 +31,12 @@ export default async function ImportPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 max-w-2xl">
+      <div className="bg-white rounded-2xl border border-navy-100 p-4 max-w-2xl">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-slate-900">Nhập lớp học từ CSV</h2>
+          <h2 className="font-semibold text-ink-900">Nhập lớp học từ CSV</h2>
           <a
             href="/admin/import/templates/classes"
-            className="text-sm text-gold-600 hover:underline"
+            className="text-sm text-wood-600 hover:underline"
           >
             Tải file mẫu
           </a>

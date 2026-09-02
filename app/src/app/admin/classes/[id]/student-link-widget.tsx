@@ -16,9 +16,9 @@ export default function StudentLinkWidget({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <h2 className="font-semibold text-slate-900 mb-1">Tài khoản học viên</h2>
-      <p className="text-xs text-slate-500 mb-3">
+    <div className="bg-white rounded-2xl border border-navy-100 p-4">
+      <h2 className="font-semibold text-ink-900 mb-1">Tài khoản học viên</h2>
+      <p className="text-xs text-ink-500 mb-3">
         Gắn lớp này với 1 tài khoản để học viên tự đăng nhập xem lịch học, tiến độ.
       </p>
       <select
@@ -29,7 +29,7 @@ export default function StudentLinkWidget({
             linkStudentAccountAction(classId, e.target.value ? Number(e.target.value) : null)
           )
         }
-        className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+        className="w-full rounded-xl border border-navy-200 px-2 py-1.5 text-sm"
       >
         <option value="">Chưa gắn tài khoản</option>
         {students.map((s) => (

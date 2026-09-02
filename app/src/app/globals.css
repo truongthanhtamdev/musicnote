@@ -1,31 +1,115 @@
 @import "tailwindcss";
 
+/* =========================================================================
+   MusicNote design tokens — redesign 2025
+   Bảng màu: navy (thương hiệu) · ivory (nền) · wood (accent guitar)
+             mint / amber / coral (trạng thái vận hành)
+   ========================================================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf9f6;
+  --foreground: #17212b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 
-  /* Brand gold, sampled from the "Guitar Đệm Hát" logo (black + gold). */
-  --color-gold-50: #fbf4e6;
-  --color-gold-100: #f4e4c6;
-  --color-gold-200: #e9cd9a;
-  --color-gold-300: #dbb56f;
-  --color-gold-400: #cda05a;
-  --color-gold-500: #bd8e49;
-  --color-gold-600: #a87c3f;
-  --color-gold-700: #8a6530;
-  --color-gold-800: #6b4e26;
-  --color-gold-900: #4a3719;
+  /* Navy — sidebar, header, nền thương hiệu */
+  --color-navy-950: #10243e;
+  --color-navy-900: #142d4b;
+  --color-navy-800: #183653;
+  --color-navy-700: #23486a;
+  --color-navy-600: #325b81;
+  --color-navy-300: #8fa8c1;
+  --color-navy-200: #bccbdb;
+  --color-navy-100: #dde5ee;
+  --color-navy-50: #eef3f8;
+
+  /* Ivory — nền ứng dụng */
+  --color-ivory-50: #faf9f6;
+  --color-ivory-100: #f4f2ec;
+  --color-ivory-200: #e8e5db;
+
+  /* Ink — chữ */
+  --color-ink-900: #17212b;
+  --color-ink-700: #3d4a58;
+  --color-ink-500: #64748b;
+  --color-ink-400: #94a3b8;
+
+  /* Wood — accent guitar, CTA phụ */
+  --color-wood-50: #fbf5ec;
+  --color-wood-100: #f5e7d2;
+  --color-wood-200: #ead0a8;
+  --color-wood-300: #ddb47c;
+  --color-wood-400: #d09f60;
+  --color-wood-500: #c78b4a;
+  --color-wood-600: #b0763b;
+  --color-wood-700: #8d5d2e;
+  --color-wood-800: #6b4823;
+  --color-wood-900: #4a3218;
+
+  /* Mint — hoàn thành, hoạt động */
+  --color-mint-50: #eaf7f3;
+  --color-mint-100: #d0ede4;
+  --color-mint-300: #7fcbb4;
+  --color-mint-500: #38a889;
+  --color-mint-600: #2d8b71;
+  --color-mint-700: #226b57;
+
+  /* Amber — sắp tới, sắp hết khóa */
+  --color-amber-50: #fdf5e7;
+  --color-amber-100: #fae8c8;
+  --color-amber-300: #f0c479;
+  --color-amber-500: #e9a23b;
+  --color-amber-600: #cc8722;
+  --color-amber-700: #a06818;
+
+  /* Coral — quá giờ, bất thường, lỗi */
+  --color-coral-50: #fcefee;
+  --color-coral-100: #f8dcd9;
+  --color-coral-300: #eaa49c;
+  --color-coral-500: #d9685c;
+  --color-coral-600: #c04d41;
+  --color-coral-700: #99392f;
+
+  /* Alias giữ tương thích với các trang chưa redesign */
+  --color-gold-50: #fbf5ec;
+  --color-gold-100: #f5e7d2;
+  --color-gold-200: #ead0a8;
+  --color-gold-300: #ddb47c;
+  --color-gold-400: #d09f60;
+  --color-gold-500: #c78b4a;
+  --color-gold-600: #b0763b;
+  --color-gold-700: #8d5d2e;
+  --color-gold-800: #6b4823;
+  --color-gold-900: #4a3218;
+
+  --radius-card: 1rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus ring nhất quán cho toàn bộ control */
+:where(input, select, textarea, button, a):focus-visible {
+  outline: 2px solid var(--color-wood-500);
+  outline-offset: 2px;
+}
+
+/* Số liệu vận hành: canh cột đều nhau */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Thanh cuộn mảnh cho vùng nội dung phụ */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-navy-200) transparent;
 }

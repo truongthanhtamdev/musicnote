@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { DAY_LABELS, DAY_ORDER, DURATION_OPTIONS } from "@/lib/types";
+import { IconPlus, IconX } from "./icons";
+import { field } from "./ui";
 
 interface Slot {
   day: string;
@@ -28,13 +30,17 @@ export function SlotsField() {
   return (
     <div className="col-span-2 space-y-2">
       {slots.map((slot, i) => (
-        <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+        <div
+          key={i}
+          className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center rounded-xl bg-ivory-50 border border-navy-100 p-2"
+        >
           <select
             name="slot_day"
             required
             value={slot.day}
             onChange={(e) => updateSlot(i, { day: e.target.value })}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            aria-label={`Thứ học buổi ${i + 1}`}
+            className={`${field} py-2`}
           >
             <option value="" disabled>
               Thứ học
@@ -51,13 +57,15 @@ export function SlotsField() {
             required
             value={slot.time}
             onChange={(e) => updateSlot(i, { time: e.target.value })}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            aria-label={`Giờ bắt đầu buổi ${i + 1}`}
+            className={`${field} py-2`}
           />
           <select
             name="slot_duration"
             value={slot.duration}
             onChange={(e) => updateSlot(i, { duration: e.target.value })}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            aria-label={`Thời lượng buổi ${i + 1}`}
+            className={`${field} py-2`}
           >
             {DURATION_OPTIONS.map((n) => (
               <option key={n} value={n}>
@@ -69,19 +77,20 @@ export function SlotsField() {
             type="button"
             onClick={() => setSlots((prev) => prev.filter((_, idx) => idx !== i))}
             disabled={slots.length === 1}
-            className="text-slate-400 hover:text-red-600 disabled:opacity-0 px-2"
+            className="p-2 rounded-lg text-ink-400 hover:text-coral-600 hover:bg-coral-50 disabled:opacity-0 transition"
             aria-label="Bỏ buổi này"
           >
-            ✕
+            <IconX className="w-4 h-4" />
           </button>
         </div>
       ))}
       <button
         type="button"
         onClick={() => setSlots((prev) => [...prev, EMPTY_SLOT])}
-        className="text-sm text-gold-700 hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-wood-600 hover:text-wood-700"
       >
-        + Thêm buổi/tuần (học viên học nhiều buổi)
+        <IconPlus className="w-4 h-4" />
+        Thêm buổi trong tuần
       </button>
     </div>
   );

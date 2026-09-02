@@ -12,7 +12,7 @@ export default function DeletePaymentButton({ id }: { id: number }) {
       onClick={() => {
         if (confirm("Xoá khoản thu này?")) startTransition(() => deletePaymentAction(id));
       }}
-      className="text-xs text-red-600 hover:underline disabled:opacity-60"
+      className="text-xs text-coral-600 hover:underline disabled:opacity-60"
     >
       Xoá
     </button>
