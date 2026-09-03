@@ -306,6 +306,11 @@ export function annotateSchedule(classes: ClassWithTeacher[]): ClassWithSchedule
  * cùng gói học (buổi học thử không tính, và không được đánh số). Lớp không
  * theo gói thì đếm riêng trong lớp đó. Luôn đếm từ đầu lịch sử, không phụ
  * thuộc khoảng ngày đang lọc, nên số buổi hiển thị ở mọi trang đều khớp nhau.
+ *
+ * Khi ai đó sửa tay số buổi (mốc `used_override` của gói), việc đánh số bám
+ * theo mốc đó thay vì đếm lại từ 1: buổi cuối cùng trước lúc đặt mốc chính là
+ * số vừa nhập, các buổi trước nó lùi dần, các buổi sau tăng tiếp — nhờ vậy
+ * badge "Buổi N" ở bảng điểm danh luôn khớp với "đã học N/20" của gói học.
  */
 export function sessionNumberMap(classIds: number[]): Map<number, number> {
   const out = new Map<number, number>();
@@ -314,22 +319,50 @@ export function sessionNumberMap(classIds: number[]): Map<number, number> {
   const placeholders = classIds.map(() => "?").join(",");
   const rows = db
     .prepare(
-      `SELECT a.id, a.is_trial, a.status, COALESCE(c.package_id, -c.id) AS pool
+      `SELECT a.id, a.is_trial, a.status, a.created_at, COALESCE(c.package_id, -c.id) AS pool,
+              p.used_override AS baseline, p.used_override_set_at AS baselineAt
        FROM attendance a
        JOIN classes c ON c.id = a.class_id
+       LEFT JOIN packages p ON p.id = c.package_id
        WHERE COALESCE(c.package_id, -c.id) IN (
          SELECT COALESCE(package_id, -id) FROM classes WHERE id IN (${placeholders})
        )
        ORDER BY a.session_date ASC, a.id ASC`
     )
-    .all(...classIds) as { id: number; is_trial: number; status: string; pool: number }[];
+    .all(...classIds) as {
+    id: number;
+    is_trial: number;
+    status: string;
+    created_at: string;
+    pool: number;
+    baseline: number | null;
+    baselineAt: string | null;
+  }[];
 
-  const counters = new Map<number, number>();
+  const byPool = new Map<number, typeof rows>();
   for (const r of rows) {
     if (r.status !== "completed" || r.is_trial) continue;
-    const n = (counters.get(r.pool) ?? 0) + 1;
-    counters.set(r.pool, n);
-    out.set(r.id, n);
+    const list = byPool.get(r.pool) ?? [];
+    list.push(r);
+    byPool.set(r.pool, list);
+  }
+
+  for (const counted of byPool.values()) {
+    const { baseline, baselineAt } = counted[0];
+    if (baseline == null || baselineAt == null) {
+      counted.forEach((r, i) => out.set(r.id, i + 1));
+      continue;
+    }
+    const before = counted.filter((r) => r.created_at <= baselineAt);
+    const after = counted.filter((r) => r.created_at > baselineAt);
+    // The last session recorded before the correction is the number typed in;
+    // earlier ones step back from it (skipping any that would land at 0 or
+    // below, i.e. sessions the typed number doesn't account for).
+    before.forEach((r, i) => {
+      const n = baseline - (before.length - 1 - i);
+      if (n > 0) out.set(r.id, n);
+    });
+    after.forEach((r, i) => out.set(r.id, baseline + i + 1));
   }
   return out;
 }

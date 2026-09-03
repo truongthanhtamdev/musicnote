@@ -81,22 +81,20 @@ export default function AttendanceRow({
               placeholder="Nội dung bài học"
               className={`${field} flex-1 min-w-[160px] py-1.5`}
             />
-            <span className="flex items-center gap-2 whitespace-nowrap">
-              {row.is_trial ? (
-                <StatusChip tone="wood">Buổi học thử</StatusChip>
-              ) : sessionNumber !== undefined ? (
-                <StatusChip tone="navy">Buổi {sessionNumber}</StatusChip>
-              ) : null}
-              <label className="flex items-center gap-1.5 text-sm text-ink-700">
-                <input
-                  type="checkbox"
-                  name="is_trial"
-                  defaultChecked={!!row.is_trial}
-                  className="w-4 h-4 rounded border-navy-300 accent-[var(--color-mint-500)]"
-                />
-                Tính là buổi học thử
-              </label>
-            </span>
+            <label className="flex items-center gap-1.5 text-sm text-ink-700 whitespace-nowrap">
+              Buổi thứ
+              <input
+                name="session_number"
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                defaultValue={row.is_trial ? 0 : (sessionNumber ?? "")}
+                title="Số buổi đang tính — sửa lại nếu sai. Điền 0 nếu là buổi học thử."
+                className={`${field} w-20 py-1.5 tabular`}
+              />
+              <span className="text-ink-400">(0 = học thử)</span>
+            </label>
             <input
               name="note"
               defaultValue={row.note || ""}

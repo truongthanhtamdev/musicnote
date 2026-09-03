@@ -143,12 +143,13 @@ Gợi ý:
   định hàng tuần, giáo viên vào **Lịch sử điểm danh → "+ Điểm danh buổi học
   bù"**, chọn đúng lớp và ngày dạy bù thực tế để điểm danh — buổi này vẫn
   tính vào gói học của học viên như bình thường.
-- **Buổi thứ mấy khi điểm danh**: mỗi lần điểm danh (cả ở "Hôm nay", khi sửa
-  lại trong Lịch sử điểm danh, và ở form điểm danh bù) đều có ô **"Buổi thứ
-  mấy"** — hệ thống tự điền sẵn số buổi đang tính, giáo viên sửa lại được nếu
-  sai (ví dụ lớp cũ đã học sẵn 15 buổi thì gõ 15). Số vừa gõ thành mốc mới và
-  các buổi sau **tự đếm tiếp** từ đó; để nguyên số hệ thống điền sẵn thì vẫn
-  chạy tự động như bình thường.
+- **Buổi thứ mấy khi điểm danh**: mọi chỗ ghi nhận buổi học — "Hôm nay", sửa
+  lại trong Lịch sử điểm danh, form điểm danh bù, và hàng sửa ở trang Lịch &
+  điểm danh của admin — đều có ô **"Buổi thứ mấy"**, hệ thống tự điền sẵn số
+  buổi đang tính và sửa lại được nếu sai (ví dụ lớp cũ đã học sẵn 15 buổi thì
+  gõ 15). Sửa 1 buổi là **cả chuỗi nhảy theo**: các buổi trước lùi dần, các
+  buổi sau tăng tiếp, và gói học ("đã học N/20") cũng khớp luôn với badge
+  "Buổi N" trong bảng. Để nguyên số điền sẵn thì vẫn chạy tự động bình thường.
 - **Buổi học thử**: không cần tick tay — **buổi 0 chính là buổi học thử**. Lớp
   vừa được center tạo/giao cho giáo viên (mục Giao lớp ở trên) tự điền sẵn
   "buổi 0" ở lần điểm danh đầu, tính lương theo giá cố định 50.000đ/tiết
