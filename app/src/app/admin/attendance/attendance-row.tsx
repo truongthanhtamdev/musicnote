@@ -17,8 +17,11 @@ const initialState: FormState = {};
 
 export default function AttendanceRow({
   row,
+  sessionNumber,
 }: {
   row: AttendanceRowType & { student_name: string; teacher_name: string };
+  /** Buổi thứ mấy của học viên trong gói học. */
+  sessionNumber?: number;
 }) {
   const [editing, setEditing] = useState(false);
   const [status, setStatus] = useState<AttendanceStatus>(row.status);
@@ -78,15 +81,22 @@ export default function AttendanceRow({
               placeholder="Nội dung bài học"
               className={`${field} flex-1 min-w-[160px] py-1.5`}
             />
-            <label className="flex items-center gap-1.5 text-sm text-ink-700 whitespace-nowrap">
-              <input
-                type="checkbox"
-                name="is_trial"
-                defaultChecked={!!row.is_trial}
-                className="w-4 h-4 rounded border-navy-300 accent-[var(--color-mint-500)]"
-              />
-              Buổi học thử
-            </label>
+            <span className="flex items-center gap-2 whitespace-nowrap">
+              {row.is_trial ? (
+                <StatusChip tone="wood">Buổi học thử</StatusChip>
+              ) : sessionNumber !== undefined ? (
+                <StatusChip tone="navy">Buổi {sessionNumber}</StatusChip>
+              ) : null}
+              <label className="flex items-center gap-1.5 text-sm text-ink-700">
+                <input
+                  type="checkbox"
+                  name="is_trial"
+                  defaultChecked={!!row.is_trial}
+                  className="w-4 h-4 rounded border-navy-300 accent-[var(--color-mint-500)]"
+                />
+                Tính là buổi học thử
+              </label>
+            </span>
             <input
               name="note"
               defaultValue={row.note || ""}
@@ -124,7 +134,7 @@ export default function AttendanceRow({
       </td>
       <td className="px-4 py-3 text-ink-700 whitespace-nowrap">{row.teacher_name}</td>
       <td className="px-4 py-3">
-        <AttendanceStatusCell row={row} />
+        <AttendanceStatusCell row={row} sessionNumber={sessionNumber} />
       </td>
       <td className="px-4 py-3">
         {row.fb_checkin_confirmed ? (

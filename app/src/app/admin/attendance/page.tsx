@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listAttendance, listTeachers } from "@/lib/queries";
+import { listAttendance, listTeachers, sessionNumberMap } from "@/lib/queries";
 import { todayISO, addDays, toISODate } from "@/lib/format";
 import { IconAlert, IconCalendarCheck, IconCheckCircle, IconFilter } from "@/components/icons";
 import {
@@ -35,6 +35,7 @@ export default async function AttendancePage({
       )
     : all;
 
+  const sessionNumbers = sessionNumberMap([...new Set(all.map((a) => a.class_id))]);
   const doneCount = all.filter((a) => a.status === "completed").length;
   const abnormal = all.length - doneCount;
   const noFb = all.filter((a) => a.status === "completed" && !a.fb_checkin_confirmed).length;
@@ -165,7 +166,7 @@ export default async function AttendancePage({
             </thead>
             <tbody className="divide-y divide-navy-100">
               {rows.map((a) => (
-                <AttendanceRow key={a.id} row={a} />
+                <AttendanceRow key={a.id} row={a} sessionNumber={sessionNumbers.get(a.id)} />
               ))}
             </tbody>
           </TableShell>

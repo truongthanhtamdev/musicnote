@@ -8,8 +8,11 @@ import type { AttendanceRow } from "@/lib/types";
 
 export default function TeacherAttendanceHistoryRow({
   row,
+  sessionNumber,
 }: {
   row: AttendanceRow & { student_name: string };
+  /** Buổi thứ mấy của học viên trong gói học. */
+  sessionNumber?: number;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -45,7 +48,7 @@ export default function TeacherAttendanceHistoryRow({
         </span>
       </td>
       <td className="px-4 py-3">
-        <AttendanceStatusCell row={row} />
+        <AttendanceStatusCell row={row} sessionNumber={sessionNumber} />
       </td>
       <td className="px-4 py-3 tabular text-ink-500">{row.check_in_time || "–"}</td>
       <td className="px-4 py-3 text-ink-600 max-w-[220px]">

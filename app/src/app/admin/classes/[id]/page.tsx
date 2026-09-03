@@ -9,6 +9,7 @@ import {
   listStudents,
   getPackageProgress,
   listSiblingClasses,
+  sessionNumberMap,
 } from "@/lib/queries";
 import { LANGUAGE_LABELS, SOURCE_LABELS, formatClassSchedule } from "@/lib/types";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
@@ -43,6 +44,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
       isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes, cls.id),
   }));
   const history = listAttendance({ classId }).slice(0, 30);
+  const sessionNumbers = sessionNumberMap([classId]);
   const students = listStudents();
   const progress = getPackageProgress(cls);
   const siblings = listSiblingClasses(cls)
@@ -141,7 +143,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
                   </td>
                   <td className="px-4 py-3 text-ink-700 whitespace-nowrap">{a.teacher_name}</td>
                   <td className="px-4 py-3">
-                    <AttendanceStatusCell row={a} />
+                    <AttendanceStatusCell row={a} sessionNumber={sessionNumbers.get(a.id)} />
                   </td>
                   <td className="px-4 py-3">
                     {a.fb_checkin_confirmed ? (

@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { listAttendance, listClassesForTeacher, getClass } from "@/lib/queries";
+import {
+  listAttendance,
+  listClassesForTeacher,
+  getClass,
+  sessionNumberMap,
+} from "@/lib/queries";
 import { addDays, toISODate, todayISO } from "@/lib/format";
 import { formatClassSchedule, CLASS_STATUS_LABELS } from "@/lib/types";
 import { IconCalendarCheck, IconCheckCircle, IconFilter } from "@/components/icons";
@@ -34,6 +39,7 @@ export default async function TeacherAttendanceHistoryPage({
   const to = sp.to || todayISO();
 
   const rows = listAttendance({ teacherId: session!.userId, from, to, classId });
+  const sessionNumbers = sessionNumberMap([...new Set(rows.map((r) => r.class_id))]);
   // Not filtered to active classes — a teacher may still need to add or
   // correct attendance for a class that has since paused or ended.
   const myClasses = listClassesForTeacher(session!.userId).map((c) => ({
@@ -136,7 +142,11 @@ export default async function TeacherAttendanceHistoryPage({
             </thead>
             <tbody className="divide-y divide-navy-100">
               {rows.map((a) => (
-                <TeacherAttendanceHistoryRow key={a.id} row={a} />
+                <TeacherAttendanceHistoryRow
+                  key={a.id}
+                  row={a}
+                  sessionNumber={sessionNumbers.get(a.id)}
+                />
               ))}
             </tbody>
           </TableShell>

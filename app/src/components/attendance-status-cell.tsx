@@ -9,11 +9,14 @@ const STATUS_TONE: Record<string, ChipTone> = {
   rescheduled: "navy",
 };
 
-/** Status label + trial badge + agreed makeup date/time, shared by every attendance list/table. */
+/** Status label + số buổi/buổi thử + ngày giờ học bù đã chốt — dùng chung cho mọi bảng điểm danh. */
 export function AttendanceStatusCell({
   row,
+  sessionNumber,
 }: {
   row: Pick<AttendanceRow, "status" | "is_trial" | "rescheduled_to_date" | "rescheduled_to_time">;
+  /** Buổi thứ mấy của học viên, tính từ sessionNumberMap(). */
+  sessionNumber?: number;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -30,7 +33,11 @@ export function AttendanceStatusCell({
         {ATTENDANCE_STATUS_LABELS[row.status]}
       </StatusChip>
 
-      {!!row.is_trial && <StatusChip tone="wood">Buổi học thử</StatusChip>}
+      {row.is_trial ? (
+        <StatusChip tone="wood">Buổi học thử</StatusChip>
+      ) : sessionNumber !== undefined ? (
+        <StatusChip tone="navy">Buổi {sessionNumber}</StatusChip>
+      ) : null}
 
       {hasRescheduleInfo(row.status) && row.rescheduled_to_date && (
         <span className="basis-full text-xs text-ink-500 tabular">

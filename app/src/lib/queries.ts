@@ -299,6 +299,39 @@ export function annotateSchedule(classes: ClassWithTeacher[]): ClassWithSchedule
 }
 
 /** Half-hour blocks the teacher has marked BUSY — everything not listed here defaults to free. */
+/**
+ * "Buổi thứ mấy" cho từng lần điểm danh: đếm luỹ tiến các buổi đã dạy trong
+ * cùng gói học (buổi học thử không tính, và không được đánh số). Lớp không
+ * theo gói thì đếm riêng trong lớp đó. Luôn đếm từ đầu lịch sử, không phụ
+ * thuộc khoảng ngày đang lọc, nên số buổi hiển thị ở mọi trang đều khớp nhau.
+ */
+export function sessionNumberMap(classIds: number[]): Map<number, number> {
+  const out = new Map<number, number>();
+  if (classIds.length === 0) return out;
+
+  const placeholders = classIds.map(() => "?").join(",");
+  const rows = db
+    .prepare(
+      `SELECT a.id, a.is_trial, a.status, COALESCE(c.package_id, -c.id) AS pool
+       FROM attendance a
+       JOIN classes c ON c.id = a.class_id
+       WHERE COALESCE(c.package_id, -c.id) IN (
+         SELECT COALESCE(package_id, -id) FROM classes WHERE id IN (${placeholders})
+       )
+       ORDER BY a.session_date ASC, a.id ASC`
+    )
+    .all(...classIds) as { id: number; is_trial: number; status: string; pool: number }[];
+
+  const counters = new Map<number, number>();
+  for (const r of rows) {
+    if (r.status !== "completed" || r.is_trial) continue;
+    const n = (counters.get(r.pool) ?? 0) + 1;
+    counters.set(r.pool, n);
+    out.set(r.id, n);
+  }
+  return out;
+}
+
 export function listBusySlots(teacherId: number): BusySlotRow[] {
   return db
     .prepare(
