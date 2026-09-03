@@ -39,7 +39,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
         <input
           name="guardian_name"
           defaultValue={cls.guardian_name || ""}
-          placeholder="Tên phụ huynh (nếu HS là trẻ em)"
+          placeholder="Tên khách hàng (người đóng học phí)"
           className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
         <input

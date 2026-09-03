@@ -88,18 +88,18 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
               </div>
               <div>
                 <label className={label} htmlFor="a-phone">
-                  SĐT học viên / phụ huynh
+                  SĐT học viên / khách hàng
                 </label>
                 <input id="a-phone" name="student_phone" className={field} />
               </div>
               <div>
                 <label className={label} htmlFor="a-guardian">
-                  Tên phụ huynh
+                  Tên khách hàng
                 </label>
                 <input
                   id="a-guardian"
                   name="guardian_name"
-                  placeholder="Nếu học viên là trẻ em"
+                  placeholder="Người đóng học phí, VD: Chị Hoa"
                   className={field}
                 />
               </div>

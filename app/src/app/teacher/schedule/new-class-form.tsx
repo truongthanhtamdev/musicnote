@@ -95,7 +95,7 @@ export default function NewClassForm() {
               </div>
               <div>
                 <label className={label} htmlFor="n-phone">
-                  SĐT học viên / phụ huynh
+                  SĐT học viên / khách hàng
                 </label>
                 <input
                   id="n-phone"
@@ -106,12 +106,12 @@ export default function NewClassForm() {
               </div>
               <div>
                 <label className={label} htmlFor="n-guardian">
-                  Tên phụ huynh
+                  Tên khách hàng
                 </label>
                 <input
                   id="n-guardian"
                   name="guardian_name"
-                  placeholder="Nếu học viên là trẻ em"
+                  placeholder="Người đóng học phí"
                   className={field}
                 />
               </div>

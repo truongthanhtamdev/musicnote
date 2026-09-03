@@ -38,6 +38,15 @@ export default function TodayClassCard({
 }) {
   const [open, setOpen] = useState(false);
   const isTrial = !!cls.trial_pending;
+  // Names of other students on the same package — a customer who enrolled two
+  // of their kids on one gói, so the remaining count below is shared.
+  const sharedStudents = [
+    ...new Set(
+      (progress?.sharedWith ?? [])
+        .map((s) => s.student_name)
+        .filter((name) => name !== cls.student_name)
+    ),
+  ];
 
   return (
     <li className="relative pl-6 sm:pl-8">
@@ -84,7 +93,7 @@ export default function TodayClassCard({
               <span className="truncate">
                 {cls.subject}
                 {cls.level ? ` · ${cls.level}` : ""}
-                {cls.guardian_name ? ` · PH: ${cls.guardian_name}` : ""}
+                {cls.guardian_name ? ` · KH: ${cls.guardian_name}` : ""}
               </span>
             </p>
 
@@ -111,6 +120,11 @@ export default function TodayClassCard({
                   max={progress.total}
                   tone={packageTone(progress.remaining)}
                 />
+                {sharedStudents.length > 0 && (
+                  <p className="text-[11px] text-ink-400 mt-1 truncate">
+                    Gói chung của khách hàng · học cùng {sharedStudents.join(", ")}
+                  </p>
+                )}
               </div>
             )}
           </div>

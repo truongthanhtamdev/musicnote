@@ -166,7 +166,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                             )}
                           </p>
                           {c.guardian_name && (
-                            <p className="text-xs text-ink-400 truncate">PH: {c.guardian_name}</p>
+                            <p className="text-xs text-ink-400 truncate">KH: {c.guardian_name}</p>
                           )}
                         </div>
                       </div>

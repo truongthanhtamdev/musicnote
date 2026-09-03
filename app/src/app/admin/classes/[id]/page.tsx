@@ -71,7 +71,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-ink-900 tracking-tight">{cls.student_name}</h1>
             {cls.guardian_name && (
-              <p className="text-ink-500 text-sm">Phụ huynh: {cls.guardian_name}</p>
+              <p className="text-ink-500 text-sm">Khách hàng: {cls.guardian_name}</p>
             )}
             <p className="text-ink-500 text-sm flex flex-wrap items-center gap-x-1.5 mt-0.5">
               <SubjectIcon subject={cls.subject} className="w-4 h-4 text-wood-500" />

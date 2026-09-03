@@ -119,8 +119,13 @@ Gợi ý:
   chưa khai chuyên môn đó hoặc chưa dạy được tiếng Anh (giáo viên chưa khai
   chuyên môn thì mặc định coi như dạy được mọi môn, để không ảnh hưởng giáo
   viên đã tạo từ trước).
-- **Phụ huynh**: với học sinh là trẻ em, có thể ghi thêm tên phụ huynh/người
-  đóng học phí (khác với tên học sinh) để tiện liên hệ, thu học phí.
+- **Khách hàng (người đóng học phí)**: mỗi lớp ghi tên học viên (bé đi học) và
+  tên **khách hàng** — người đăng ký/đóng tiền, thường là phụ huynh. Một khách
+  hàng có thể đăng ký cho **nhiều bé dùng chung 1 gói** (VD 2 con cùng học 1
+  gói 50 tiết): tạo lớp cho từng bé rồi cho dùng chung gói ở trang chi tiết
+  lớp. Khi đó số tiết trừ chung, và lúc điểm danh thẻ lớp hiện luôn "Gói chung
+  của khách hàng · học cùng &lt;tên bé kia&gt;" kèm số tiết còn lại của cả gói —
+  nhìn là biết khách hàng đó sắp hết khoá hay chưa.
 - **Gói học (20/50/100 tiết)**: mỗi lớp có thể gắn 1 gói học; hệ thống tự đếm
   số buổi "Đã dạy" tính từ ngày bắt đầu gói để ra số tiết đã học/còn lại
   (cảnh báo màu cam khi còn ≤ 3 tiết). Bấm "Gia hạn (làm mới)" khi học viên

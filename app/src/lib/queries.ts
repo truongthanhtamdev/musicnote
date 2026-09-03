@@ -139,8 +139,12 @@ export interface PackageProgress {
   startedAt: string;
   /** True when `used` came from a manual correction rather than counting attendance. */
   isManuallyAdjusted: boolean;
-  /** Other classes (weekly slots) drawing from this same package pool, if any. */
-  sharedWith: { id: number; day_of_week: number; start_time: string }[];
+  /**
+   * Other classes drawing from this same package pool, if any — either the
+   * same student's other weekly slots, or a sibling the customer enrolled on
+   * the one package.
+   */
+  sharedWith: { id: number; day_of_week: number; start_time: string; student_name: string }[];
 }
 
 export function getPackage(id: number): PackageRow | undefined {
@@ -215,8 +219,10 @@ export function getPackageProgress(cls: ClassRow): PackageProgress | null {
   if (!base) return null;
 
   const sharedWith = db
-    .prepare("SELECT id, day_of_week, start_time FROM classes WHERE package_id = ? AND id != ?")
-    .all(cls.package_id, cls.id) as { id: number; day_of_week: number; start_time: string }[];
+    .prepare(
+      "SELECT id, day_of_week, start_time, student_name FROM classes WHERE package_id = ? AND id != ?"
+    )
+    .all(cls.package_id, cls.id) as PackageProgress["sharedWith"];
 
   return { ...base, sharedWith };
 }

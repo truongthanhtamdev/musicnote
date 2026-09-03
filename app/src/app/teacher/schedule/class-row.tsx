@@ -180,9 +180,9 @@ export default function TeacherClassRow({
           <input
             name="guardian_name"
             defaultValue={cls.guardian_name || ""}
-            placeholder="Tên phụ huynh"
+            placeholder="Tên khách hàng"
             className={field}
-            aria-label="Tên phụ huynh"
+            aria-label="Tên khách hàng"
           />
           <input
             name="level"
