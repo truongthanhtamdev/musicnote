@@ -26,7 +26,7 @@ export default function ClassesImportForm() {
         name="file"
         accept=".csv,text/csv"
         required
-        className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-lg file:border-0 file:bg-ivory-200 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-slate-200"
+        className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-lg file:border-0 file:bg-ivory-200 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-navy-100"
       />
       {state.error && <p className="text-sm text-coral-600">{state.error}</p>}
       {state.summary && (
