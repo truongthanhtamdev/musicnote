@@ -65,8 +65,21 @@ Gợi ý:
   chưa có HTTPS (chạy tạm qua `http://ip:port`), để trống biến này** — đặt
   `true` khi chưa có HTTPS sẽ khiến trình duyệt từ chối lưu cookie và liên
   tục bị đá về trang đăng nhập.
-- Sao lưu định kỳ thư mục `DATA_DIR` (chính là toàn bộ dữ liệu: giáo viên,
-  lớp học, điểm danh, lịch rảnh).
+- **Sao lưu tự động hàng đêm**: cài 1 dòng cron để chạy sẵn script trong repo
+  (dùng `VACUUM INTO` của SQLite nên an toàn kể cả khi app đang chạy) — mỗi
+  đêm tạo 1 file `DATA_DIR/backups/musicnote-YYYY-MM-DD.db`, tự xoá bản cũ
+  chỉ giữ 30 bản gần nhất:
+
+  ```bash
+  crontab -e
+  # thêm dòng này (2h sáng mỗi ngày), sửa lại đường dẫn cho đúng máy bạn:
+  0 2 * * * cd /root/musicnote/app && /usr/bin/node scripts/backup.mjs >> /var/log/musicnote-backup.log 2>&1
+  ```
+
+  Kiểm tra cron chạy chưa: vào app, mục **Sao lưu dữ liệu** — trang này hiện
+  bản mới nhất, danh sách các bản trên máy chủ, và cảnh báo nếu hôm nay chưa
+  có bản nào. Vẫn nên thỉnh thoảng bấm **"Tải dữ liệu mới nhất về máy"** để
+  giữ 1 bản ngoài máy chủ (phòng khi hỏng ổ đĩa/mất VPS).
 - Đặt `AUTH_SECRET` là một chuỗi ngẫu nhiên dài, giữ bí mật và **không đổi**
   sau khi đã có người đăng nhập (đổi sẽ làm mất hiệu lực mọi phiên đăng
   nhập hiện tại).
@@ -159,6 +172,12 @@ Gợi ý:
   **mặc định mọi ô đều rảnh**, chỉ cần bấm đánh dấu những khung giờ mình bận
   (không nhận lớp được); bấm lại để bỏ đánh dấu, hoặc "rảnh cả ngày" ở đầu
   cột để bỏ hết trong 1 ngày.
+- **Admin → Sao lưu dữ liệu**: bấm **"Tải dữ liệu mới nhất về máy"** để tải
+  toàn bộ dữ liệu về thành 1 file `.db` (mở xem được bằng phần mềm miễn phí
+  "DB Browser for SQLite"). Trang này cũng liệt kê các bản sao lưu tự động
+  hàng đêm trên máy chủ (tải lại được từng bản), và cảnh báo nếu hôm nay
+  chưa có bản nào — xem phần Triển khai ở trên để cài lịch cron. Khôi phục:
+  chép file `.db` đè lên `DATA_DIR/musicnote.db` rồi khởi động lại app.
 - **Admin/Giáo vụ → Nhập dữ liệu**: tải lên file CSV để tạo hàng loạt
   giáo viên/lớp học một lần (hữu ích khi đưa ~200 lớp có sẵn vào hệ thống),
   có file mẫu tải sẵn và báo lỗi theo từng dòng.

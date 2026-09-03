@@ -158,8 +158,10 @@ function getPackageProgressBatch(packageIds: number[]): Map<number, PackageProgr
   const map = new Map<number, PackageProgress>();
   if (packageIds.length === 0) return map;
   const placeholders = packageIds.map(() => "?").join(",");
-  // computedUsed counts completed attendance since the package started, but
-  // only from after used_override_set_at when a baseline is set — so a
+  // computedUsed counts completed attendance since the package started —
+  // excluding trials, since "buổi 0" is a taster that doesn't eat a paid
+  // session, which is also how sessionNumberMap numbers them. It counts
+  // only from after used_override_set_at when a baseline is set, so a
   // manually-entered baseline (e.g. backfilling an old class already at
   // session 15) keeps counting up from there instead of freezing. The cutoff
   // compares against a.created_at (insertion order), not a.session_date —
@@ -173,7 +175,8 @@ function getPackageProgressBatch(packageIds: number[]): Map<number, PackageProgr
     .prepare(
       `SELECT p.id as packageId, p.total_sessions as total, p.started_at as startedAt, p.used_override as usedOverride,
         (SELECT COUNT(*) FROM attendance a JOIN classes c ON c.id = a.class_id
-         WHERE c.package_id = p.id AND a.status = 'completed' AND a.session_date >= p.started_at
+         WHERE c.package_id = p.id AND a.status = 'completed' AND a.is_trial = 0
+           AND a.session_date >= p.started_at
            AND (p.used_override_set_at IS NULL OR a.created_at > p.used_override_set_at)) as computedUsed
        FROM packages p WHERE p.id IN (${placeholders})`
     )
@@ -298,7 +301,6 @@ export function annotateSchedule(classes: ClassWithTeacher[]): ClassWithSchedule
   });
 }
 
-/** Half-hour blocks the teacher has marked BUSY — everything not listed here defaults to free. */
 /**
  * "Buổi thứ mấy" cho từng lần điểm danh: đếm luỹ tiến các buổi đã dạy trong
  * cùng gói học (buổi học thử không tính, và không được đánh số). Lớp không
@@ -332,6 +334,7 @@ export function sessionNumberMap(classIds: number[]): Map<number, number> {
   return out;
 }
 
+/** Half-hour blocks the teacher has marked BUSY — everything not listed here defaults to free. */
 export function listBusySlots(teacherId: number): BusySlotRow[] {
   return db
     .prepare(

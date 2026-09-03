@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { DAY_ORDER, TIME_SLOTS } from "./types";
 import { addMinutesToTime } from "./format";
 
-const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
+export const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
 if (!fs.existsSync(/* turbopackIgnore: true */ DATA_DIR)) {
   fs.mkdirSync(/* turbopackIgnore: true */ DATA_DIR, { recursive: true });
 }

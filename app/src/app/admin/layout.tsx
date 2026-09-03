@@ -6,6 +6,7 @@ import {
   IconCalendarCheck,
   IconChart,
   IconClasses,
+  IconDownload,
   IconHome,
   IconPackage,
   IconSettings,
@@ -75,6 +76,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             href: "/admin/staff",
             label: "Nhân sự quản lý",
             icon: <IconSettings className={ICON} />,
+          },
+          {
+            href: "/admin/backup",
+            label: "Sao lưu dữ liệu",
+            icon: <IconDownload className={ICON} />,
           },
         ]
       : []),
