@@ -172,6 +172,10 @@ Gợi ý:
   **mặc định mọi ô đều rảnh**, chỉ cần bấm đánh dấu những khung giờ mình bận
   (không nhận lớp được); bấm lại để bỏ đánh dấu, hoặc "rảnh cả ngày" ở đầu
   cột để bỏ hết trong 1 ngày.
+- **Xuất file Excel/CSV**: trang **Lịch & điểm danh**, **Chấm công/Lương** và
+  **Doanh thu** đều có nút **"Xuất CSV"** — xuất đúng những gì đang lọc trên
+  màn hình (khoảng ngày, giáo viên, trạng thái), mở thẳng bằng Excel/Google
+  Sheets. File điểm danh có sẵn cột "Buổi thứ" và cột đánh dấu buổi học thử.
 - **Admin → Sao lưu dữ liệu**: bấm **"Tải dữ liệu mới nhất về máy"** để tải
   toàn bộ dữ liệu về thành 1 file `.db` (mở xem được bằng phần mềm miễn phí
   "DB Browser for SQLite"). Trang này cũng liệt kê các bản sao lưu tự động

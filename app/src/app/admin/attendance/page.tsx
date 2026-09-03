@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { listAttendance, listTeachers, sessionNumberMap } from "@/lib/queries";
 import { todayISO, addDays, toISODate } from "@/lib/format";
-import { IconAlert, IconCalendarCheck, IconCheckCircle, IconFilter } from "@/components/icons";
+import {
+  IconAlert,
+  IconCalendarCheck,
+  IconCheckCircle,
+  IconDownload,
+  IconFilter,
+} from "@/components/icons";
 import {
   Card,
   EmptyState,
@@ -138,6 +144,15 @@ export default async function AttendancePage({
             <IconFilter className="w-4 h-4" />
             Lọc
           </button>
+          <a
+            href={`/admin/attendance/export?from=${from}&to=${to}${
+              teacherId ? `&teacherId=${teacherId}` : ""
+            }${sp.status ? `&status=${sp.status}` : ""}`}
+            className={btn.secondary}
+          >
+            <IconDownload className="w-4 h-4" />
+            Xuất CSV
+          </a>
           <Link href="/admin/attendance" className={btn.ghost}>
             Xoá lọc
           </Link>
