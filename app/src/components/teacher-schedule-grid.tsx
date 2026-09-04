@@ -89,7 +89,7 @@ function QuickAddCell({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group w-full h-9 sm:h-7 rounded-md hover:bg-wood-50 border border-transparent hover:border-wood-200 transition flex items-center justify-center"
+        className="group w-full h-9 sm:h-7 rounded-md bg-mint-50 hover:bg-wood-50 border border-mint-100 hover:border-wood-200 transition flex items-center justify-center"
         aria-label={`Thêm lớp ${DAY_LABELS[dayOfWeek]} ${startTime}`}
       >
         <IconPlus className="w-3.5 h-3.5 text-wood-500 opacity-0 group-hover:opacity-100 transition" />
@@ -219,7 +219,7 @@ export function TeacherScheduleGrid({
           Bận (cá nhân)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3.5 h-3.5 rounded bg-white border border-navy-100" />
+          <span className="inline-block w-3.5 h-3.5 rounded bg-mint-50 border border-mint-100" />
           Rảnh — {mode === "self" ? "bấm để đánh dấu bận" : "bấm để thêm lớp mới"}
         </span>
       </div>
@@ -333,7 +333,7 @@ export function TeacherScheduleGrid({
                             type="button"
                             disabled={isPending}
                             onClick={() => startTransition(() => toggleBusySlotAction(d, time))}
-                            className="w-full h-9 sm:h-7 rounded-md border border-transparent hover:bg-ivory-100 hover:border-navy-100 transition disabled:opacity-60"
+                            className="w-full h-9 sm:h-7 rounded-md bg-mint-50 border border-mint-100 hover:bg-ivory-100 hover:border-navy-100 transition disabled:opacity-60"
                             aria-label={`Đánh dấu bận ${DAY_LABELS[d]} ${time}`}
                           />
                         )}
