@@ -10,7 +10,7 @@ một VPS nhỏ, không cần dịch vụ ngoài.
 | Vai trò | Quyền |
 |---|---|
 | **Admin** | Toàn quyền: tạo tài khoản cho Giáo vụ/Giáo viên/Học viên, quản lý giáo viên & lương/buổi, quản lý lớp, giao lớp, sửa điểm danh, xem/xuất báo cáo lương, quản lý doanh thu & lợi nhuận. |
-| **Giáo vụ** (coordinator) | Tạo/sửa lớp học, giao lớp cho giáo viên, xem & sửa nhật ký điểm danh. Không xem/sửa được lương hay tài khoản. |
+| **Giáo vụ** (coordinator) | Tạo/sửa lớp học, giao lớp cho giáo viên, xem & sửa nhật ký điểm danh, quản lý khách hàng tiềm năng (chốt khách & tạo lớp — nhưng không ghi nhận được tiền học). Không xem/sửa được lương hay tài khoản. |
 | **Giáo viên** | Xem lớp được giao, **tự thêm lớp mới của mình** (học sinh + thứ/giờ học) và sửa lịch lớp mình đang dạy, điểm danh buổi học hôm nay (kèm nội dung bài học + tick "đã điểm danh trên Facebook"), cập nhật khung giờ rảnh theo tuần, xem lịch dạy & thu nhập của mình. |
 | **Học viên** | Đăng nhập xem lớp học của mình: tiến độ gói học (đã học/còn lại bao nhiêu tiết) và nội dung các buổi học gần đây. Chỉ xem, không sửa được gì. |
 
@@ -71,6 +71,23 @@ Gợi ý:
 
 - **Admin/Giáo vụ → Lớp học**: thêm lớp mới (học sinh, thứ/giờ học cố
   định hàng tuần, thời lượng), sửa thông tin, tạm dừng/kết thúc lớp.
+- **Admin/Giáo vụ → Khách tiềm năng**: data khách hỏi từ Facebook (tên, SĐT
+  Zalo, tên/link Facebook, khu vực, môn, hình thức học — 1 kèm 1 tại nhà /
+  online / nhóm tại quán cà phê / tại trung tâm — nhu cầu, nguồn). Mỗi khách
+  đi theo phễu **Mới → Đã liên hệ → Đang tư vấn → Hẹn học thử → Đã học thử →
+  Đã chốt / Từ chối / Nguội**, có người phụ trách, ngày hẹn liên hệ lại (quá
+  hạn thì tô vàng ở danh sách và hiện thẻ nhắc trên trang Tổng quan) và nhật
+  ký từng lần gọi/nhắn. Bấm SĐT là mở thẳng chat Zalo. Nhập trùng SĐT bị chặn
+  kèm link mở khách cũ. Nút **Chốt & tạo lớp** tạo lớp học thật từ thông tin
+  đã tư vấn và gắn lớp đó vào khách.
+- **Doanh thu theo nguồn quảng cáo**: vì lớp được gắn với khách, mọi khoản
+  học phí của lớp tự quy về đúng nguồn đã mang khách tới. Trang chi tiết
+  khách ghi nhận tiền học luôn (cùng bảng thanh toán với trang Doanh thu).
+  Trang **Khách tiềm năng → Báo cáo & doanh thu** tính theo lứa khách nhận
+  trong khoảng ngày: tỉ lệ chốt, doanh thu thu được, chi phí quảng cáo (lấy
+  tự động từ các khoản chi có chữ "Quảng cáo"/"Ads"), **CPL** (chi phí/lead),
+  **CAC** (chi phí/khách chốt), **ROAS** (doanh thu/chi phí quảng cáo), tách
+  theo nguồn – khu vực – hình thức học, kèm thống kê lý do không chốt.
 - **Admin/Giáo vụ → Giao lớp**: danh sách lớp chưa có giáo viên; hệ thống
   gợi ý giáo viên có khung giờ rảnh trùng lịch lớp (đánh dấu ✓), bấm để giao
   ngay.
@@ -114,8 +131,11 @@ Gợi ý:
 - **Giáo viên → Khung giờ rảnh**: lưới theo tuần (30 phút/ô, 07:00–22:00),
   bấm để bật/tắt khung giờ có thể nhận lớp.
 - **Admin/Giáo vụ → Nhập dữ liệu**: tải lên file CSV để tạo hàng loạt
-  giáo viên/lớp học một lần (hữu ích khi đưa ~200 lớp có sẵn vào hệ thống),
-  có file mẫu tải sẵn và báo lỗi theo từng dòng.
+  giáo viên/lớp học/khách hàng tiềm năng một lần (hữu ích khi đưa ~200 lớp có
+  sẵn, hoặc file tải về từ Facebook Lead Ads, vào hệ thống), có file mẫu tải
+  sẵn và báo lỗi theo từng dòng. File khách hàng tiềm năng tự bỏ qua dòng
+  trùng SĐT với khách đã có. Danh sách khách cũng xuất được CSV theo đúng bộ
+  lọc đang xem.
 - **Giáo viên → Hôm nay**: danh sách lớp trong ngày, điểm danh 1 lần/lớp/buổi
   (trạng thái: Đã dạy / GV vắng / HS vắng / Dời lịch), có ô ghi chú và ô tick
   xác nhận đã điểm danh Facebook.
