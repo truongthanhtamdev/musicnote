@@ -6,7 +6,7 @@ import {
   listClasses,
   listPackagesNearingCompletion,
 } from "@/lib/queries";
-import { formatTimeRange, todayISO, toISODate, addDays } from "@/lib/format";
+import { formatTimeRange, todayISO, toISODate, addDays, now } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 import {
   IconAlert,
@@ -49,7 +49,7 @@ function weeklyStats() {
   const activeClasses = listClasses({ status: "active" });
   const days: { label: string; date: string; scheduled: number; taught: number }[] = [];
   for (let i = 6; i >= 0; i--) {
-    const d = addDays(new Date(), -i);
+    const d = addDays(now(), -i);
     const date = toISODate(d);
     const scheduled = activeClasses.filter(
       (c) =>
@@ -87,7 +87,7 @@ export default async function AdminDashboard() {
       .get() as { c: number }
   ).c;
 
-  const today = new Date();
+  const today = now();
   const dow = today.getDay();
   const todayStr = todayISO();
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
@@ -159,7 +159,7 @@ export default async function AdminDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <MetricCard
           label="Giáo viên đang hoạt động"
           value={teacherCount}

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { nowHHMM } from "@/lib/format";
 import { assertRole } from "@/lib/guard";
 import { getAttendance, getClass, getPackageProgress } from "@/lib/queries";
 import { hasRescheduleInfo, type AttendanceStatus } from "@/lib/types";
@@ -77,8 +78,7 @@ export async function markAttendanceAction(
   }
 
   const existing = getAttendance(classId, sessionDate);
-  const now = new Date();
-  const nowStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const nowStr = nowHHMM();
 
   if (existing) {
     // is_trial isn't in this SET list on purpose — it follows "buổi thứ mấy"

@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { now } from "@/lib/format";
 import { listClassesForTeacher, getPackageProgressForClasses } from "@/lib/queries";
 import { DAY_LABELS, DAY_ORDER } from "@/lib/types";
 import { IconClasses, IconClock } from "@/components/icons";
@@ -15,7 +16,7 @@ export default async function TeacherSchedulePage() {
     progress: c.package_id ? (progressByPackage.get(c.package_id) ?? null) : null,
   }));
   const flexibleClasses = classes.filter((c) => c.schedule_type === "flexible");
-  const todayDow = new Date().getDay();
+  const todayDow = now().getDay();
 
   return (
     <div className="space-y-5">

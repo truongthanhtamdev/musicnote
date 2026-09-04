@@ -80,6 +80,10 @@ Gợi ý:
   bản mới nhất, danh sách các bản trên máy chủ, và cảnh báo nếu hôm nay chưa
   có bản nào. Vẫn nên thỉnh thoảng bấm **"Tải dữ liệu mới nhất về máy"** để
   giữ 1 bản ngoài máy chủ (phòng khi hỏng ổ đĩa/mất VPS).
+- **Múi giờ**: app luôn tính ngày/giờ theo giờ Việt Nam (`Asia/Ho_Chi_Minh`)
+  dù máy chủ chạy UTC, nên giờ điểm danh và "Hôm nay" luôn khớp thực tế —
+  không cần chỉnh gì trên VPS. Trung tâm ở múi giờ khác thì đặt biến môi
+  trường `APP_TIME_ZONE` (VD `APP_TIME_ZONE="Asia/Bangkok"`).
 - Đặt `AUTH_SECRET` là một chuỗi ngẫu nhiên dài, giữ bí mật và **không đổi**
   sau khi đã có người đăng nhập (đổi sẽ làm mất hiệu lực mọi phiên đăng
   nhập hiện tại).

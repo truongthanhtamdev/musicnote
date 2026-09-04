@@ -89,7 +89,7 @@ function QuickAddCell({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group w-full h-7 rounded-md hover:bg-wood-50 border border-transparent hover:border-wood-200 transition flex items-center justify-center"
+        className="group w-full h-9 sm:h-7 rounded-md hover:bg-wood-50 border border-transparent hover:border-wood-200 transition flex items-center justify-center"
         aria-label={`Thêm lớp ${DAY_LABELS[dayOfWeek]} ${startTime}`}
       >
         <IconPlus className="w-3.5 h-3.5 text-wood-500 opacity-0 group-hover:opacity-100 transition" />
@@ -225,10 +225,10 @@ export function TeacherScheduleGrid({
       </div>
 
       <div className="overflow-x-auto scroll-thin rounded-2xl border border-navy-100">
-        <table className="border-collapse text-xs w-full min-w-[640px]">
+        <table className="border-collapse text-[11px] sm:text-xs w-full min-w-0 sm:min-w-[640px]">
           <thead>
             <tr className="bg-ivory-100">
-              <th className="w-16 sticky left-0 bg-ivory-100 z-10" />
+              <th className="w-10 sm:w-16 sticky left-0 bg-ivory-100 z-10" />
               {DAY_ORDER.map((d) => (
                 <th key={d} className="px-1 py-2 font-semibold text-ink-700 border-l border-navy-100">
                   <div className="flex flex-col items-center gap-0.5">
@@ -240,7 +240,8 @@ export function TeacherScheduleGrid({
                         className="text-[10px] font-medium text-ink-400 hover:text-coral-600 transition"
                         title="Bỏ hết đánh dấu bận trong ngày này"
                       >
-                        rảnh cả ngày
+                        <span className="sm:hidden">xoá</span>
+                        <span className="hidden sm:inline">rảnh cả ngày</span>
                       </button>
                     )}
                   </div>
@@ -254,7 +255,7 @@ export function TeacherScheduleGrid({
               return (
                 <tr key={time} className={isHour ? "border-t border-navy-100" : ""}>
                   <td
-                    className={`pr-2 text-right sticky left-0 bg-white tabular ${
+                    className={`pr-1 sm:pr-2 text-right sticky left-0 bg-white tabular ${
                       isHour ? "text-ink-600 font-medium" : "text-ink-400"
                     }`}
                   >
@@ -309,13 +310,13 @@ export function TeacherScheduleGrid({
                               type="button"
                               disabled={isPending}
                               onClick={() => startTransition(() => toggleBusySlotAction(d, time))}
-                              className="w-full h-7 rounded-md bg-ivory-200 hover:bg-navy-100 border border-navy-100 text-ink-500 text-[10px] font-medium transition disabled:opacity-60"
+                              className="w-full h-9 sm:h-7 rounded-md bg-ivory-200 hover:bg-navy-100 border border-navy-100 text-ink-500 text-[10px] font-medium transition disabled:opacity-60"
                               title="Bấm để bỏ đánh dấu bận"
                             >
                               Bận
                             </button>
                           ) : (
-                            <div className="w-full h-7 rounded-md bg-ivory-200 border border-navy-100 text-ink-400 text-[10px] font-medium flex items-center justify-center">
+                            <div className="w-full h-9 sm:h-7 rounded-md bg-ivory-200 border border-navy-100 text-ink-400 text-[10px] font-medium flex items-center justify-center">
                               Bận
                             </div>
                           )}
@@ -332,7 +333,7 @@ export function TeacherScheduleGrid({
                             type="button"
                             disabled={isPending}
                             onClick={() => startTransition(() => toggleBusySlotAction(d, time))}
-                            className="w-full h-7 rounded-md border border-transparent hover:bg-ivory-100 hover:border-navy-100 transition disabled:opacity-60"
+                            className="w-full h-9 sm:h-7 rounded-md border border-transparent hover:bg-ivory-100 hover:border-navy-100 transition disabled:opacity-60"
                             aria-label={`Đánh dấu bận ${DAY_LABELS[d]} ${time}`}
                           />
                         )}

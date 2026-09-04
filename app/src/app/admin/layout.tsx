@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/guard";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import { listClassesByDay, listAttendance } from "@/lib/queries";
-import { todayISO } from "@/lib/format";
+import { todayISO, now } from "@/lib/format";
 import {
   IconCalendarCheck,
   IconChart,
@@ -21,7 +21,7 @@ const ICON = "w-5 h-5";
 
 /** Số lớp hôm nay đã qua giờ kết thúc mà chưa có điểm danh — hiện ở chuông cảnh báo. */
 function overdueTodayCount(): number {
-  const today = new Date();
+  const today = now();
   const todayStr = todayISO();
   const marked = new Set(listAttendance({ from: todayStr, to: todayStr }).map((a) => a.class_id));
   const nowMinutes = today.getHours() * 60 + today.getMinutes();

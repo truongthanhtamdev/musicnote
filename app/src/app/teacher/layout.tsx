@@ -2,7 +2,7 @@ import { requireRole } from "@/lib/guard";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import { NotificationsBanner } from "@/components/notifications-banner";
 import { listClassesForTeacher, getAttendance, listUnreadNotifications } from "@/lib/queries";
-import { todayISO } from "@/lib/format";
+import { todayISO, now } from "@/lib/format";
 import {
   IconCalendarCheck,
   IconClasses,
@@ -30,7 +30,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
 
   // Badge chuông: lớp hôm nay chưa điểm danh + thông báo chưa đọc.
   const todayStr = todayISO();
-  const dow = new Date().getDay();
+  const dow = now().getDay();
   const pending = listClassesForTeacher(session.userId).filter(
     (c) =>
       c.status === "active" &&

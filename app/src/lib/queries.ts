@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { addMinutesToTime, nextOccurrence, mostRecentOccurrence, toISODate, todayISO } from "./format";
+import { addMinutesToTime, nextOccurrence, mostRecentOccurrence, toISODate, todayISO, now } from "./format";
 import {
   parseLanguages,
   parseSubjects,
@@ -287,7 +287,7 @@ export interface ClassWithSchedule extends ClassWithTeacher {
 }
 
 export function annotateSchedule(classes: ClassWithTeacher[]): ClassWithSchedule[] {
-  const today = new Date();
+  const today = now();
   const todayStr = todayISO();
   return classes.map((c) => {
     // Flexible classes have no fixed weekly day, so "next session" and

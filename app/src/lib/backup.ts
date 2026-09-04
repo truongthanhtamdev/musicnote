@@ -1,4 +1,5 @@
 import path from "path";
+import { now } from "./format";
 import fs from "fs";
 import { db, DATA_DIR } from "./db";
 
@@ -25,7 +26,7 @@ export function writeSnapshot(target: string) {
   db.prepare("VACUUM INTO ?").run(target);
 }
 
-export function backupFileName(date = new Date()): string {
+export function backupFileName(date = now()): string {
   const stamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
     date.getDate()
   ).padStart(2, "0")}`;

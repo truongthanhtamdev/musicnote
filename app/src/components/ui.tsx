@@ -122,17 +122,17 @@ export function MetricCard({
 }) {
   const t = METRIC_TONES[tone];
   const body = (
-    <div className="bg-white rounded-2xl border border-navy-100 p-4 flex items-start gap-3.5 h-full transition hover:border-wood-300 hover:shadow-[0_2px_10px_rgba(16,36,62,0.06)]">
+    <div className="bg-white rounded-2xl border border-navy-100 p-3.5 sm:p-4 flex items-start gap-2.5 sm:gap-3.5 h-full transition hover:border-wood-300 hover:shadow-[0_2px_10px_rgba(16,36,62,0.06)]">
       {icon && (
-        <span className={`shrink-0 rounded-xl p-2.5 ${t.icon}`} aria-hidden="true">
+        <span className={`shrink-0 rounded-xl p-2 sm:p-2.5 ${t.icon}`} aria-hidden="true">
           {icon}
         </span>
       )}
       <div className="min-w-0">
         <p className="text-sm text-ink-500 leading-snug">{label}</p>
-        <p className={`text-3xl font-bold mt-0.5 tabular ${t.value}`}>
+        <p className={`text-2xl sm:text-3xl font-bold mt-0.5 tabular ${t.value}`}>
           {value}
-          {unit && <span className="text-sm font-medium text-ink-400 ml-1.5">{unit}</span>}
+          {unit && <span className="text-xs sm:text-sm font-medium text-ink-400 ml-1 sm:ml-1.5">{unit}</span>}
         </p>
         {hint && <p className="text-xs text-ink-400 mt-0.5">{hint}</p>}
       </div>
@@ -324,7 +324,7 @@ export function TableShell({ children }: { children: ReactNode }) {
 export function Th({ children, className = "" }: { children?: ReactNode; className?: string }) {
   return (
     <th
-      className={`px-4 py-3 font-semibold text-xs uppercase tracking-wide text-ink-500 text-left bg-ivory-100 sticky top-0 whitespace-nowrap ${className}`}
+      className={`px-2.5 sm:px-4 py-3 font-semibold text-xs uppercase tracking-wide text-ink-500 text-left bg-ivory-100 sticky top-0 whitespace-nowrap ${className}`}
     >
       {children}
     </th>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { listClassesForTeacher, getPackageProgress, listAttendance } from "@/lib/queries";
-import { todayISO } from "@/lib/format";
+import { todayISO, now } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 import { IconCalendarCheck, IconCheckCircle, IconMusic } from "@/components/icons";
 import { Card, EmptyState, btn } from "@/components/ui";
@@ -17,7 +17,7 @@ export default async function TeacherTodayPage() {
   const session = await getSession();
   const teacherId = session!.userId;
 
-  const today = new Date();
+  const today = now();
   const dow = today.getDay();
   const todayStr = todayISO();
   const nowMinutes = today.getHours() * 60 + today.getMinutes();

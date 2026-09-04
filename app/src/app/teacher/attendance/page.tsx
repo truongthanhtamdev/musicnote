@@ -6,7 +6,7 @@ import {
   getClass,
   sessionNumberMap,
 } from "@/lib/queries";
-import { addDays, toISODate, todayISO } from "@/lib/format";
+import { addDays, toISODate, todayISO, now } from "@/lib/format";
 import { formatClassSchedule, CLASS_STATUS_LABELS } from "@/lib/types";
 import { IconCalendarCheck, IconCheckCircle, IconFilter } from "@/components/icons";
 import {
@@ -35,7 +35,7 @@ export default async function TeacherAttendanceHistoryPage({
   // just the default 30-day window everyone else's combined log uses —
   // omitting `from` entirely (rather than a fake early sentinel date)
   // already means "no lower bound" to listAttendance.
-  const from = sp.from || (classId ? undefined : toISODate(addDays(new Date(), -30)));
+  const from = sp.from || (classId ? undefined : toISODate(addDays(now(), -30)));
   const to = sp.to || todayISO();
 
   const rows = listAttendance({ teacherId: session!.userId, from, to, classId });
@@ -77,7 +77,7 @@ export default async function TeacherAttendanceHistoryPage({
         action={<MakeupAttendanceForm classes={myClasses} />}
       />
 
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <MetricCard
           label="Tổng buổi ghi nhận"
           value={rows.length}
@@ -134,9 +134,9 @@ export default async function TeacherAttendanceHistoryPage({
                 <Th>Ngày</Th>
                 <Th>Học viên</Th>
                 <Th>Trạng thái</Th>
-                <Th>Giờ điểm danh</Th>
-                <Th>Nội dung bài học</Th>
-                <Th>Ghi chú</Th>
+                <Th className="hidden sm:table-cell">Giờ điểm danh</Th>
+                <Th className="hidden sm:table-cell">Nội dung bài học</Th>
+                <Th className="hidden sm:table-cell">Ghi chú</Th>
                 <Th />
               </tr>
             </thead>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { listAttendance, listTeachers, sessionNumberMap } from "@/lib/queries";
-import { todayISO, addDays, toISODate } from "@/lib/format";
+import { todayISO, addDays, toISODate, now } from "@/lib/format";
 import {
   IconAlert,
   IconCalendarCheck,
@@ -29,7 +29,7 @@ export default async function AttendancePage({
   const sp = await searchParams;
   const teachers = listTeachers(true);
 
-  const defaultFrom = toISODate(addDays(new Date(), -7));
+  const defaultFrom = toISODate(addDays(now(), -7));
   const from = sp.from || defaultFrom;
   const to = sp.to || todayISO();
   const teacherId = sp.teacherId ? Number(sp.teacherId) : undefined;
