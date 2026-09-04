@@ -51,13 +51,15 @@ export function TopNav({
   return (
     <header className="bg-neutral-950 border-b border-neutral-800 sticky top-0 z-10">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center justify-between h-14 gap-4">
+        <div className="flex items-center justify-between min-h-14 py-2 gap-4">
           <div className="flex items-center gap-6 min-w-0">
             <span className="flex items-center gap-2 whitespace-nowrap shrink-0">
               <Logo className="h-7 shrink-0" />
               <span className="font-bold text-gold-300">{title}</span>
             </span>
-            <nav className="hidden md:flex items-center gap-1 overflow-x-auto min-w-0">
+            {/* Cuốn xuống dòng thay vì cắt mất mục cuối: menu admin có tới 11 mục,
+                ở màn hình laptop 1440px một hàng không đủ chỗ. */}
+            <nav className="hidden md:flex flex-wrap items-center gap-1 min-w-0">
               <NavLinks links={links} className="" />
             </nav>
           </div>
