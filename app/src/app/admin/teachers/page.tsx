@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { listTeachers, listClasses } from "@/lib/queries";
 import { formatVND } from "@/lib/format";
@@ -57,10 +58,14 @@ export default async function TeachersPage() {
               {teachers.map((t) => (
                 <tr key={t.id} className="hover:bg-ivory-50">
                   <td className="px-4 py-3">
-                    <span className="flex items-center gap-2.5 font-medium text-ink-900 whitespace-nowrap">
+                    <Link
+                      href={`/admin/teachers/${t.id}`}
+                      title="Xem lịch tuần & chi tiết giáo viên"
+                      className="flex items-center gap-2.5 font-medium text-ink-900 hover:text-wood-700 whitespace-nowrap"
+                    >
                       <Avatar name={t.name} className="w-8 h-8 text-[11px]" />
                       {t.name}
-                    </span>
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-ink-600">{t.email}</td>
                   <td className="px-4 py-3 text-ink-600 tabular">{t.phone || "–"}</td>
