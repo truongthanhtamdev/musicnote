@@ -7,6 +7,9 @@ import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { getUserByEmail } from "@/lib/auth";
 import { parseCSV, parseDayOfWeek } from "@/lib/csv";
+import { todayISO } from "@/lib/format";
+import { findLeadsByPhone } from "@/lib/queries";
+import { normalizePhone, type LeadLearningMode } from "@/lib/types";
 
 export interface ImportState {
   error?: string;
@@ -177,6 +180,101 @@ export async function importClassesAction(
   revalidatePath("/admin/assign");
 
   let summary = `Đã tạo ${created} lớp học.`;
+  if (errors.length > 0) {
+    summary += ` Có ${errors.length} dòng lỗi:\n${errors.slice(0, 30).join("\n")}`;
+    if (errors.length > 30) summary += `\n... và ${errors.length - 30} lỗi khác`;
+  }
+  return { summary };
+}
+
+/** "1 kèm 1 tại nhà" / "online" / "cà phê" / "trung tâm" → mã hình thức học trong hệ thống. */
+function parseLearningModeText(raw: string): LeadLearningMode {
+  const t = (raw || "").toLowerCase();
+  if (!t) return "home_private";
+  if (t.includes("online") || t.includes("trực tuyến")) return "online";
+  if (t.includes("cà phê") || t.includes("ca phe") || t.includes("nhóm") || t.includes("cafe"))
+    return "cafe_group";
+  if (t.includes("trung tâm") || t.includes("trung tam")) return "center";
+  return "home_private";
+}
+
+/**
+ * Nhập data khách hàng tiềm năng từ Facebook (file tải về từ Lead Ads, hoặc
+ * file Excel giáo vụ tự gõ), cột theo đúng thứ tự:
+ * Ten,SDT,TenFacebook,LinkFacebook,KhuVuc,MonHoc,HinhThucHoc,NhuCau,Nguon,NgayNhan,GhiChu
+ * Dòng trùng SĐT (đã có trong danh sách) sẽ bị bỏ qua để tránh nhân đôi khách.
+ */
+export async function importLeadsAction(
+  _prev: ImportState,
+  formData: FormData
+): Promise<ImportState> {
+  const session = await assertRole(["admin", "coordinator"]);
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Vui lòng chọn file CSV" };
+  }
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if (rows.length === 0) {
+    return { error: "File CSV trống" };
+  }
+  const dataRows = /ten|tên|sdt|sđt|facebook/i.test(rows[0].join(",")) ? rows.slice(1) : rows;
+
+  const insert = db.prepare(
+    `INSERT INTO leads (name, phone, phone_normalized, fb_name, fb_url, area, subject,
+       learning_mode, need, source, received_at, status, temperature, owner_id, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', 'warm', ?, ?)`
+  );
+
+  let created = 0;
+  let duplicated = 0;
+  const errors: string[] = [];
+  const today = todayISO();
+
+  dataRows.forEach((cols, idx) => {
+    const [name, phone, fbName, fbUrl, area, subject, mode, need, source, receivedAt, notes] =
+      cols.map((c) => (c || "").trim());
+    const lineNo = idx + 2; // trừ dòng tiêu đề
+
+    if (!name) {
+      errors.push(`Dòng ${lineNo}: thiếu tên khách hàng`);
+      return;
+    }
+    if (!phone && !fbUrl && !fbName) {
+      errors.push(`Dòng ${lineNo}: không có cách liên hệ nào (SĐT hoặc Facebook)`);
+      return;
+    }
+
+    const phoneNormalized = normalizePhone(phone || "");
+    if (phoneNormalized && findLeadsByPhone(phoneNormalized).length > 0) {
+      duplicated++;
+      return;
+    }
+
+    insert.run(
+      name,
+      phone || null,
+      phoneNormalized || null,
+      fbName || null,
+      fbUrl || null,
+      area || null,
+      subject || "Guitar",
+      parseLearningModeText(mode || ""),
+      need || null,
+      source || "Facebook Ads",
+      /^\d{4}-\d{2}-\d{2}$/.test(receivedAt || "") ? receivedAt : today,
+      session.userId,
+      notes || null
+    );
+    created++;
+  });
+
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin/leads/report");
+
+  let summary = `Đã thêm ${created} khách hàng tiềm năng.`;
+  if (duplicated > 0) summary += ` Bỏ qua ${duplicated} dòng trùng SĐT đã có sẵn.`;
   if (errors.length > 0) {
     summary += ` Có ${errors.length} dòng lỗi:\n${errors.slice(0, 30).join("\n")}`;
     if (errors.length > 30) summary += `\n... và ${errors.length - 30} lỗi khác`;

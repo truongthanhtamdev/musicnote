@@ -117,6 +117,43 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS leads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT,
+      phone_normalized TEXT,
+      fb_name TEXT,
+      fb_url TEXT,
+      area TEXT,
+      subject TEXT NOT NULL DEFAULT 'Guitar',
+      learning_mode TEXT NOT NULL DEFAULT 'home_private'
+        CHECK(learning_mode IN ('home_private','online','cafe_group','center')),
+      need TEXT,
+      source TEXT NOT NULL DEFAULT 'Facebook Ads',
+      received_at TEXT NOT NULL DEFAULT (date('now')),
+      status TEXT NOT NULL DEFAULT 'new'
+        CHECK(status IN ('new','contacted','consulting','trial_scheduled','trial_done','won','lost','cold')),
+      temperature TEXT NOT NULL DEFAULT 'warm' CHECK(temperature IN ('hot','warm','cold')),
+      owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      next_follow_up TEXT,
+      expected_value INTEGER,
+      lost_reason TEXT,
+      class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
+      won_at TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS lead_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lead_id INTEGER NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      kind TEXT NOT NULL DEFAULT 'note'
+        CHECK(kind IN ('note','call','message','appointment','status')),
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_attendance_teacher_date ON attendance(teacher_id, session_date);
@@ -124,6 +161,11 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_availability_teacher ON availability(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_payments_paid_at ON payments(paid_at);
     CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
+    CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+    CREATE INDEX IF NOT EXISTS idx_leads_follow_up ON leads(next_follow_up);
+    CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone_normalized);
+    CREATE INDEX IF NOT EXISTS idx_leads_class ON leads(class_id);
+    CREATE INDEX IF NOT EXISTS idx_lead_notes_lead ON lead_notes(lead_id);
   `);
 
   // CREATE TABLE IF NOT EXISTS above only helps on a brand-new database file;

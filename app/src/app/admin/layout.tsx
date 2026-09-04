@@ -6,6 +6,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const links = [
     { href: "/admin", label: "Tổng quan" },
+    { href: "/admin/leads", label: "Khách tiềm năng" },
     { href: "/admin/classes", label: "Lớp học" },
     { href: "/admin/assign", label: "Giao lớp" },
     { href: "/admin/teachers", label: "Giáo viên" },

@@ -2,11 +2,15 @@ import { db } from "./db";
 import { nextOccurrence, mostRecentOccurrence, toISODate, todayISO } from "./format";
 import {
   parseLanguages,
+  LEAD_OPEN_STATUSES,
   TRIAL_SESSION_RATE,
   type AttendanceRow,
   type AvailabilityRow,
   type ClassRow,
   type ExpenseRow,
+  type LeadNoteKind,
+  type LeadNoteRow,
+  type LeadRow,
   type PackageRow,
   type PaymentRow,
   type UserRow,
@@ -368,4 +372,304 @@ export function getRevenueSummary(from: string, to: string): RevenueSummary {
     totalExpenses,
     profit: totalRevenue - totalPayroll - totalExpenses,
   };
+}
+
+/* ── Khách hàng tiềm năng (lead) ─────────────────────────────────────── */
+
+export interface LeadWithMeta extends LeadRow {
+  owner_name: string | null;
+  /** Tên học viên trên lớp đã tạo từ lead này (nếu đã chốt). */
+  class_student_name: string | null;
+  /** Doanh thu thực thu: tổng các khoản thanh toán gắn với lớp của lead này. */
+  revenue: number;
+  note_count: number;
+}
+
+const LEAD_SELECT = `
+  SELECT l.*, u.name as owner_name, c.student_name as class_student_name,
+         (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.class_id = l.class_id) as revenue,
+         (SELECT COUNT(*) FROM lead_notes n WHERE n.lead_id = l.id) as note_count
+  FROM leads l
+  LEFT JOIN users u ON u.id = l.owner_id
+  LEFT JOIN classes c ON c.id = l.class_id`;
+
+export interface LeadFilter {
+  status?: string;
+  source?: string;
+  area?: string;
+  subject?: string;
+  learningMode?: string;
+  ownerId?: number;
+  search?: string;
+  /** Chỉ lead đang mở và đã tới/quá hạn liên hệ lại. */
+  dueOnly?: boolean;
+  from?: string;
+  to?: string;
+  order?: "recent" | "follow_up";
+}
+
+export function listLeads(filter: LeadFilter = {}): LeadWithMeta[] {
+  const clauses: string[] = [];
+  const params: Record<string, unknown> = {};
+
+  if (filter.status) {
+    if (filter.status === "open") {
+      clauses.push(`l.status IN (${LEAD_OPEN_STATUSES.map((s) => `'${s}'`).join(",")})`);
+    } else {
+      clauses.push("l.status = @status");
+      params.status = filter.status;
+    }
+  }
+  if (filter.source) {
+    clauses.push("l.source = @source");
+    params.source = filter.source;
+  }
+  if (filter.area) {
+    clauses.push("l.area = @area");
+    params.area = filter.area;
+  }
+  if (filter.subject) {
+    clauses.push("l.subject = @subject");
+    params.subject = filter.subject;
+  }
+  if (filter.learningMode) {
+    clauses.push("l.learning_mode = @learningMode");
+    params.learningMode = filter.learningMode;
+  }
+  if (filter.ownerId) {
+    clauses.push("l.owner_id = @ownerId");
+    params.ownerId = filter.ownerId;
+  }
+  if (filter.from) {
+    clauses.push("l.received_at >= @from");
+    params.from = filter.from;
+  }
+  if (filter.to) {
+    clauses.push("l.received_at <= @to");
+    params.to = filter.to;
+  }
+  if (filter.dueOnly) {
+    clauses.push(
+      `l.next_follow_up IS NOT NULL AND l.next_follow_up <= @today
+       AND l.status IN (${LEAD_OPEN_STATUSES.map((s) => `'${s}'`).join(",")})`
+    );
+    params.today = todayISO();
+  }
+  if (filter.search) {
+    clauses.push(
+      `(l.name LIKE @q OR l.phone LIKE @q OR l.phone_normalized LIKE @q
+        OR l.fb_name LIKE @q OR l.area LIKE @q OR l.need LIKE @q OR l.notes LIKE @q)`
+    );
+    params.q = `%${filter.search}%`;
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const order =
+    filter.order === "follow_up"
+      ? "ORDER BY l.next_follow_up IS NULL, l.next_follow_up, l.id DESC"
+      : "ORDER BY l.received_at DESC, l.id DESC";
+  return db.prepare(`${LEAD_SELECT} ${where} ${order}`).all(params) as LeadWithMeta[];
+}
+
+export function getLead(id: number): LeadWithMeta | undefined {
+  return db.prepare(`${LEAD_SELECT} WHERE l.id = ?`).get(id) as LeadWithMeta | undefined;
+}
+
+/** Lead khác trùng SĐT (đã chuẩn hoá) — dùng để cảnh báo nhập trùng. */
+export function findLeadsByPhone(phoneNormalized: string, excludeId?: number): LeadRow[] {
+  if (!phoneNormalized) return [];
+  return db
+    .prepare(
+      `SELECT * FROM leads WHERE phone_normalized = ? AND id != ? ORDER BY received_at DESC`
+    )
+    .all(phoneNormalized, excludeId ?? 0) as LeadRow[];
+}
+
+export function countLeadsDue(): number {
+  return (
+    db
+      .prepare(
+        `SELECT COUNT(*) as c FROM leads
+         WHERE next_follow_up IS NOT NULL AND next_follow_up <= ?
+           AND status IN (${LEAD_OPEN_STATUSES.map((s) => `'${s}'`).join(",")})`
+      )
+      .get(todayISO()) as { c: number }
+  ).c;
+}
+
+export function listLeadNotes(leadId: number): (LeadNoteRow & { user_name: string | null })[] {
+  return db
+    .prepare(
+      `SELECT n.*, u.name as user_name FROM lead_notes n
+       LEFT JOIN users u ON u.id = n.user_id
+       WHERE n.lead_id = ? ORDER BY n.created_at DESC, n.id DESC`
+    )
+    .all(leadId) as (LeadNoteRow & { user_name: string | null })[];
+}
+
+export function addLeadNote(
+  leadId: number,
+  userId: number | null,
+  kind: LeadNoteKind,
+  body: string
+) {
+  db.prepare("INSERT INTO lead_notes (lead_id, user_id, kind, body) VALUES (?, ?, ?, ?)").run(
+    leadId,
+    userId,
+    kind,
+    body
+  );
+}
+
+/** Danh sách giá trị đã dùng của một cột (khu vực, nguồn...) để đổ vào bộ lọc. */
+export function listLeadFieldValues(column: "area" | "source" | "subject"): string[] {
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT ${column} as v FROM leads WHERE ${column} IS NOT NULL AND ${column} != '' ORDER BY v`
+    )
+    .all() as { v: string }[];
+  return rows.map((r) => r.v);
+}
+
+export interface LeadStats {
+  total: number;
+  byStatus: Record<string, number>;
+  won: number;
+  lost: number;
+  open: number;
+  /** Doanh thu thực thu từ những lead nhận trong kỳ (mọi khoản đã đóng của lớp đó). */
+  revenue: number;
+  /** Doanh thu dự kiến của các lead đang theo (chưa chốt, chưa bỏ). */
+  pipelineValue: number;
+  /** Chi phí quảng cáo trong kỳ, lấy từ bảng chi phí (mục "Quảng cáo (Ads)"). */
+  adsSpend: number;
+  /** Chi phí trên mỗi lead. */
+  cpl: number | null;
+  /** Chi phí để có một khách chốt. */
+  cac: number | null;
+  /** Doanh thu / chi phí quảng cáo. */
+  roas: number | null;
+  conversionRate: number | null;
+}
+
+/**
+ * Thống kê theo "lứa" lead: đếm các lead NHẬN trong khoảng ngày, và doanh thu
+ * là toàn bộ tiền những lead đó đã đóng (kể cả đóng ở kỳ sau) — nhờ vậy
+ * CAC/ROAS so được đúng với chi phí quảng cáo đã bỏ ra trong kỳ.
+ */
+export function getLeadStats(from: string, to: string): LeadStats {
+  const rows = db
+    .prepare("SELECT status, COUNT(*) as c FROM leads WHERE received_at >= ? AND received_at <= ? GROUP BY status")
+    .all(from, to) as { status: string; c: number }[];
+
+  const byStatus: Record<string, number> = {};
+  let total = 0;
+  for (const r of rows) {
+    byStatus[r.status] = r.c;
+    total += r.c;
+  }
+  const won = byStatus.won || 0;
+  const lost = (byStatus.lost || 0) + (byStatus.cold || 0);
+  const open = total - won - lost;
+
+  const revenue = (
+    db
+      .prepare(
+        `SELECT COALESCE(SUM(p.amount), 0) as s FROM payments p
+         JOIN leads l ON l.class_id = p.class_id
+         WHERE l.received_at >= ? AND l.received_at <= ?`
+      )
+      .get(from, to) as { s: number }
+  ).s;
+
+  const pipelineValue = (
+    db
+      .prepare(
+        `SELECT COALESCE(SUM(expected_value), 0) as s FROM leads
+         WHERE received_at >= ? AND received_at <= ?
+           AND status IN (${LEAD_OPEN_STATUSES.map((s) => `'${s}'`).join(",")})`
+      )
+      .get(from, to) as { s: number }
+  ).s;
+
+  const adsSpend = getAdsSpend(from, to);
+
+  return {
+    total,
+    byStatus,
+    won,
+    lost,
+    open,
+    revenue,
+    pipelineValue,
+    adsSpend,
+    cpl: total > 0 && adsSpend > 0 ? Math.round(adsSpend / total) : null,
+    cac: won > 0 && adsSpend > 0 ? Math.round(adsSpend / won) : null,
+    roas: adsSpend > 0 ? revenue / adsSpend : null,
+    conversionRate: total > 0 ? won / total : null,
+  };
+}
+
+/** Chi phí quảng cáo trong kỳ — mọi khoản chi có chữ "Quảng cáo" hoặc "Ads" trong tên loại. */
+export function getAdsSpend(from: string, to: string): number {
+  return (
+    db
+      .prepare(
+        `SELECT COALESCE(SUM(amount), 0) as s FROM expenses
+         WHERE expense_date >= ? AND expense_date <= ?
+           AND (category LIKE '%Quảng cáo%' OR category LIKE '%ads%')`
+      )
+      .get(from, to) as { s: number }
+  ).s;
+}
+
+export interface LeadBreakdownRow {
+  key: string;
+  total: number;
+  won: number;
+  revenue: number;
+  conversionRate: number | null;
+}
+
+/** Bảng lead + doanh thu tách theo nguồn / khu vực / hình thức học / môn. */
+export function getLeadBreakdown(
+  by: "source" | "area" | "learning_mode" | "subject",
+  from: string,
+  to: string
+): LeadBreakdownRow[] {
+  const rows = db
+    .prepare(
+      `SELECT COALESCE(NULLIF(l.${by}, ''), 'Không rõ') as key,
+              COUNT(*) as total,
+              SUM(CASE WHEN l.status = 'won' THEN 1 ELSE 0 END) as won,
+              COALESCE(SUM(
+                (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.class_id = l.class_id)
+              ), 0) as revenue
+       FROM leads l
+       WHERE l.received_at >= ? AND l.received_at <= ?
+       GROUP BY key
+       ORDER BY total DESC`
+    )
+    .all(from, to) as Omit<LeadBreakdownRow, "conversionRate">[];
+
+  return rows.map((r) => ({ ...r, conversionRate: r.total > 0 ? r.won / r.total : null }));
+}
+
+/** Lý do từ chối hay gặp nhất — để biết nên chỉnh giá, chỉnh target quảng cáo hay chỉnh lịch. */
+export function getLostReasons(from: string, to: string): { reason: string; count: number }[] {
+  return db
+    .prepare(
+      `SELECT COALESCE(NULLIF(lost_reason, ''), 'Không ghi lý do') as reason, COUNT(*) as count
+       FROM leads
+       WHERE status IN ('lost','cold') AND received_at >= ? AND received_at <= ?
+       GROUP BY reason ORDER BY count DESC`
+    )
+    .all(from, to) as { reason: string; count: number }[];
+}
+
+/** Các khoản đã thu của lớp gắn với lead — hiện ngay trong trang chi tiết lead. */
+export function listPaymentsForClass(classId: number): PaymentRow[] {
+  return db
+    .prepare("SELECT * FROM payments WHERE class_id = ? ORDER BY paid_at DESC, id DESC")
+    .all(classId) as PaymentRow[];
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { listClassesByDay, listAttendance } from "@/lib/queries";
+import { listClassesByDay, listAttendance, countLeadsDue } from "@/lib/queries";
 import { formatTimeRange, todayISO } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
 
@@ -29,6 +29,12 @@ export default async function AdminDashboard() {
   const unassignedStats = db
     .prepare("SELECT COUNT(*) as c FROM classes WHERE status='active' AND teacher_id IS NULL")
     .get() as { c: number };
+  const openLeadStats = db
+    .prepare(
+      "SELECT COUNT(*) as c FROM leads WHERE status IN ('new','contacted','consulting','trial_scheduled','trial_done')"
+    )
+    .get() as { c: number };
+  const leadsDue = countLeadsDue();
 
   const today = new Date();
   const dow = today.getDay();
@@ -54,6 +60,16 @@ export default async function AdminDashboard() {
           label="Lớp chưa có giáo viên"
           value={unassignedStats.c}
           href="/admin/assign"
+        />
+        <StatCard
+          label="Khách tiềm năng đang theo"
+          value={openLeadStats.c}
+          href="/admin/leads?status=open"
+        />
+        <StatCard
+          label="Khách cần liên hệ hôm nay"
+          value={leadsDue}
+          href="/admin/leads?due=1"
         />
       </div>
 
