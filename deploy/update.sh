@@ -11,7 +11,20 @@ set -euo pipefail
 # Suy ra bản cài từ chính vị trí file này (/opt/<ten>/deploy/update.sh), nhờ
 # vậy cập nhật đúng bản đang chạy khi trên VPS có nhiều bản cài khác nhau.
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_NAME="$(basename "$APP_DIR")"
+if [ -n "${APP_NAME:-}" ]; then
+  APP_DIR="/opt/$APP_NAME"
+else
+  APP_NAME="$(basename "$APP_DIR")"
+fi
+
+# Chạy bản script tải tạm về /tmp thì cách suy ra ở trên cho ra "/" và mọi
+# lệnh sau đó hỏng khó hiểu ("sudo: unknown user /"). Báo rõ ngay từ đầu.
+if [ ! -d "$APP_DIR/.git" ]; then
+  echo "Không tìm thấy bản cài tại $APP_DIR." >&2
+  echo "Chạy lại kèm tên bản cài, ví dụ:" >&2
+  echo "  sudo APP_NAME=clienthub bash $0" >&2
+  exit 1
+fi
 APP_USER="$APP_NAME"
 DATA_DIR="/var/lib/$APP_NAME/data"
 SERVICE="$APP_NAME.service"
