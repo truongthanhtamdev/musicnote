@@ -13,12 +13,21 @@ set -euo pipefail
 DOMAIN="${1:-}"
 REPO="${REPO:-https://github.com/truongthanhtamdev/musicnote.git}"
 BRANCH="${BRANCH:-claude/facebook-customer-management-nd4rys}"
-APP_USER=musicnote
-APP_DIR=/opt/musicnote
-DATA_DIR=/var/lib/musicnote/data
-BACKUP_DIR=/var/backups/musicnote
-ENV_FILE=/etc/musicnote.env
+
+# APP_NAME quyết định TOÀN BỘ tên riêng của bản cài này: tài khoản chạy dịch
+# vụ, thư mục mã nguồn, thư mục dữ liệu, tên dịch vụ systemd, file cấu hình
+# Caddy. Đặt tên khác + cổng khác là cài được nhiều bản trên cùng VPS mà
+# không bản nào đụng bản nào.
+APP_NAME="${APP_NAME:-musicnote}"
 PORT="${PORT:-3000}"
+
+APP_USER="$APP_NAME"
+APP_DIR="/opt/$APP_NAME"
+DATA_DIR="/var/lib/$APP_NAME/data"
+BACKUP_DIR="/var/backups/$APP_NAME"
+ENV_FILE="/etc/$APP_NAME.env"
+SERVICE="$APP_NAME.service"
+BACKUP_BIN="/usr/local/bin/$APP_NAME-backup"
 
 log() { echo -e "\n\033[1;33m==> $*\033[0m"; }
 
@@ -27,10 +36,31 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+echo "Cài đặt: $APP_NAME  ·  cổng $PORT  ·  thư mục $APP_DIR  ·  dữ liệu $DATA_DIR"
+
+# Máy có thể đang chạy web khác. Dừng lại và báo rõ thay vì cướp cổng hoặc
+# ghi đè dịch vụ của người khác.
+if ss -ltnp 2>/dev/null | grep -q ":$PORT "; then
+  if ! systemctl is-active --quiet "$SERVICE" 2>/dev/null; then
+    echo >&2
+    echo "DỪNG: cổng $PORT đang có chương trình khác dùng." >&2
+    echo "Chạy lại với cổng và tên khác, ví dụ:" >&2
+    echo "  ... | sudo APP_NAME=musicnote PORT=3001 bash -s -- ten-mien.com" >&2
+    exit 1
+  fi
+fi
+
+if [ -f "/etc/systemd/system/$SERVICE" ] && [ ! -d "$APP_DIR/.git" ]; then
+  echo >&2
+  echo "DỪNG: đã có dịch vụ $SERVICE trên máy nhưng không phải bản cài này." >&2
+  echo "Đổi APP_NAME để cài thành bản riêng, ví dụ APP_NAME=clienthub PORT=3001." >&2
+  exit 1
+fi
+
 log "Cài các gói cơ bản"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq curl git ca-certificates gnupg sqlite3 ufw
+apt-get install -y -qq curl git ca-certificates gnupg sqlite3 ufw iproute2
 
 # Next.js 16 cần Node 20 trở lên; Ubuntu đóng gói sẵn bản quá cũ nên lấy từ NodeSource.
 NEED_NODE=1
@@ -99,10 +129,10 @@ sudo -u "$APP_USER" cp -r public .next/standalone/public
 sudo -u "$APP_USER" mkdir -p .next/standalone/.next
 sudo -u "$APP_USER" cp -r .next/static .next/standalone/.next/static
 
-log "Tạo dịch vụ tự khởi động musicnote.service"
-cat > /etc/systemd/system/musicnote.service <<UNITEOF
+log "Tạo dịch vụ tự khởi động $SERVICE"
+cat > "/etc/systemd/system/$SERVICE" <<UNITEOF
 [Unit]
-Description=Musicnote - he thong quan ly trung tam nhac
+Description=$APP_NAME - he thong quan ly trung tam nhac
 After=network.target
 
 [Service]
@@ -123,24 +153,32 @@ ReadWritePaths=$(dirname "$DATA_DIR")
 WantedBy=multi-user.target
 UNITEOF
 systemctl daemon-reload
-systemctl enable --quiet musicnote
-systemctl restart musicnote
+systemctl enable --quiet "$SERVICE"
+systemctl restart "$SERVICE"
 
 log "Hẹn giờ sao lưu dữ liệu hàng ngày (03:15 sáng, giữ 30 bản)"
-install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/musicnote-backup
-cat > /etc/cron.d/musicnote-backup <<CRONEOF
-15 3 * * * root /usr/local/bin/musicnote-backup >/dev/null 2>&1
+install -m 755 "$APP_DIR/deploy/backup.sh" "$BACKUP_BIN"
+cat > "/etc/cron.d/$APP_NAME-backup" <<CRONEOF
+15 3 * * * root DATA_DIR=$DATA_DIR BACKUP_DIR=$BACKUP_DIR $BACKUP_BIN >/dev/null 2>&1
 CRONEOF
 
-log "Bật tường lửa"
-ufw allow OpenSSH >/dev/null
-if [ -n "$DOMAIN" ]; then
-  ufw allow 80/tcp >/dev/null
-  ufw allow 443/tcp >/dev/null
+# Tường lửa: CHỈ thêm luật, không tự bật khi đang tắt. VPS có thể đang chạy
+# web khác ở cổng khác; bật tường lửa với mỗi luật của bản cài này là chặn
+# mất web kia.
+if ufw status 2>/dev/null | head -1 | grep -q "active"; then
+  log "Mở cổng cho bản cài này trên tường lửa đang bật"
+  ufw allow OpenSSH >/dev/null
+  if [ -n "$DOMAIN" ]; then
+    ufw allow 80/tcp >/dev/null
+    ufw allow 443/tcp >/dev/null
+  else
+    ufw allow "$PORT"/tcp >/dev/null
+  fi
 else
-  ufw allow "$PORT"/tcp >/dev/null
+  log "Tường lửa đang tắt - giữ nguyên (không tự bật để khỏi chặn web khác)"
+  echo "    Muốn bật sau, nhớ mở đủ cổng cho MỌI web trên máy, ví dụ:"
+  echo "    sudo ufw allow OpenSSH && sudo ufw allow 80,443,3000,$PORT/tcp && sudo ufw enable"
 fi
-ufw --force enable >/dev/null
 
 if [ -n "$DOMAIN" ]; then
   log "Cài Caddy và bật HTTPS cho $DOMAIN"
@@ -162,7 +200,7 @@ if [ -n "$DOMAIN" ]; then
 import /etc/caddy/sites/*.caddy
 MAINEOF
   fi
-  cat > /etc/caddy/sites/musicnote.caddy <<CADDYEOF
+  cat > "/etc/caddy/sites/$APP_NAME.caddy" <<CADDYEOF
 $DOMAIN {
 	reverse_proxy 127.0.0.1:$PORT
 }
@@ -172,7 +210,7 @@ CADDYEOF
 fi
 
 sleep 3
-systemctl is-active --quiet musicnote && STATUS="đang chạy" || STATUS="LỖI - xem: journalctl -u musicnote -n 50"
+systemctl is-active --quiet "$SERVICE" && STATUS="đang chạy" || STATUS="LỖI - xem: journalctl -u $SERVICE -n 50"
 
 echo
 echo "=================================================="
@@ -188,5 +226,5 @@ echo " Dữ liệu:      $DATA_DIR/musicnote.db"
 echo " Sao lưu:      $BACKUP_DIR (tự chạy 3h15 sáng mỗi ngày)"
 echo
 echo " Cập nhật sau này:  sudo bash $APP_DIR/deploy/update.sh"
-echo " Xem log:           journalctl -u musicnote -f"
+echo " Xem log:           journalctl -u $SERVICE -f"
 echo "=================================================="

@@ -8,9 +8,14 @@
 
 set -euo pipefail
 
-APP_USER=musicnote
-APP_DIR=/opt/musicnote
-DATA_DIR=/var/lib/musicnote/data
+# Suy ra bản cài từ chính vị trí file này (/opt/<ten>/deploy/update.sh), nhờ
+# vậy cập nhật đúng bản đang chạy khi trên VPS có nhiều bản cài khác nhau.
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_NAME="$(basename "$APP_DIR")"
+APP_USER="$APP_NAME"
+DATA_DIR="/var/lib/$APP_NAME/data"
+SERVICE="$APP_NAME.service"
+BACKUP_BIN="/usr/local/bin/$APP_NAME-backup"
 BRANCH="${BRANCH:-$(git -C "$APP_DIR" rev-parse --abbrev-ref HEAD)}"
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -19,9 +24,9 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 echo "==> Sao lưu dữ liệu trước khi cập nhật"
-/usr/local/bin/musicnote-backup || echo "(bỏ qua: chưa cài script sao lưu)"
+DATA_DIR="$DATA_DIR" "$BACKUP_BIN" || echo "(bỏ qua: chưa cài script sao lưu)"
 
-echo "==> Tải mã nguồn mới (nhánh $BRANCH)"
+echo "==> Tải mã nguồn mới cho $APP_NAME (nhánh $BRANCH)"
 sudo -u "$APP_USER" git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
 sudo -u "$APP_USER" git -C "$APP_DIR" checkout --quiet -B "$BRANCH" "origin/$BRANCH"
 git -C "$APP_DIR" log --oneline -1
@@ -36,8 +41,8 @@ sudo -u "$APP_USER" mkdir -p .next/standalone/.next
 sudo -u "$APP_USER" cp -r .next/static .next/standalone/.next/static
 
 echo "==> Khởi động lại dịch vụ"
-systemctl restart musicnote
+systemctl restart "$SERVICE"
 sleep 3
-systemctl is-active --quiet musicnote \
+systemctl is-active --quiet "$SERVICE" \
   && echo "Xong. Dịch vụ đang chạy." \
-  || { echo "LỖI - xem log:"; journalctl -u musicnote -n 30 --no-pager; exit 1; }
+  || { echo "LỖI - xem log:"; journalctl -u "$SERVICE" -n 30 --no-pager; exit 1; }
