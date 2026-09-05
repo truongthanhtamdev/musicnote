@@ -85,6 +85,57 @@ sudo systemctl start musicnote
 | Build báo hết bộ nhớ (VPS 1GB) | Tạo swap: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile` rồi chạy lại |
 | Muốn đổi sang nhánh khác | `sudo BRANCH=main bash /opt/musicnote/deploy/update.sh` |
 
+## Chạy nhiều web trên cùng một VPS
+
+Không có nguyên tắc "1 VPS chỉ 1 web". Một VPS là một máy tính — chạy được bao
+nhiêu web là tuỳ RAM còn trống. Caddy đứng trước, nhìn tên miền rồi chuyển
+tiếp vào đúng ứng dụng đang chạy ở cổng nội bộ tương ứng:
+
+```
+quanly.tenmien.com   →  Caddy  →  127.0.0.1:3000   (hệ thống quản lý này)
+www.tenmien.com      →  Caddy  →  thư mục file tĩnh (web giới thiệu)
+app2.tenmien.com     →  Caddy  →  127.0.0.1:3001   (một ứng dụng khác)
+```
+
+Mỗi web khai báo trong **một file riêng** ở `/etc/caddy/sites/*.caddy`, nên cài
+thêm web mới không đụng gì tới web cũ. Ví dụ thêm một trang giới thiệu tĩnh:
+
+```
+sudo mkdir -p /var/www/gioithieu
+# chép file html vào /var/www/gioithieu
+sudo tee /etc/caddy/sites/gioithieu.caddy > /dev/null <<'EOF'
+www.tenmien.com {
+	root * /var/www/gioithieu
+	file_server
+}
+EOF
+sudo systemctl reload caddy
+```
+
+Thêm một ứng dụng Node khác thì cho nó chạy ở cổng khác (VD 3001) rồi:
+
+```
+sudo tee /etc/caddy/sites/app2.caddy > /dev/null <<'EOF'
+app2.tenmien.com {
+	reverse_proxy 127.0.0.1:3001
+}
+EOF
+sudo systemctl reload caddy
+```
+
+**Cần bao nhiêu RAM:** hệ thống này chạy tốn khoảng 150–250MB. Trang tĩnh gần
+như không tốn gì. WordPress kèm MySQL tốn 400–700MB. Vậy VPS 1GB đủ cho hệ
+thống này + vài trang tĩnh; muốn thêm một ứng dụng Node hay WordPress nữa thì
+nên lên 2GB.
+
+**Khi nào nên tách riêng VPS:** khi một web quan trọng tới mức không được phép
+sập lây — vì chung máy nghĩa là chung số phận: một web ngốn hết RAM hoặc bị
+tấn công là web kia cũng ảnh hưởng. Với quy mô một trung tâm dạy nhạc, gom
+chung một VPS là hợp lý và tiết kiệm.
+
+**Lưu ý khi build:** lệnh cập nhật có bước build khá ngốn RAM, chạy lúc ít
+người dùng, và nên tạo sẵn swap (xem bảng lỗi ở trên) nếu VPS chỉ 1GB.
+
 ## Bảo mật tối thiểu nên làm
 
 1. Đổi mật khẩu admin ngay lần đăng nhập đầu.

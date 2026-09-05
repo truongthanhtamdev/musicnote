@@ -139,12 +139,23 @@ if [ -n "$DOMAIN" ]; then
     apt-get update -qq
     apt-get install -y -qq caddy
   fi
-  cat > /etc/caddy/Caddyfile <<CADDYEOF
+  # Mỗi web một file cấu hình riêng trong /etc/caddy/sites/ để cài thêm web
+  # khác lên cùng VPS không ghi đè lẫn nhau.
+  mkdir -p /etc/caddy/sites
+  if ! grep -q "import /etc/caddy/sites" /etc/caddy/Caddyfile 2>/dev/null; then
+    [ -f /etc/caddy/Caddyfile ] && cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak.$(date +%s)
+    cat > /etc/caddy/Caddyfile <<'MAINEOF'
+# Mỗi web khai báo trong một file riêng ở /etc/caddy/sites/*.caddy
+import /etc/caddy/sites/*.caddy
+MAINEOF
+  fi
+  cat > /etc/caddy/sites/musicnote.caddy <<CADDYEOF
 $DOMAIN {
 	reverse_proxy 127.0.0.1:$PORT
 }
 CADDYEOF
-  systemctl restart caddy
+  caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&1 || echo "(!) Caddyfile có lỗi, kiểm tra: caddy validate --config /etc/caddy/Caddyfile"
+  systemctl reload caddy 2>/dev/null || systemctl restart caddy
 fi
 
 sleep 3
