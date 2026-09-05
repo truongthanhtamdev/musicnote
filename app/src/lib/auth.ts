@@ -36,7 +36,10 @@ export async function setSessionCookie(payload: SessionPayload) {
   store.set(COOKIE_NAME, signSession(payload), {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // Chỉ đánh dấu Secure khi thật sự có HTTPS đứng trước. Bật theo
+    // NODE_ENV như trước làm trình duyệt từ chối lưu cookie trên site
+    // http:// thuần, và mọi trang sau khi đăng nhập đều bị đá về login.
+    secure: process.env.COOKIE_SECURE === "true",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });

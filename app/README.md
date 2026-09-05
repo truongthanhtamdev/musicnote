@@ -55,8 +55,14 @@ npm install
 npm run build
 AUTH_SECRET="chuoi-bi-mat-rat-dai-va-ngau-nhien" \
 DATA_DIR="/var/lib/musicnote/data" \
+COOKIE_SECURE="false" \
 npm run start -- -p 3000
 ```
+
+**`COOKIE_SECURE`**: để `false` khi truy cập bằng `http://` (VD
+`http://IP:3000`), đặt `true` khi đã có HTTPS đứng trước. Đánh dấu cookie là
+Secure trên site http:// thuần sẽ khiến trình duyệt không lưu cookie đăng nhập
+— đăng nhập xong bấm sang trang khác là bị đá về trang đăng nhập ngay.
 
 Gợi ý:
 - Chạy phía sau Nginx/Caddy với HTTPS, và dùng `pm2` hoặc systemd để tự khởi

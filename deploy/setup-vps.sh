@@ -120,8 +120,17 @@ HOSTNAME=$HOST_BIND
 ENVEOF
   chmod 600 "$ENV_FILE"
 else
-  echo "Đã có $ENV_FILE, giữ nguyên."
+  echo "Đã có $ENV_FILE, giữ nguyên AUTH_SECRET."
 fi
+
+# Cookie đăng nhập chỉ được đánh dấu Secure khi có HTTPS (tức là có tên
+# miền và Caddy đứng trước). Truy cập bằng http://IP:cổng mà bật Secure thì
+# trình duyệt không lưu cookie và người dùng bị đá về trang đăng nhập ngay
+# sau khi đăng nhập.
+COOKIE_SECURE="false"
+[ -n "$DOMAIN" ] && COOKIE_SECURE="true"
+sed -i "/^COOKIE_SECURE=/d" "$ENV_FILE"
+echo "COOKIE_SECURE=$COOKIE_SECURE" >> "$ENV_FILE"
 
 log "Cài thư viện và build (mất vài phút)"
 cd "$APP_DIR/app"

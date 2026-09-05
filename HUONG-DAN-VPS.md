@@ -83,6 +83,7 @@ sudo systemctl start musicnote
 | Vào link báo không kết nối được | `systemctl status musicnote` xem còn chạy không; chưa chạy thì xem `journalctl -u musicnote -n 50 --no-pager` |
 | Tên miền chưa lên HTTPS | Bản ghi A của tên miền phải trỏ đúng IP VPS và đợi vài phút cho DNS lan; sau đó `sudo systemctl restart caddy` |
 | Build báo hết bộ nhớ (VPS 1GB) | Tạo swap: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile` rồi chạy lại |
+| Đăng nhập xong, bấm sang trang khác lại bị đá về trang đăng nhập | Cookie đang bị đánh dấu Secure trong khi web chạy `http://`. Sửa dòng `COOKIE_SECURE=false` trong `/etc/<tên>.env` rồi `sudo systemctl restart <tên>` |
 | Muốn đổi sang nhánh khác | `sudo BRANCH=main bash /opt/musicnote/deploy/update.sh` |
 
 ## Chạy nhiều web trên cùng một VPS
