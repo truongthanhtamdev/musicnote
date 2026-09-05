@@ -18,6 +18,8 @@ SERVICE="$APP_NAME.service"
 BACKUP_BIN="/usr/local/bin/$APP_NAME-backup"
 BRANCH="${BRANCH:-$(git -C "$APP_DIR" rev-parse --abbrev-ref HEAD)}"
 
+as_app() { sudo -u "$APP_USER" -H env "HOME=/home/$APP_USER" "$@"; }
+
 if [ "$(id -u)" -ne 0 ]; then
   echo "Cần chạy bằng quyền root: sudo bash update.sh" >&2
   exit 1
@@ -27,18 +29,18 @@ echo "==> Sao lưu dữ liệu trước khi cập nhật"
 DATA_DIR="$DATA_DIR" "$BACKUP_BIN" || echo "(bỏ qua: chưa cài script sao lưu)"
 
 echo "==> Tải mã nguồn mới cho $APP_NAME (nhánh $BRANCH)"
-sudo -u "$APP_USER" git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
-sudo -u "$APP_USER" git -C "$APP_DIR" checkout --quiet -B "$BRANCH" "origin/$BRANCH"
+as_app git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
+as_app git -C "$APP_DIR" checkout --quiet -B "$BRANCH" "origin/$BRANCH"
 git -C "$APP_DIR" log --oneline -1
 
 echo "==> Cài thư viện và build"
 cd "$APP_DIR/app"
-sudo -u "$APP_USER" npm ci --no-audit --no-fund
-sudo -u "$APP_USER" env DATA_DIR="$DATA_DIR" npm run build
-sudo -u "$APP_USER" rm -rf .next/standalone/public .next/standalone/.next/static
-sudo -u "$APP_USER" cp -r public .next/standalone/public
-sudo -u "$APP_USER" mkdir -p .next/standalone/.next
-sudo -u "$APP_USER" cp -r .next/static .next/standalone/.next/static
+as_app npm ci --no-audit --no-fund
+as_app env DATA_DIR="$DATA_DIR" npm run build
+rm -rf .next/standalone/public .next/standalone/.next/static
+as_app cp -r public .next/standalone/public
+as_app mkdir -p .next/standalone/.next
+as_app cp -r .next/static .next/standalone/.next/static
 
 echo "==> Khởi động lại dịch vụ"
 systemctl restart "$SERVICE"

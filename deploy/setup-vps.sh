@@ -31,6 +31,10 @@ BACKUP_BIN="/usr/local/bin/$APP_NAME-backup"
 
 log() { echo -e "\n\033[1;33m==> $*\033[0m"; }
 
+# Chạy lệnh dưới tài khoản dịch vụ VỚI đúng thư mục nhà của tài khoản đó.
+# Thiếu HOME thì npm ghi cache vào /root/.npm và hỏng vì không đủ quyền.
+as_app() { sudo -u "$APP_USER" -H env "HOME=/home/$APP_USER" "$@"; }
+
 if [ "$(id -u)" -ne 0 ]; then
   echo "Cần chạy bằng quyền root: sudo bash setup-vps.sh [tên-miền]" >&2
   exit 1
@@ -94,10 +98,10 @@ chown -R "$APP_USER:$APP_USER" "$APP_DIR" "$(dirname "$DATA_DIR")" "$BACKUP_DIR"
 
 log "Tải mã nguồn (nhánh $BRANCH)"
 if [ -d "$APP_DIR/.git" ]; then
-  sudo -u "$APP_USER" git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
-  sudo -u "$APP_USER" git -C "$APP_DIR" checkout --quiet -B "$BRANCH" "origin/$BRANCH"
+  as_app git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
+  as_app git -C "$APP_DIR" checkout --quiet -B "$BRANCH" "origin/$BRANCH"
 else
-  sudo -u "$APP_USER" git clone --quiet --branch "$BRANCH" "$REPO" "$APP_DIR"
+  as_app git clone --quiet --branch "$BRANCH" "$REPO" "$APP_DIR"
 fi
 echo "Phiên bản: $(git -C "$APP_DIR" log --oneline -1)"
 
@@ -121,13 +125,14 @@ fi
 
 log "Cài thư viện và build (mất vài phút)"
 cd "$APP_DIR/app"
-sudo -u "$APP_USER" npm ci --no-audit --no-fund
-sudo -u "$APP_USER" env DATA_DIR="$DATA_DIR" npm run build
+as_app npm ci --no-audit --no-fund
+as_app env DATA_DIR="$DATA_DIR" npm run build
 
 # Bản build "standalone" không tự kèm ảnh và file tĩnh — phải chép vào.
-sudo -u "$APP_USER" cp -r public .next/standalone/public
-sudo -u "$APP_USER" mkdir -p .next/standalone/.next
-sudo -u "$APP_USER" cp -r .next/static .next/standalone/.next/static
+rm -rf .next/standalone/public .next/standalone/.next/static
+as_app cp -r public .next/standalone/public
+as_app mkdir -p .next/standalone/.next
+as_app cp -r .next/static .next/standalone/.next/static
 
 log "Tạo dịch vụ tự khởi động $SERVICE"
 cat > "/etc/systemd/system/$SERVICE" <<UNITEOF
