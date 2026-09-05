@@ -371,29 +371,31 @@ export function Avatar({
 /* --------------------------------- Link ---------------------------------- */
 
 /**
- * Link Facebook của khách hàng. Trả về null khi lớp chưa có link, để chỗ gọi
- * chỉ cần render thẳng mà không phải tự kiểm tra.
+ * Tên khách hàng — bấm vào là mở Facebook của họ khi lớp có lưu link. Không
+ * có link thì vẫn hiện tên (chữ thường, không bấm được); không có gì thì trả
+ * về null để chỗ gọi render thẳng mà không phải tự kiểm tra.
  */
-export function FacebookLink({
-  url,
-  label = "Facebook",
+export function CustomerName({
+  name,
+  facebookUrl,
   className = "",
 }: {
-  url: string | null;
-  label?: string;
+  name: string | null;
+  facebookUrl: string | null;
   className?: string;
 }) {
-  if (!url) return null;
+  if (!name && !facebookUrl) return null;
+  if (!facebookUrl) return <span className={className}>{name}</span>;
   return (
     <a
-      href={url}
+      href={facebookUrl}
       target="_blank"
       rel="noopener noreferrer"
       title="Mở Facebook khách hàng"
-      className={`inline-flex items-center gap-1 text-navy-600 hover:text-navy-700 font-medium ${className}`}
+      className={`inline-flex items-center gap-1 text-navy-600 hover:text-navy-700 hover:underline font-medium ${className}`}
     >
-      <IconFacebook className="w-3.5 h-3.5" />
-      {label}
+      <IconFacebook className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{name || "Facebook"}</span>
     </a>
   );
 }

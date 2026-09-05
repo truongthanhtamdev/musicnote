@@ -19,7 +19,7 @@ import {
   Card,
   CardHeader,
   EmptyState,
-  FacebookLink,
+  CustomerName,
   StatusChip,
   TableShell,
   Th,
@@ -72,9 +72,9 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-ink-900 tracking-tight">{cls.student_name}</h1>
             {(cls.guardian_name || cls.facebook_url) && (
-              <p className="text-ink-500 text-sm flex flex-wrap items-center gap-x-2">
-                {cls.guardian_name && <span>Khách hàng: {cls.guardian_name}</span>}
-                <FacebookLink url={cls.facebook_url} />
+              <p className="text-ink-500 text-sm flex flex-wrap items-center gap-1.5">
+                Khách hàng:
+                <CustomerName name={cls.guardian_name} facebookUrl={cls.facebook_url} />
               </p>
             )}
             <p className="text-ink-500 text-sm flex flex-wrap items-center gap-x-1.5 mt-0.5">
