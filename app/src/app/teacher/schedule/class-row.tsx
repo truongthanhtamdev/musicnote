@@ -35,7 +35,7 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-gold-600 hover:underline text-sm"
+            className="text-brand-600 hover:underline text-sm"
           >
             Sửa
           </button>
@@ -52,14 +52,14 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
           name="student_name"
           defaultValue={cls.student_name}
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
           placeholder="Tên học sinh"
         />
         <div className="grid grid-cols-2 gap-2">
           <select
             name="day_of_week"
             defaultValue={cls.day_of_week}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           >
             {DAY_ORDER.map((d) => (
               <option key={d} value={d}>
@@ -72,7 +72,7 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
             type="time"
             defaultValue={cls.start_time}
             required
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           />
           <select
             name="duration_minutes"
@@ -88,26 +88,26 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
             name="student_phone"
             defaultValue={cls.student_phone || ""}
             placeholder="SĐT"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           />
           <input
             name="guardian_name"
             defaultValue={cls.guardian_name || ""}
             placeholder="Tên phụ huynh"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           />
           <input
             name="level"
             defaultValue={cls.level || ""}
             placeholder="Trình độ"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           />
           <input
             name="subject"
             list="subject-suggestions"
             defaultValue={cls.subject}
             placeholder="Môn học"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           />
           <datalist id="subject-suggestions">
             {SUBJECT_SUGGESTIONS.map((s) => (
@@ -117,7 +117,7 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
           <select
             name="language"
             defaultValue={cls.language}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           >
             {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
               <option key={v} value={v}>
@@ -137,7 +137,7 @@ export default function TeacherClassRow({ cls }: { cls: ClassRow }) {
           <button
             type="submit"
             disabled={pending}
-            className="text-sm bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white rounded-lg px-3 py-1.5"
+            className="text-sm bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-lg px-3 py-1.5"
           >
             {pending ? "Đang lưu..." : "Lưu"}
           </button>

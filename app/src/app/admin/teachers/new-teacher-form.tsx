@@ -32,14 +32,14 @@ export default function NewTeacherForm() {
         <input
           name="phone"
           placeholder="Số điện thoại"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="pay_per_session"
           type="number"
           min={0}
           placeholder="Lương/buổi (VNĐ)"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="password"
@@ -49,7 +49,7 @@ export default function NewTeacherForm() {
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm col-span-2"
         />
         <div className="col-span-2">
-          <label className="block text-xs text-slate-500 mb-1">Ngôn ngữ dạy được</label>
+          <label className="label">Ngôn ngữ dạy được</label>
           <div className="flex gap-4 text-sm">
             <label className="flex items-center gap-1.5">
               <input type="checkbox" name="languages" value="vi" defaultChecked /> Tiếng Việt
@@ -65,7 +65,7 @@ export default function NewTeacherForm() {
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="btn btn-primary"
       >
         {pending ? "Đang lưu..." : "Thêm giáo viên"}
       </button>

@@ -28,11 +28,11 @@ export default async function AttendancePage({
 
       <form className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Giáo viên</label>
+          <label className="label">Giáo viên</label>
           <select
             name="teacherId"
             defaultValue={teacherId || ""}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           >
             <option value="">Tất cả</option>
             {teachers.map((t) => (
@@ -43,26 +43,26 @@ export default async function AttendancePage({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Từ ngày</label>
+          <label className="label">Từ ngày</label>
           <input
             type="date"
             name="from"
             defaultValue={from}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Đến ngày</label>
+          <label className="label">Đến ngày</label>
           <input
             type="date"
             name="to"
             defaultValue={to}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           />
         </div>
         <button
           type="submit"
-          className="bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-lg px-4 py-2"
+          className="btn btn-primary"
         >
           Lọc
         </button>

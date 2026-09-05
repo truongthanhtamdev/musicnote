@@ -16,7 +16,7 @@ import {
 } from "@/lib/types";
 
 const initialState: LeadFormState = {};
-const inputClass = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
+const inputClass = "input";
 
 export default function EditLeadForm({
   lead,
@@ -33,27 +33,27 @@ export default function EditLeadForm({
 
       <div className="grid md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Tên khách hàng *</label>
+          <label className="label">Tên khách hàng *</label>
           <input name="name" required defaultValue={lead.name} className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">SĐT Zalo</label>
+          <label className="label">SĐT Zalo</label>
           <input name="phone" defaultValue={lead.phone || ""} className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Tên Facebook</label>
+          <label className="label">Tên Facebook</label>
           <input name="fb_name" defaultValue={lead.fb_name || ""} className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Link Facebook</label>
+          <label className="label">Link Facebook</label>
           <input name="fb_url" defaultValue={lead.fb_url || ""} className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Khu vực</label>
+          <label className="label">Khu vực</label>
           <input name="area" defaultValue={lead.area || ""} className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Môn học</label>
+          <label className="label">Môn học</label>
           <select name="subject" defaultValue={lead.subject} className={inputClass}>
             {[...new Set([...SUBJECT_SUGGESTIONS, lead.subject])].map((s) => (
               <option key={s} value={s}>
@@ -63,7 +63,7 @@ export default function EditLeadForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Hình thức học</label>
+          <label className="label">Hình thức học</label>
           <select name="learning_mode" defaultValue={lead.learning_mode} className={inputClass}>
             {(Object.keys(LEARNING_MODE_LABELS) as LeadLearningMode[]).map((m) => (
               <option key={m} value={m}>
@@ -73,7 +73,7 @@ export default function EditLeadForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Nguồn</label>
+          <label className="label">Nguồn</label>
           <input
             name="source"
             list="lead-source-options-edit"
@@ -89,13 +89,13 @@ export default function EditLeadForm({
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Nhu cầu cụ thể</label>
+        <label className="label">Nhu cầu cụ thể</label>
         <input name="need" defaultValue={lead.need || ""} className={inputClass} />
       </div>
 
       <div className="grid md:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Trạng thái</label>
+          <label className="label">Trạng thái</label>
           <select name="status" defaultValue={lead.status} className={inputClass}>
             {(Object.keys(LEAD_STATUS_LABELS) as LeadStatus[]).map((s) => (
               <option key={s} value={s}>
@@ -105,7 +105,7 @@ export default function EditLeadForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Mức độ tiềm năng</label>
+          <label className="label">Mức độ tiềm năng</label>
           <select name="temperature" defaultValue={lead.temperature} className={inputClass}>
             {(Object.keys(LEAD_TEMPERATURE_LABELS) as LeadTemperature[]).map((t) => (
               <option key={t} value={t}>
@@ -115,7 +115,7 @@ export default function EditLeadForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Người phụ trách</label>
+          <label className="label">Người phụ trách</label>
           <select name="owner_id" defaultValue={lead.owner_id ? String(lead.owner_id) : ""} className={inputClass}>
             <option value="">Chưa giao</option>
             {staff.map((s) => (
@@ -126,11 +126,11 @@ export default function EditLeadForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Ngày nhận lead</label>
+          <label className="label">Ngày nhận lead</label>
           <input type="date" name="received_at" defaultValue={lead.received_at} className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Hẹn liên hệ lại</label>
+          <label className="label">Hẹn liên hệ lại</label>
           <input
             type="date"
             name="next_follow_up"
@@ -139,7 +139,7 @@ export default function EditLeadForm({
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Doanh thu dự kiến (VNĐ)</label>
+          <label className="label">Doanh thu dự kiến (VNĐ)</label>
           <input
             name="expected_value"
             inputMode="numeric"
@@ -151,7 +151,7 @@ export default function EditLeadForm({
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Lý do từ chối (nếu có)</label>
+        <label className="label">Lý do từ chối (nếu có)</label>
         <input
           name="lost_reason"
           list="lead-lost-reasons"
@@ -166,7 +166,7 @@ export default function EditLeadForm({
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Ghi chú chung</label>
+        <label className="label">Ghi chú chung</label>
         <textarea name="notes" rows={3} defaultValue={lead.notes || ""} className={inputClass} />
       </div>
 
@@ -176,7 +176,7 @@ export default function EditLeadForm({
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="btn btn-primary"
       >
         {pending ? "Đang lưu..." : "Lưu thông tin"}
       </button>

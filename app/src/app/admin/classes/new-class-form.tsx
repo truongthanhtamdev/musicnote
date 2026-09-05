@@ -27,31 +27,31 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
         <input
           name="student_phone"
           placeholder="SĐT học sinh/PH"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="guardian_name"
           placeholder="Tên phụ huynh (nếu HS là trẻ em)"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="level"
           placeholder="Trình độ (VD: Cơ bản)"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="subject"
           list="subject-suggestions"
           placeholder="Môn học (VD: Guitar)"
           defaultValue="Guitar"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <datalist id="subject-suggestions">
           {SUBJECT_SUGGESTIONS.map((s) => (
             <option key={s} value={s} />
           ))}
         </datalist>
-        <select name="language" defaultValue="vi" className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <select name="language" defaultValue="vi" className="input">
           {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
             <option key={v} value={v}>
               {label}
@@ -62,7 +62,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
           name="day_of_week"
           required
           defaultValue=""
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         >
           <option value="" disabled>
             Thứ học
@@ -77,12 +77,12 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
           name="start_time"
           type="time"
           required
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <select
           name="duration_minutes"
           defaultValue="60"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         >
           <option value="30">30 phút</option>
           <option value="45">45 phút</option>
@@ -92,7 +92,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
         <select
           name="teacher_id"
           defaultValue=""
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         >
           <option value="">Chưa xếp giáo viên</option>
           {teachers.map((t) => (
@@ -104,7 +104,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
         <select
           name="package_total_sessions"
           defaultValue=""
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         >
           <option value="">Không theo gói (học đều đặn)</option>
           {PACKAGE_OPTIONS.map((n) => (
@@ -116,7 +116,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
         <input
           name="notes"
           placeholder="Ghi chú"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
       </div>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
@@ -124,7 +124,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="btn btn-primary"
       >
         {pending ? "Đang lưu..." : "Thêm lớp"}
       </button>

@@ -36,7 +36,7 @@ export default function LeadStatusActions({
             onClick={() => startTransition(() => setLeadStatusAction(leadId, s))}
             className={`text-sm rounded-lg px-3 py-1.5 border transition disabled:opacity-60 ${
               status === s
-                ? "border-gold-300 bg-gold-50 text-gold-700 font-medium"
+                ? "border-brand-300 bg-brand-50 text-brand-700 font-medium"
                 : "border-slate-300 text-slate-700 hover:bg-slate-50"
             }`}
           >

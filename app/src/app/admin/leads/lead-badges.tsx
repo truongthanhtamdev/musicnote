@@ -5,34 +5,31 @@ import {
   type LeadTemperature,
 } from "@/lib/types";
 
+/** Cùng bộ màu với thanh phễu ở trang báo cáo, để nhìn màu là nhận ra bước. */
 const STATUS_STYLES: Record<LeadStatus, string> = {
-  new: "bg-sky-50 text-sky-700",
-  contacted: "bg-indigo-50 text-indigo-700",
-  consulting: "bg-violet-50 text-violet-700",
-  trial_scheduled: "bg-amber-50 text-amber-700",
+  new: "bg-slate-100 text-slate-600",
+  contacted: "bg-amber-50 text-amber-700",
+  consulting: "bg-indigo-50 text-indigo-700",
+  trial_scheduled: "bg-violet-50 text-violet-700",
   trial_done: "bg-orange-50 text-orange-700",
-  won: "bg-emerald-50 text-emerald-700",
-  lost: "bg-red-50 text-red-700",
-  cold: "bg-slate-100 text-slate-600",
+  won: "bg-brand-50 text-brand-700",
+  lost: "bg-rose-50 text-rose-700",
+  cold: "bg-slate-100 text-slate-500",
 };
 
 export function LeadStatusBadge({ status }: { status: LeadStatus }) {
-  return (
-    <span className={`text-xs font-medium px-2 py-1 rounded-full ${STATUS_STYLES[status]}`}>
-      {LEAD_STATUS_LABELS[status]}
-    </span>
-  );
+  return <span className={`badge ${STATUS_STYLES[status]}`}>{LEAD_STATUS_LABELS[status]}</span>;
 }
 
 const TEMPERATURE_STYLES: Record<LeadTemperature, string> = {
-  hot: "bg-red-50 text-red-600",
+  hot: "bg-rose-50 text-rose-600",
   warm: "bg-amber-50 text-amber-700",
   cold: "bg-slate-100 text-slate-500",
 };
 
 export function LeadTemperatureBadge({ temperature }: { temperature: LeadTemperature }) {
   return (
-    <span className={`text-xs font-medium px-2 py-1 rounded-full ${TEMPERATURE_STYLES[temperature]}`}>
+    <span className={`badge ${TEMPERATURE_STYLES[temperature]}`}>
       {LEAD_TEMPERATURE_LABELS[temperature]}
     </span>
   );

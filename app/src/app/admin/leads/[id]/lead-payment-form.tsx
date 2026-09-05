@@ -7,7 +7,7 @@ import { todayISO } from "@/lib/format";
 import { getSuggestedPackagePrice } from "@/lib/types";
 
 const initialState: FormState = {};
-const inputClass = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
+const inputClass = "input";
 
 export default function LeadPaymentForm({
   leadId,
@@ -51,7 +51,7 @@ export default function LeadPaymentForm({
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="btn btn-primary"
       >
         {pending ? "Đang lưu..." : "Ghi nhận thanh toán"}
       </button>

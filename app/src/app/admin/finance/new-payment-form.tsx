@@ -43,7 +43,7 @@ export default function NewPaymentForm({
         name="class_id"
         defaultValue=""
         onChange={handleClassChange}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="input"
       >
         <option value="">Không gắn lớp cụ thể</option>
         {classes.map((c) => (
@@ -61,14 +61,14 @@ export default function NewPaymentForm({
           placeholder="Số tiền (VNĐ)"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="paid_at"
           type="date"
           required
           defaultValue={todayISO()}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
       </div>
       <p className="text-xs text-slate-400 -mt-1">
@@ -78,14 +78,14 @@ export default function NewPaymentForm({
       <input
         name="note"
         placeholder="Ghi chú (VD: đóng gói 20 tiết)"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="input"
       />
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state.success && <p className="text-sm text-emerald-600">Đã ghi nhận thanh toán.</p>}
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="btn btn-primary"
       >
         {pending ? "Đang lưu..." : "Ghi nhận thanh toán"}
       </button>

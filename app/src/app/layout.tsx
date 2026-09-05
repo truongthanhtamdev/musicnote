@@ -1,20 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// Một họ chữ duy nhất cho toàn hệ thống — dáng hình học, chữ số đều nhau,
+// hợp với bảng biểu và các con số doanh thu.
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "Piano Guitar Đệm Hát - Quản lý giáo viên",
-  description: "Điểm danh, chấm công và giao lớp cho giáo viên guitar online",
+  title: "ClientHub - Piano Guitar Đệm Hát",
+  description:
+    "Quản lý khách hàng tiềm năng, lớp học, điểm danh và doanh thu cho trung tâm dạy nhạc",
 };
 
 export default function RootLayout({
@@ -23,11 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="vi" className={`${jakarta.variable} h-full antialiased`}>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }

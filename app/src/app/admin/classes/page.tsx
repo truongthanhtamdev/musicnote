@@ -82,7 +82,7 @@ export default async function ClassesPage() {
                       <ClassStatusBadge status={c.status} />
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <Link href={`/admin/classes/${c.id}`} className="text-gold-600 hover:underline">
+                      <Link href={`/admin/classes/${c.id}`} className="text-brand-600 hover:underline">
                         Chi tiết
                       </Link>
                     </td>

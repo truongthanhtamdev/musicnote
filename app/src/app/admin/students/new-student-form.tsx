@@ -20,32 +20,32 @@ export default function NewStudentForm() {
         name="name"
         required
         placeholder="Họ tên học viên"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="input"
       />
       <input
         name="email"
         required
         placeholder="Email hoặc SĐT dùng để đăng nhập"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="input"
       />
       <input
         name="phone"
         placeholder="Số điện thoại liên hệ (không bắt buộc)"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="input"
       />
       <input
         name="password"
         type="password"
         required
         placeholder="Mật khẩu tạm"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="input"
       />
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state.success && <p className="text-sm text-emerald-600">Đã thêm học viên.</p>}
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="btn btn-primary"
       >
         {pending ? "Đang lưu..." : "Thêm học viên"}
       </button>

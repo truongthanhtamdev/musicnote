@@ -13,7 +13,7 @@ import {
 
 const initialState: LeadFormState = {};
 
-const inputClass = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
+const inputClass = "input";
 
 export default function NewLeadForm({
   staff,
@@ -40,33 +40,33 @@ export default function NewLeadForm({
 
       <div className="grid md:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Tên khách hàng *</label>
+          <label className="label">Tên khách hàng *</label>
           <input name="name" required placeholder="VD: Chị Lan" className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">SĐT Zalo</label>
+          <label className="label">SĐT Zalo</label>
           <input name="phone" inputMode="tel" placeholder="09xx xxx xxx" className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Khu vực</label>
+          <label className="label">Khu vực</label>
           <input name="area" placeholder="VD: Quận 7, Thủ Đức..." className={inputClass} />
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Tên Facebook</label>
+          <label className="label">Tên Facebook</label>
           <input name="fb_name" placeholder="Tên hiển thị trên FB" className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Link Facebook / inbox</label>
+          <label className="label">Link Facebook / inbox</label>
           <input name="fb_url" placeholder="https://facebook.com/..." className={inputClass} />
         </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Môn học</label>
+          <label className="label">Môn học</label>
           <select name="subject" defaultValue="Guitar" className={inputClass}>
             {SUBJECT_SUGGESTIONS.map((s) => (
               <option key={s} value={s}>
@@ -76,7 +76,7 @@ export default function NewLeadForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Hình thức học</label>
+          <label className="label">Hình thức học</label>
           <select name="learning_mode" defaultValue="home_private" className={inputClass}>
             {(Object.keys(LEARNING_MODE_LABELS) as LeadLearningMode[]).map((m) => (
               <option key={m} value={m}>
@@ -86,7 +86,7 @@ export default function NewLeadForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Nguồn</label>
+          <label className="label">Nguồn</label>
           <input
             name="source"
             list="lead-source-options"
@@ -102,7 +102,7 @@ export default function NewLeadForm({
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Nhu cầu cụ thể</label>
+        <label className="label">Nhu cầu cụ thể</label>
         <input
           name="need"
           placeholder="VD: học đệm hát cho con 12 tuổi, muốn học tối T3-T5"
@@ -112,15 +112,15 @@ export default function NewLeadForm({
 
       <div className="grid md:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Ngày nhận lead</label>
+          <label className="label">Ngày nhận lead</label>
           <input type="date" name="received_at" defaultValue={todayISO()} className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Hẹn liên hệ lại</label>
+          <label className="label">Hẹn liên hệ lại</label>
           <input type="date" name="next_follow_up" className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Người phụ trách</label>
+          <label className="label">Người phụ trách</label>
           <select name="owner_id" defaultValue={String(currentUserId)} className={inputClass}>
             <option value="">Chưa giao</option>
             {staff.map((s) => (
@@ -148,7 +148,7 @@ export default function NewLeadForm({
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="btn btn-primary"
       >
         {pending ? "Đang lưu..." : state.duplicate ? "Vẫn lưu (người khác)" : "Lưu khách hàng"}
       </button>

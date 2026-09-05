@@ -1,31 +1,320 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Hệ thiết kế "ClientHub": thanh điều hướng nền xanh rêu đậm, xanh ngọc làm
+ * màu nhấn, nền giấy hơi ngả xanh, thẻ trắng viền mảnh. Mọi màu khai báo ở
+ * đây một lần rồi dùng lại qua biến, không rải mã màu trong từng trang.
+ */
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-brand-50: #eff7f4;
+  --color-brand-100: #d7ece4;
+  --color-brand-200: #abd8c8;
+  --color-brand-300: #76bda6;
+  --color-brand-400: #45a285;
+  --color-brand-500: #218b6c;
+  --color-brand-600: #12715a;
+  --color-brand-700: #0f5b49;
+  --color-brand-800: #0f4739;
+  --color-brand-900: #10332c;
+  --color-brand-950: #0a231e;
+
+  --color-paper: #f3f6f6;
+  --color-surface: #ffffff;
+  --color-line: #e3e9e7;
+  --color-line-soft: #eef2f1;
+  --color-ink: #14211f;
+  --color-ink-soft: #3f524d;
+  --color-muted: #6c7d78;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  /* Brand gold, sampled from the "Guitar Đệm Hát" logo (black + gold). */
-  --color-gold-50: #fbf4e6;
-  --color-gold-100: #f4e4c6;
-  --color-gold-200: #e9cd9a;
-  --color-gold-300: #dbb56f;
-  --color-gold-400: #cda05a;
-  --color-gold-500: #bd8e49;
-  --color-gold-600: #a87c3f;
-  --color-gold-700: #8a6530;
-  --color-gold-800: #6b4e26;
-  --color-gold-900: #4a3719;
-}
+html { -webkit-text-size-adjust: 100%; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { text-wrap: balance; }
+
+/* Số liệu trong thẻ và bảng luôn thẳng cột. */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ── Tiêu đề trang ───────────────────────────────────────────────────── */
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.page-title {
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--color-ink);
+  margin-top: 6px;
+}
+
+/* Dấu chấm cuối tiêu đề, tô màu nhấn — chi tiết nhận diện của bộ giao diện. */
+.page-title::after {
+  content: ".";
+  color: var(--color-brand-500);
+}
+
+/* Tên người, tên lớp... thì bỏ dấu chấm đi cho khỏi giống lỗi chính tả. */
+.page-title--plain::after { content: none; }
+
+.page-sub {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--color-muted);
+}
+
+/* ── Thẻ và bảng điều khiển ──────────────────────────────────────────── */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+}
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+.panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+/* ── Thẻ số liệu ─────────────────────────────────────────────────────── */
+
+.stat {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 118px;
+}
+
+.stat-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stat-label {
+  font-size: 12.5px;
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.stat-icon {
+  color: var(--color-brand-500);
+  flex-shrink: 0;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 8px;
+  color: var(--color-ink);
+}
+
+.stat-hint {
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 11.5px;
+  color: var(--color-muted);
+}
+
+/* Một thẻ nổi bật nền đậm cho con số quan trọng nhất của trang. */
+.stat--dark {
+  background: var(--color-brand-800);
+  border-color: var(--color-brand-800);
+}
+.stat--dark .stat-label { color: var(--color-brand-200); }
+.stat--dark .stat-value { color: #fff; }
+.stat--dark .stat-hint { color: var(--color-brand-300); }
+.stat--dark .stat-icon { color: var(--color-brand-300); }
+
+/* ── Nút ─────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: .6; cursor: default; }
+.btn:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; }
+
+.btn-primary { background: var(--color-brand-600); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--color-brand-700); }
+
+.btn-ghost {
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-soft);
+}
+.btn-ghost:hover:not(:disabled) { background: var(--color-brand-50); border-color: var(--color-brand-200); }
+
+.btn-danger { background: var(--color-surface); border-color: #f0d3cf; color: #b4463a; }
+.btn-danger:hover:not(:disabled) { background: #fdf1ef; }
+
+.btn-sm { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
+
+/* ── Ô nhập ──────────────────────────────────────────────────────────── */
+
+.label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--color-muted);
+  margin-bottom: 5px;
+}
+
+.input {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--color-ink);
+}
+.input:focus { outline: none; border-color: var(--color-brand-400); box-shadow: 0 0 0 3px var(--color-brand-50); }
+
+select.input { appearance: auto; }
+
+/* ── Bảng ────────────────────────────────────────────────────────────── */
+
+.tbl { width: 100%; font-size: 13.5px; border-collapse: collapse; }
+.tbl thead th {
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--color-muted);
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-line);
+  white-space: nowrap;
+}
+.tbl tbody td { padding: 14px 18px; border-bottom: 1px solid var(--color-line-soft); vertical-align: top; }
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl tbody tr:hover { background: #fafcfb; }
+.tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Huy hiệu, chip, dải nhắc việc ───────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-brand-50);
+  color: var(--color-brand-700);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #f2e3bd;
+  background: #fdf8ec;
+  color: #7c5b16;
+  font-size: 13.5px;
+}
+.alert:hover { background: #fbf3df; }
+
+/* ── Thanh tiến độ của phễu ──────────────────────────────────────────── */
+
+.bar-track {
+  flex: 1;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--color-line-soft);
+  overflow: hidden;
+}
+.bar-fill { height: 100%; border-radius: 999px; }
+
+/* ── Tab dạng phân đoạn ──────────────────────────────────────────────── */
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--color-line-soft);
+}
+.segmented a {
+  padding: 5px 11px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+.segmented a:hover { color: var(--color-ink); }
+.segmented a[aria-current="true"] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(20, 33, 31, .08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
 }

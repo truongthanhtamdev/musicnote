@@ -24,7 +24,7 @@ export default function NewExpenseForm() {
         required
         placeholder="Loại chi phí (VD: Quảng cáo (Ads))"
         defaultValue="Quảng cáo (Ads)"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="input"
       />
       <datalist id="expense-category-suggestions">
         {EXPENSE_CATEGORY_SUGGESTIONS.map((c) => (
@@ -38,20 +38,20 @@ export default function NewExpenseForm() {
           min="1"
           required
           placeholder="Số tiền (VNĐ)"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="expense_date"
           type="date"
           required
           defaultValue={todayISO()}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
       </div>
       <input
         name="note"
         placeholder="Ghi chú (không bắt buộc)"
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        className="input"
       />
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state.success && <p className="text-sm text-emerald-600">Đã thêm chi phí.</p>}

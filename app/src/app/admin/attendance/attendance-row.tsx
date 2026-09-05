@@ -25,7 +25,7 @@ export default function AttendanceRow({
 
   if (editing) {
     return (
-      <tr className="bg-gold-50/40">
+      <tr className="bg-brand-50/40">
         <td className="px-4 py-2">{row.session_date}</td>
         <td className="px-4 py-2">{row.student_name}</td>
         <td className="px-4 py-2">{row.teacher_name}</td>
@@ -67,7 +67,7 @@ export default function AttendanceRow({
             <button
               type="submit"
               disabled={pending}
-              className="text-sm bg-gold-600 hover:bg-gold-700 text-white rounded-lg px-3 py-1"
+              className="text-sm bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-3 py-1"
             >
               {pending ? "Đang lưu..." : "Lưu"}
             </button>
@@ -106,7 +106,7 @@ export default function AttendanceRow({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-gold-600 hover:underline"
+          className="text-brand-600 hover:underline"
         >
           Sửa
         </button>

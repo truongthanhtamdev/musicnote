@@ -1,15 +1,26 @@
 import { requireRole } from "@/lib/guard";
-import { TopNav } from "@/components/nav";
+import { AppShell } from "@/components/app-shell";
+import type { NavGroup } from "@/components/shell-nav";
+import { IconGraduation } from "@/components/icons";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole(["student"]);
 
-  const links = [{ href: "/student", label: "Lịch học của tôi" }];
+  const groups: NavGroup[] = [
+    {
+      label: "Của tôi",
+      items: [{ href: "/student", label: "Lịch học của tôi", icon: <IconGraduation /> }],
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <TopNav title="Piano Guitar Đệm Hát" userName={session.name} links={links} />
-      <main className="max-w-4xl mx-auto px-4 py-6">{children}</main>
-    </div>
+    <AppShell
+      workspace="Piano Guitar Đệm Hát"
+      groups={groups}
+      userName={session.name}
+      roleLabel="Học viên"
+    >
+      {children}
+    </AppShell>
   );
 }

@@ -57,7 +57,7 @@ export default async function StudentHomePage() {
                     <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
-                          progress.remaining <= 3 ? "bg-amber-500" : "bg-gold-600"
+                          progress.remaining <= 3 ? "bg-amber-500" : "bg-brand-600"
                         }`}
                         style={{ width: `${Math.min(100, (progress.used / progress.total) * 100)}%` }}
                       />
@@ -74,7 +74,7 @@ export default async function StudentHomePage() {
                   ) : (
                     <ul className="space-y-2">
                       {history.map((a) => (
-                        <li key={a.id} className="text-sm border-l-2 border-gold-200 pl-3">
+                        <li key={a.id} className="text-sm border-l-2 border-brand-200 pl-3">
                           <p className="text-slate-500 text-xs">
                             {a.session_date} · {ATTENDANCE_STATUS_LABELS[a.status]}
                           </p>

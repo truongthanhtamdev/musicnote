@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { roleHomePath } from "@/lib/types";
-import { Logo } from "@/components/logo";
+import { IconUsers } from "@/components/icons";
 import LoginForm from "./login-form";
 
 export default async function LoginPage({
@@ -16,16 +16,23 @@ export default async function LoginPage({
   const { next } = await searchParams;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-brand-900 px-4 py-10">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Logo className="h-14 mx-auto mb-2" />
-          <h1 className="text-2xl font-bold text-slate-900">Piano Guitar Đệm Hát</h1>
-          <p className="text-slate-500 mt-1">Hệ thống điểm danh &amp; chấm công giáo viên</p>
+        <div className="mb-7 text-center">
+          <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-brand-500/20 text-brand-200">
+            <IconUsers className="size-6" />
+          </span>
+          <h1 className="text-[22px] font-bold text-white">ClientHub</h1>
+          <p className="mt-1 text-[13px] text-brand-300">
+            Piano Guitar Đệm Hát · Quản lý khách hàng &amp; lớp học
+          </p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="card p-6 shadow-lg shadow-black/10">
           <LoginForm next={next || ""} />
         </div>
+        <p className="mt-5 text-center text-[11.5px] text-brand-300/70">
+          Dữ liệu khách hàng của trung tâm — không chia sẻ tài khoản cho người ngoài.
+        </p>
       </div>
     </div>
   );

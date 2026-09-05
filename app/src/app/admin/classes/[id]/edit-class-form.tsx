@@ -25,26 +25,26 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
           name="student_phone"
           defaultValue={cls.student_phone || ""}
           placeholder="SĐT học sinh/PH"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="guardian_name"
           defaultValue={cls.guardian_name || ""}
           placeholder="Tên phụ huynh (nếu HS là trẻ em)"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="level"
           defaultValue={cls.level || ""}
           placeholder="Trình độ"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="subject"
           list="subject-suggestions"
           defaultValue={cls.subject}
           placeholder="Môn học"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <datalist id="subject-suggestions">
           {SUBJECT_SUGGESTIONS.map((s) => (
@@ -54,7 +54,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
         <select
           name="language"
           defaultValue={cls.language}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         >
           {Object.entries(LANGUAGE_LABELS).map(([v, label]) => (
             <option key={v} value={v}>
@@ -65,7 +65,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
         <select
           name="day_of_week"
           defaultValue={cls.day_of_week}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         >
           {DAY_ORDER.map((d) => (
             <option key={d} value={d}>
@@ -78,7 +78,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
           type="time"
           defaultValue={cls.start_time}
           required
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <select
           name="duration_minutes"
@@ -102,7 +102,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
       <button
         type="submit"
         disabled={pending}
-        className="bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4 py-2"
+        className="btn btn-primary"
       >
         {pending ? "Đang lưu..." : "Lưu thay đổi"}
       </button>

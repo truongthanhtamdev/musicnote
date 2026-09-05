@@ -30,7 +30,7 @@ export default function MakeupAttendanceForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-sm border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg px-4 py-2"
+        className="btn btn-ghost"
       >
         + Điểm danh buổi học bù / dời lịch
       </button>
@@ -54,7 +54,7 @@ export default function MakeupAttendanceForm({
           <select
             name="class_id"
             required
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           >
             <option value="">-- Chọn lớp --</option>
             {classes.map((c) => (
@@ -68,7 +68,7 @@ export default function MakeupAttendanceForm({
             name="session_date"
             required
             defaultValue={todayISO()}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="input"
           />
         </div>
 
@@ -85,7 +85,7 @@ export default function MakeupAttendanceForm({
                     defaultChecked={value === "completed"}
                     className="peer sr-only"
                   />
-                  <span className="block text-center border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 peer-checked:bg-gold-600 peer-checked:border-gold-600 peer-checked:text-white transition cursor-pointer">
+                  <span className="block text-center border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 peer-checked:bg-brand-600 peer-checked:border-brand-600 peer-checked:text-white transition cursor-pointer">
                     {label}
                   </span>
                 </label>
@@ -107,12 +107,12 @@ export default function MakeupAttendanceForm({
           name="lesson_content"
           placeholder="Nội dung bài học hôm nay"
           rows={2}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
         <input
           name="note"
           placeholder="Ghi chú (không bắt buộc)"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="input"
         />
 
         {state.error && <p className="text-sm text-red-600">{state.error}</p>}
@@ -120,7 +120,7 @@ export default function MakeupAttendanceForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-full bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white font-semibold rounded-lg px-4 py-2.5 text-sm"
+          className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-semibold rounded-lg px-4 py-2.5 text-sm"
         >
           {pending ? "Đang lưu..." : "Lưu điểm danh bù"}
         </button>
