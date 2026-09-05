@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/modal";
 import { IconAlert, SubjectIcon } from "@/components/icons";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
-import { Avatar, ProgressBar, StatusChip, btn, packageTone } from "@/components/ui";
+import { Avatar, FacebookLink, ProgressBar, StatusChip, btn, packageTone } from "@/components/ui";
 import { formatTimeRange } from "@/lib/format";
 import type { PackageProgress } from "@/lib/queries";
 import AttendanceForm from "./attendance-form";
@@ -13,6 +13,7 @@ export interface TodayClass {
   id: number;
   student_name: string;
   guardian_name: string | null;
+  facebook_url: string | null;
   subject: string;
   level: string | null;
   language: string;
@@ -95,6 +96,7 @@ export default function TodayClassCard({
                 {cls.level ? ` · ${cls.level}` : ""}
                 {cls.guardian_name ? ` · KH: ${cls.guardian_name}` : ""}
               </span>
+              <FacebookLink url={cls.facebook_url} label="" className="shrink-0" />
             </p>
 
             {progress && (

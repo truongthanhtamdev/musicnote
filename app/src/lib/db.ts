@@ -68,6 +68,7 @@ function migrate() {
       student_name TEXT NOT NULL,
       student_phone TEXT,
       guardian_name TEXT,
+      facebook_url TEXT,
       student_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
       level TEXT,
       subject TEXT NOT NULL DEFAULT 'Guitar',
@@ -169,6 +170,7 @@ function migrate() {
   // explicitly, or older deployments crash on the first query that touches
   // one of them.
   ensureColumn("classes", "guardian_name", "TEXT");
+  ensureColumn("classes", "facebook_url", "TEXT");
   ensureColumn("classes", "subject", "TEXT NOT NULL DEFAULT 'Guitar'");
   ensureColumn("classes", "schedule_type", "TEXT NOT NULL DEFAULT 'fixed'");
   ensureColumn("classes", "language", "TEXT NOT NULL DEFAULT 'vi'");
@@ -260,8 +262,15 @@ function invertAvailabilityToBusyOnce() {
 
 function ensureColumn(table: string, column: string, definition: string) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
-  if (!cols.some((c) => c.name === column)) {
+  if (cols.some((c) => c.name === column)) return;
+  try {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  } catch (err) {
+    // `next build` opens the same file from several worker processes at once,
+    // so two of them can pass the check above before either one ALTERs. The
+    // loser gets "duplicate column name", which means the column now exists —
+    // exactly what this function is for.
+    if (!(err instanceof Error) || !err.message.includes("duplicate column name")) throw err;
   }
 }
 

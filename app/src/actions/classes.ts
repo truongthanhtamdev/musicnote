@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole, ForbiddenError } from "@/lib/guard";
-import { todayISO } from "@/lib/format";
+import { normalizeFacebookUrl, todayISO } from "@/lib/format";
 import { notifyUser, getClass } from "@/lib/queries";
 import { formatClassSchedule } from "@/lib/types";
 import type { FormState } from "./teachers";
@@ -40,6 +40,7 @@ export async function createClassAction(
   const studentName = String(formData.get("student_name") || "").trim();
   const studentPhone = String(formData.get("student_phone") || "").trim();
   const guardianName = String(formData.get("guardian_name") || "").trim();
+  const facebookUrl = normalizeFacebookUrl(String(formData.get("facebook_url") || ""));
   const level = String(formData.get("level") || "").trim();
   const subject = String(formData.get("subject") || "").trim() || "Guitar";
   const language = String(formData.get("language") || "vi") === "en" ? "en" : "vi";
@@ -93,8 +94,8 @@ export async function createClassAction(
   }
 
   const insert = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   );
   let firstClassId: number | null = null;
   for (const slot of slots) {
@@ -102,6 +103,7 @@ export async function createClassAction(
       studentName,
       studentPhone || null,
       guardianName || null,
+      facebookUrl,
       level || null,
       subject,
       language,
@@ -151,6 +153,7 @@ export async function updateClassAction(
   const studentName = String(formData.get("student_name") || "").trim();
   const studentPhone = String(formData.get("student_phone") || "").trim();
   const guardianName = String(formData.get("guardian_name") || "").trim();
+  const facebookUrl = normalizeFacebookUrl(String(formData.get("facebook_url") || ""));
   const level = String(formData.get("level") || "").trim();
   const subject = String(formData.get("subject") || "").trim() || "Guitar";
   const language = String(formData.get("language") || "vi") === "en" ? "en" : "vi";
@@ -166,7 +169,7 @@ export async function updateClassAction(
 
   const result = db
     .prepare(
-      `UPDATE classes SET student_name=?, student_phone=?, guardian_name=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?
+      `UPDATE classes SET student_name=?, student_phone=?, guardian_name=?, facebook_url=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?
        WHERE id = ? ${session.role === "teacher" ? "AND teacher_id = ?" : ""}`
     )
     .run(
@@ -174,6 +177,7 @@ export async function updateClassAction(
         studentName,
         studentPhone || null,
         guardianName || null,
+        facebookUrl,
         level || null,
         subject,
         language,

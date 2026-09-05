@@ -212,6 +212,14 @@ export const IconUser = (p: IconProps) => (
   </Svg>
 );
 
+export const IconFacebook = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="5" />
+    <path d="M15 8h-1.5A2.5 2.5 0 0 0 11 10.5V21" />
+    <path d="M8.5 13.5h5.5" />
+  </Svg>
+);
+
 export const IconGuitar = (p: IconProps) => (
   <Svg {...p}>
     <path d="M14.5 3.5 17 6l2.5-1L21 6.5l-1 2.5 2 2.5-2 1.5" />

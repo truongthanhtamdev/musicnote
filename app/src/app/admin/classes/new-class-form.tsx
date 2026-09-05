@@ -104,6 +104,17 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
                 />
               </div>
               <div>
+                <label className={label} htmlFor="a-facebook">
+                  Facebook khách hàng
+                </label>
+                <input
+                  id="a-facebook"
+                  name="facebook_url"
+                  placeholder="Link hoặc tên tài khoản Facebook"
+                  className={field}
+                />
+              </div>
+              <div>
                 <label className={label} htmlFor="a-level">
                   Trình độ
                 </label>

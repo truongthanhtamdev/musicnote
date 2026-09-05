@@ -185,6 +185,13 @@ export default function TeacherClassRow({
             aria-label="Tên khách hàng"
           />
           <input
+            name="facebook_url"
+            defaultValue={cls.facebook_url || ""}
+            placeholder="Facebook khách hàng"
+            className={field}
+            aria-label="Facebook khách hàng"
+          />
+          <input
             name="level"
             defaultValue={cls.level || ""}
             placeholder="Trình độ"

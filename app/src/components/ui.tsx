@@ -4,7 +4,7 @@
  */
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { IconChevronRight } from "./icons";
+import { IconChevronRight, IconFacebook } from "./icons";
 
 /* ---------------------------------- Card --------------------------------- */
 
@@ -369,6 +369,34 @@ export function Avatar({
 }
 
 /* --------------------------------- Link ---------------------------------- */
+
+/**
+ * Link Facebook của khách hàng. Trả về null khi lớp chưa có link, để chỗ gọi
+ * chỉ cần render thẳng mà không phải tự kiểm tra.
+ */
+export function FacebookLink({
+  url,
+  label = "Facebook",
+  className = "",
+}: {
+  url: string | null;
+  label?: string;
+  className?: string;
+}) {
+  if (!url) return null;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Mở Facebook khách hàng"
+      className={`inline-flex items-center gap-1 text-navy-600 hover:text-navy-700 font-medium ${className}`}
+    >
+      <IconFacebook className="w-3.5 h-3.5" />
+      {label}
+    </a>
+  );
+}
 
 export function DetailLink({ href, children = "Chi tiết" }: { href: string; children?: ReactNode }) {
   return (

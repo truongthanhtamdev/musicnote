@@ -7,6 +7,7 @@ import {
   Card,
   DetailLink,
   EmptyState,
+  FacebookLink,
   MetricCard,
   PageHeader,
   ProgressBar,
@@ -165,8 +166,11 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                               </span>
                             )}
                           </p>
-                          {c.guardian_name && (
-                            <p className="text-xs text-ink-400 truncate">KH: {c.guardian_name}</p>
+                          {(c.guardian_name || c.facebook_url) && (
+                            <p className="text-xs text-ink-400 truncate flex items-center gap-1.5">
+                              {c.guardian_name && <span className="truncate">KH: {c.guardian_name}</span>}
+                              <FacebookLink url={c.facebook_url} label="" className="shrink-0" />
+                            </p>
                           )}
                         </div>
                       </div>

@@ -116,6 +116,17 @@ export default function NewClassForm() {
                 />
               </div>
               <div>
+                <label className={label} htmlFor="n-facebook">
+                  Facebook khách hàng
+                </label>
+                <input
+                  id="n-facebook"
+                  name="facebook_url"
+                  placeholder="Link hoặc tên tài khoản Facebook"
+                  className={field}
+                />
+              </div>
+              <div>
                 <label className={label} htmlFor="n-level">
                   Trình độ
                 </label>

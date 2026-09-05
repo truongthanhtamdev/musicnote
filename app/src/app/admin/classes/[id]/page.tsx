@@ -19,6 +19,7 @@ import {
   Card,
   CardHeader,
   EmptyState,
+  FacebookLink,
   StatusChip,
   TableShell,
   Th,
@@ -70,8 +71,11 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
           <Avatar name={cls.student_name} className="w-12 h-12 text-sm" />
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-ink-900 tracking-tight">{cls.student_name}</h1>
-            {cls.guardian_name && (
-              <p className="text-ink-500 text-sm">Khách hàng: {cls.guardian_name}</p>
+            {(cls.guardian_name || cls.facebook_url) && (
+              <p className="text-ink-500 text-sm flex flex-wrap items-center gap-x-2">
+                {cls.guardian_name && <span>Khách hàng: {cls.guardian_name}</span>}
+                <FacebookLink url={cls.facebook_url} />
+              </p>
             )}
             <p className="text-ink-500 text-sm flex flex-wrap items-center gap-x-1.5 mt-0.5">
               <SubjectIcon subject={cls.subject} className="w-4 h-4 text-wood-500" />

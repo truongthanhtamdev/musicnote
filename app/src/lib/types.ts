@@ -32,6 +32,8 @@ export interface ClassRow {
   student_name: string;
   student_phone: string | null;
   guardian_name: string | null;
+  /** Link Facebook của khách hàng, để nhắn tin liên hệ nhanh. */
+  facebook_url: string | null;
   student_user_id: number | null;
   level: string | null;
   subject: string;

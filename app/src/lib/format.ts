@@ -104,3 +104,22 @@ export function mostRecentOccurrence(dayOfWeek: number, from: Date = now()): Dat
   d.setDate(d.getDate() - diff);
   return d;
 }
+
+/**
+ * Turns whatever the user pasted into the Facebook field into an openable
+ * link, or null when the field is blank. Accepts a full URL, a bare
+ * "facebook.com/..." / "m.me/..." address, or just a username/handle — the
+ * form is used on a phone, so nobody types "https://" by hand.
+ */
+export function normalizeFacebookUrl(raw: string): string | null {
+  const value = raw.trim().replace(/^@/, "");
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  // A Facebook address pasted without the scheme. Matched against the known
+  // hosts rather than "has a dot", because handles routinely contain dots
+  // (hoa.nguyen.98) and must still be read as usernames.
+  if (/^(?:www\.|m\.)?(?:facebook\.com|fb\.com|fb\.me|m\.me|messenger\.com)\//i.test(value)) {
+    return `https://${value}`;
+  }
+  return `https://facebook.com/${encodeURIComponent(value)}`;
+}

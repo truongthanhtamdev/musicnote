@@ -43,6 +43,12 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
           className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
         <input
+          name="facebook_url"
+          defaultValue={cls.facebook_url || ""}
+          placeholder="Facebook khách hàng (link hoặc tên tài khoản)"
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
+        />
+        <input
           name="level"
           defaultValue={cls.level || ""}
           placeholder="Trình độ"
