@@ -44,6 +44,19 @@ if [ "$NEED_NODE" -eq 1 ]; then
 fi
 echo "Node.js: $(node -v)"
 
+# Bước build của Next.js ngốn RAM; VPS 1GB không có swap sẽ bị "killed" giữa
+# chừng. Tự tạo swap 2GB khi máy ít RAM và chưa có swap.
+RAM_MB="$(free -m | awk '/^Mem:/{print $2}')"
+SWAP_MB="$(free -m | awk '/^Swap:/{print $2}')"
+if [ "${RAM_MB:-0}" -lt 1600 ] && [ "${SWAP_MB:-0}" -lt 512 ] && [ ! -f /swapfile ]; then
+  log "RAM ${RAM_MB}MB - tạo swap 2GB cho đủ bộ nhớ lúc build"
+  fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+  chmod 600 /swapfile
+  mkswap /swapfile >/dev/null
+  swapon /swapfile
+  grep -q "^/swapfile" /etc/fstab || echo "/swapfile none swap sw 0 0" >> /etc/fstab
+fi
+
 log "Tạo tài khoản chạy dịch vụ và các thư mục"
 id -u "$APP_USER" >/dev/null 2>&1 || useradd --system --create-home --home-dir /home/$APP_USER --shell /usr/sbin/nologin "$APP_USER"
 mkdir -p "$APP_DIR" "$DATA_DIR" "$BACKUP_DIR"
