@@ -103,7 +103,8 @@ if [ -d "$APP_DIR/.git" ]; then
 else
   as_app git clone --quiet --branch "$BRANCH" "$REPO" "$APP_DIR"
 fi
-echo "Phiên bản: $(git -C "$APP_DIR" log --oneline -1)"
+git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
+echo "Phiên bản: $(as_app git -C "$APP_DIR" log --oneline -1)"
 
 # Mật khẩu ký phiên đăng nhập: tạo một lần rồi giữ nguyên mãi. Đổi chuỗi này
 # sẽ làm mọi người đang đăng nhập bị văng ra.

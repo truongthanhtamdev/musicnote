@@ -15,15 +15,19 @@ APP_NAME="$(basename "$APP_DIR")"
 APP_USER="$APP_NAME"
 DATA_DIR="/var/lib/$APP_NAME/data"
 SERVICE="$APP_NAME.service"
-BACKUP_BIN="/usr/local/bin/$APP_NAME-backup"
-BRANCH="${BRANCH:-$(git -C "$APP_DIR" rev-parse --abbrev-ref HEAD)}"
-
 as_app() { sudo -u "$APP_USER" -H env "HOME=/home/$APP_USER" "$@"; }
-
+BACKUP_BIN="/usr/local/bin/$APP_NAME-backup"
 if [ "$(id -u)" -ne 0 ]; then
   echo "Cần chạy bằng quyền root: sudo bash update.sh" >&2
   exit 1
 fi
+
+# git từ chối đọc kho mã thuộc tài khoản khác ("dubious ownership"). Khai báo
+# thư mục này là tin cậy cho root, nếu không lệnh lấy tên nhánh ngay bên dưới
+# sẽ lỗi và script chết trước khi cập nhật được gì.
+git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
+
+BRANCH="${BRANCH:-$(as_app git -C "$APP_DIR" rev-parse --abbrev-ref HEAD)}"
 
 echo "==> Sao lưu dữ liệu trước khi cập nhật"
 DATA_DIR="$DATA_DIR" "$BACKUP_BIN" || echo "(bỏ qua: chưa cài script sao lưu)"
