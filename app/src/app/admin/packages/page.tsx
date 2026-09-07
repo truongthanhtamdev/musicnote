@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
-import { annotateSchedule, getPackageProgress, listClasses, listTeachers } from "@/lib/queries";
+import { listTeachers } from "@/lib/queries";
+import { filterPackageRows, listPackageRows, type PackageSP } from "./filters";
 import { PACKAGE_OPTIONS, SUBJECT_SUGGESTIONS, formatClassSchedule } from "@/lib/types";
-import { IconPackage, IconSearch, SubjectIcon } from "@/components/icons";
+import { IconDownload, IconPackage, IconSearch, SubjectIcon } from "@/components/icons";
 import {
   Avatar,
   Card,
@@ -21,14 +22,7 @@ import {
 
 const PAGE_SIZE = 10;
 
-type SP = {
-  q?: string;
-  subject?: string;
-  teacherId?: string;
-  pkg?: string;
-  remaining?: string;
-  page?: string;
-};
+type SP = PackageSP;
 
 /** Đường dẫn giữ nguyên các bộ lọc khác, chỉ đổi một tham số (dùng cho filter chip). */
 function urlWith(sp: SP, key: keyof SP, value: string | null): string {
@@ -70,36 +64,36 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const teachers = listTeachers(true);
 
-  const all = annotateSchedule(listClasses())
-    .flatMap((c) => {
-      const progress = getPackageProgress(c);
-      return progress ? [{ cls: c, progress }] : [];
-    })
-    .sort((a, b) => a.progress.remaining - b.progress.remaining);
-
-  const q = (sp.q || "").trim().toLowerCase();
-  const filtered = all.filter(({ cls, progress }) => {
-    if (q && !cls.student_name.toLowerCase().includes(q)) return false;
-    if (sp.subject && cls.subject !== sp.subject) return false;
-    if (sp.teacherId && String(cls.teacher_id ?? "") !== sp.teacherId) return false;
-    if (sp.pkg && String(progress.total) !== sp.pkg) return false;
-    if (sp.remaining && progress.remaining > Number(sp.remaining)) return false;
-    return true;
-  });
+  const everything = listPackageRows();
+  const all = everything.filter((r) => r.progress !== null);
+  const noPackageCount = everything.length - all.length;
+  const filtered = filterPackageRows(everything, sp);
 
   const page = Math.max(1, Number(sp.page || 1));
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const hasFilter = Boolean(sp.q || sp.subject || sp.teacherId || sp.pkg || sp.remaining);
-  const endingSoon = all.filter((r) => r.progress.remaining <= 5).length;
-  const critical = all.filter((r) => r.progress.remaining <= 3).length;
+  const exportQuery = new URLSearchParams(
+    Object.entries(sp).filter(([k, v]) => v && k !== "page") as [string, string][]
+  ).toString();
+  const endingSoon = all.filter((r) => r.progress!.remaining <= 5).length;
+  const critical = all.filter((r) => r.progress!.remaining <= 3).length;
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="Học viên & gói học"
         subtitle="Theo dõi tiến độ 20/50/100 tiết của từng học viên và nhắc gia hạn đúng lúc."
+        action={
+          <a
+            href={`/admin/packages/export${exportQuery ? `?${exportQuery}` : ""}`}
+            className={btn.secondary}
+          >
+            <IconDownload className="w-4 h-4" />
+            Xuất CSV
+          </a>
+        }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -127,7 +121,7 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
         />
         <MetricCard
           label="Tổng tiết đã dạy"
-          value={all.reduce((s, r) => s + r.progress.used, 0)}
+          value={all.reduce((s, r) => s + r.progress!.used, 0)}
           unit="tiết"
           tone="mint"
           icon={<IconPackage className="w-5 h-5" />}
@@ -199,6 +193,13 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
                 Còn ≤ {n} tiết
               </Chip>
             ))}
+            <span className="w-px h-5 bg-navy-100" aria-hidden="true" />
+            <Chip
+              href={urlWith(sp, "pkg", sp.pkg === "none" ? null : "none")}
+              active={sp.pkg === "none"}
+            >
+              Chưa có gói ({noPackageCount})
+            </Chip>
             {hasFilter && (
               <Link href="/admin/packages" className={`${btn.ghost} text-coral-600`}>
                 Xoá lọc
@@ -237,22 +238,35 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
             </thead>
             <tbody className="divide-y divide-navy-100">
               {rows.map(({ cls, progress }) => {
-                const tone = packageTone(progress.remaining);
+                const tone = progress ? packageTone(progress.remaining) : "navy";
                 return (
                   <tr
                     key={cls.id}
-                    className={tone === "coral" ? "bg-coral-50/40" : "hover:bg-ivory-50"}
+                    className={
+                      tone === "coral"
+                        ? "bg-coral-50/40"
+                        : progress
+                          ? "hover:bg-ivory-50"
+                          : "bg-amber-50/40"
+                    }
                   >
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
+                      <Link
+                        href={`/admin/classes/${cls.id}`}
+                        title="Mở hồ sơ học viên để điền gói học & học phí"
+                        className="flex items-center gap-2.5 group"
+                      >
                         <Avatar name={cls.student_name} className="w-8 h-8 text-[11px]" />
                         <div className="min-w-0">
-                          <p className="font-medium text-ink-900 truncate">{cls.student_name}</p>
-                          <p className="text-xs text-ink-400 tabular">
+                          <p className="font-medium text-ink-900 group-hover:text-wood-700 truncate">
+                            {cls.student_name}
+                          </p>
+                          <p className="text-xs text-ink-400 tabular truncate">
+                            {cls.guardian_name ? `KH: ${cls.guardian_name} · ` : ""}
                             {formatClassSchedule(cls)}
                           </p>
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-ink-700">
                       <span className="flex items-center gap-1.5">
@@ -264,10 +278,10 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
                       {cls.teacher_name || <span className="text-amber-700">Chưa xếp GV</span>}
                     </td>
                     <td className="px-4 py-3 text-ink-700 tabular whitespace-nowrap">
-                      Gói {progress.total} tiết
+                      {progress ? `Gói ${progress.total} tiết` : <span className="text-ink-400">–</span>}
                     </td>
                     <td className="px-4 py-3 text-right tabular text-ink-900 font-medium">
-                      {progress.used}
+                      {progress ? progress.used : "–"}
                     </td>
                     <td
                       className={`px-4 py-3 text-right tabular font-semibold ${
@@ -278,18 +292,24 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
                             : "text-ink-900"
                       }`}
                     >
-                      {progress.remaining}
+                      {progress ? progress.remaining : "–"}
                     </td>
                     <td className="px-4 py-3 min-w-[140px]">
-                      <ProgressBar
-                        value={progress.used}
-                        max={progress.total}
-                        tone={tone}
-                        showPercent
-                      />
+                      {progress ? (
+                        <ProgressBar
+                          value={progress.used}
+                          max={progress.total}
+                          tone={tone}
+                          showPercent
+                        />
+                      ) : (
+                        <span className="text-xs text-ink-400">Chưa đăng ký gói</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
-                      {progress.remaining === 0 ? (
+                      {!progress ? (
+                        <StatusChip tone="amber">Chưa có gói</StatusChip>
+                      ) : progress.remaining === 0 ? (
                         <StatusChip tone="coral">Hết gói</StatusChip>
                       ) : progress.remaining <= 5 ? (
                         <StatusChip tone={tone}>Sắp hết gói</StatusChip>
@@ -298,7 +318,9 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <DetailLink href={`/admin/classes/${cls.id}`} />
+                      <DetailLink href={`/admin/classes/${cls.id}`}>
+                        {progress ? "Chi tiết" : "Điền gói"}
+                      </DetailLink>
                     </td>
                   </tr>
                 );
