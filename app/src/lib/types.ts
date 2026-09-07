@@ -200,6 +200,15 @@ export function formatClassSchedule(
   return `${DAY_LABELS[cls.day_of_week]} ${formatTimeRange(cls.start_time, cls.duration_minutes)}`;
 }
 
+/**
+ * Nhãn người đóng tiền: tên khách hàng (phụ huynh) đứng trước vì họ mới là
+ * người thanh toán, tên học viên theo sau để phân biệt khi một khách hàng
+ * đăng ký cho hai bé. Lớp chưa khai khách hàng thì chỉ còn tên học viên.
+ */
+export function formatPayerLabel(cls: Pick<ClassRow, "student_name" | "guardian_name">): string {
+  return cls.guardian_name ? `${cls.guardian_name} · ${cls.student_name}` : cls.student_name;
+}
+
 export function parseLanguages(csv: string): ClassLanguage[] {
   return csv
     .split(",")

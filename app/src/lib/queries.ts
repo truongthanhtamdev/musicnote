@@ -507,16 +507,19 @@ export function computePayroll(from: string, to: string): PayrollRow[] {
 export function listPayments(
   from: string,
   to: string
-): (PaymentRow & { student_name: string | null })[] {
+): (PaymentRow & { student_name: string | null; guardian_name: string | null })[] {
   return db
     .prepare(
-      `SELECT p.*, c.student_name as student_name
+      `SELECT p.*, c.student_name as student_name, c.guardian_name as guardian_name
        FROM payments p
        LEFT JOIN classes c ON c.id = p.class_id
        WHERE p.paid_at >= ? AND p.paid_at <= ?
        ORDER BY p.paid_at DESC, p.id DESC`
     )
-    .all(from, to) as (PaymentRow & { student_name: string | null })[];
+    .all(from, to) as (PaymentRow & {
+    student_name: string | null;
+    guardian_name: string | null;
+  })[];
 }
 
 export function listExpenses(from: string, to: string): ExpenseRow[] {

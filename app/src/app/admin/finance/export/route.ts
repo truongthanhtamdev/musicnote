@@ -19,10 +19,16 @@ export async function GET(req: NextRequest) {
   lines.push(`Doanh thu tu ${from} den ${to}`);
   lines.push("");
   lines.push("KHOAN THU");
-  lines.push("Ngay,Hoc vien,So tien,Ghi chu");
+  lines.push("Ngay,Khach hang,Hoc vien,So tien,Ghi chu");
   for (const p of payments) {
     lines.push(
-      [p.paid_at, `"${(p.student_name || "").replace(/"/g, '""')}"`, p.amount, `"${(p.note || "").replace(/"/g, '""')}"`].join(",")
+      [
+        p.paid_at,
+        `"${(p.guardian_name || "").replace(/"/g, '""')}"`,
+        `"${(p.student_name || "").replace(/"/g, '""')}"`,
+        p.amount,
+        `"${(p.note || "").replace(/"/g, '""')}"`,
+      ].join(",")
     );
   }
   lines.push("");

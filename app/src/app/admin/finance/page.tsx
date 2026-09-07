@@ -7,6 +7,7 @@ import {
   getPackage,
 } from "@/lib/queries";
 import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
+import { formatPayerLabel } from "@/lib/types";
 import { IconChart, IconDownload, IconFilter, IconWallet } from "@/components/icons";
 import { Card, CardHeader, MetricCard, PageHeader, btn, field, label } from "@/components/ui";
 import NewPaymentForm from "./new-payment-form";
@@ -29,7 +30,7 @@ export default async function FinancePage({
   const summary = getRevenueSummary(from, to);
   const classes = listClasses().map((c) => ({
     id: c.id,
-    label: `${c.student_name} (${c.teacher_name || "Chưa xếp GV"})`,
+    label: `${formatPayerLabel(c)} (${c.teacher_name || "Chưa xếp GV"})`,
     subject: c.subject,
     packageTotal: c.package_id ? (getPackage(c.package_id)?.total_sessions ?? null) : null,
   }));
@@ -116,7 +117,13 @@ export default async function FinancePage({
                   <div className="min-w-0">
                     <p className="font-semibold text-ink-900 tabular">{formatVND(p.amount)}</p>
                     <p className="text-ink-500 text-xs truncate">
-                      {p.paid_at} · {p.student_name || "Không gắn lớp"}
+                      {p.paid_at} ·{" "}
+                      {p.student_name
+                        ? formatPayerLabel({
+                            student_name: p.student_name,
+                            guardian_name: p.guardian_name,
+                          })
+                        : "Không gắn lớp"}
                       {p.note ? ` · ${p.note}` : ""}
                     </p>
                   </div>
