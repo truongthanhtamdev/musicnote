@@ -12,8 +12,8 @@ import { IconChart, IconDownload, IconFilter, IconWallet } from "@/components/ic
 import { Card, CardHeader, MetricCard, PageHeader, btn, field, label } from "@/components/ui";
 import NewPaymentForm from "./new-payment-form";
 import NewExpenseForm from "./new-expense-form";
-import DeletePaymentButton from "./delete-payment-button";
-import DeleteExpenseButton from "./delete-expense-button";
+import PaymentRow from "./payment-row";
+import ExpenseRow from "./expense-row";
 
 export default async function FinancePage({
   searchParams,
@@ -113,22 +113,23 @@ export default async function FinancePage({
             <CardHeader title="Danh sách thu" count={payments.length} />
             <div className="divide-y divide-navy-100 max-h-96 overflow-y-auto scroll-thin">
               {payments.map((p) => (
-                <div key={p.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-ink-900 tabular">{formatVND(p.amount)}</p>
-                    <p className="text-ink-500 text-xs truncate">
-                      {p.paid_at} ·{" "}
-                      {p.student_name
-                        ? formatPayerLabel({
-                            student_name: p.student_name,
-                            guardian_name: p.guardian_name,
-                          })
-                        : "Không gắn lớp"}
-                      {p.note ? ` · ${p.note}` : ""}
-                    </p>
-                  </div>
-                  <DeletePaymentButton id={p.id} />
-                </div>
+                <PaymentRow
+                  key={p.id}
+                  payment={{
+                    id: p.id,
+                    amount: p.amount,
+                    paid_at: p.paid_at,
+                    note: p.note,
+                    class_id: p.class_id,
+                    label: p.student_name
+                      ? formatPayerLabel({
+                          student_name: p.student_name,
+                          guardian_name: p.guardian_name,
+                        })
+                      : "Không gắn lớp",
+                  }}
+                  classes={classes}
+                />
               ))}
               {payments.length === 0 && (
                 <p className="text-sm text-ink-500 px-5 py-8 text-center">
@@ -150,16 +151,7 @@ export default async function FinancePage({
             <CardHeader title="Danh sách chi phí" count={expenses.length} />
             <div className="divide-y divide-navy-100 max-h-96 overflow-y-auto scroll-thin">
               {expenses.map((e) => (
-                <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-ink-900 tabular">{formatVND(e.amount)}</p>
-                    <p className="text-ink-500 text-xs truncate">
-                      {e.expense_date} · {e.category}
-                      {e.note ? ` · ${e.note}` : ""}
-                    </p>
-                  </div>
-                  <DeleteExpenseButton id={e.id} />
-                </div>
+                <ExpenseRow key={e.id} expense={e} />
               ))}
               {expenses.length === 0 && (
                 <p className="text-sm text-ink-500 px-5 py-8 text-center">
