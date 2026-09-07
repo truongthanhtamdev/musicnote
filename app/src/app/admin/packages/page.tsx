@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { listTeachers } from "@/lib/queries";
 import { filterPackageRows, listPackageRows, type PackageSP } from "./filters";
+import { AutoSubmitSelect } from "./auto-submit-select";
 import { PACKAGE_OPTIONS, SUBJECT_SUGGESTIONS, formatClassSchedule } from "@/lib/types";
 import { IconDownload, IconPackage, IconSearch, SubjectIcon } from "@/components/icons";
 import {
@@ -91,7 +92,7 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
             className={btn.secondary}
           >
             <IconDownload className="w-4 h-4" />
-            Xuất CSV
+            Xuất CSV ({filtered.length} lớp)
           </a>
         }
       />
@@ -142,7 +143,7 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
                 aria-label="Tìm kiếm học viên"
               />
             </div>
-            <select
+            <AutoSubmitSelect
               name="subject"
               defaultValue={sp.subject || ""}
               className={`${field} w-auto`}
@@ -154,8 +155,8 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
                   {s}
                 </option>
               ))}
-            </select>
-            <select
+            </AutoSubmitSelect>
+            <AutoSubmitSelect
               name="teacherId"
               defaultValue={sp.teacherId || ""}
               className={`${field} w-auto`}
@@ -167,9 +168,9 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
                   {t.name}
                 </option>
               ))}
-            </select>
+            </AutoSubmitSelect>
             <button type="submit" className={btn.primary}>
-              Lọc
+              Tìm
             </button>
           </form>
 
