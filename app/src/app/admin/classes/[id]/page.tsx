@@ -106,7 +106,13 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
           </div>
         </Card>
         <div className="space-y-5">
-          <PackageWidget classId={cls.id} progress={progress} siblingsWithPackage={siblings} />
+          <PackageWidget
+            classId={cls.id}
+            subject={cls.subject}
+            progress={progress}
+            siblingsWithPackage={siblings}
+            canRecordPayment={isAdmin}
+          />
           <StudentLinkWidget
             classId={cls.id}
             currentStudentUserId={cls.student_user_id}

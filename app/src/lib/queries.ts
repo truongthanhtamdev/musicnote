@@ -158,7 +158,7 @@ export function getPackage(id: number): PackageRow | undefined {
  * is left empty here; only `getPackageProgress` (below) fills it in, since
  * it's the only caller that renders it.
  */
-function getPackageProgressBatch(packageIds: number[]): Map<number, PackageProgress> {
+export function getPackageProgressBatch(packageIds: number[]): Map<number, PackageProgress> {
   const map = new Map<number, PackageProgress>();
   if (packageIds.length === 0) return map;
   const placeholders = packageIds.map(() => "?").join(",");

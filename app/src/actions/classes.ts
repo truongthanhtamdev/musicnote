@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole, ForbiddenError } from "@/lib/guard";
 import { normalizeFacebookUrl, todayISO } from "@/lib/format";
-import { notifyUser, getClass } from "@/lib/queries";
+import { notifyUser, getClass, getPackageProgressBatch } from "@/lib/queries";
 import { formatClassSchedule } from "@/lib/types";
 import type { FormState } from "./teachers";
 
@@ -230,6 +230,83 @@ export async function adjustPackageUsedAction(packageId: number, used: number | 
   revalidatePath("/admin/classes");
   revalidatePath("/teacher");
   revalidatePath("/teacher/schedule");
+}
+
+/**
+ * Đăng ký / cập nhật gói học của một lớp và ghi nhận luôn học phí đã đóng.
+ * Gộp ba việc admin luôn làm cùng một lúc khi khách hàng đóng tiền: số buổi
+ * đã đăng ký, số buổi đã học tính tới hiện tại, và khoản thu.
+ *
+ * Lớp đã có gói thì cập nhật ngay trên gói đó (không tạo gói mới) để giữ
+ * nguyên các lịch học khác đang dùng chung gói.
+ */
+export async function saveClassPackageAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const session = await assertRole(["admin", "coordinator"]);
+
+  const classId = Number(formData.get("class_id"));
+  const totalSessions = Number(formData.get("total_sessions") || 0);
+  const usedRaw = String(formData.get("used_sessions") || "").trim();
+  const amount = Number(formData.get("amount") || 0);
+  const paidAt = String(formData.get("paid_at") || "");
+  const note = String(formData.get("note") || "").trim();
+
+  if (!classId || !Number.isInteger(totalSessions) || totalSessions <= 0) {
+    return { error: "Vui lòng nhập số buổi đã đăng ký" };
+  }
+  const used = usedRaw === "" ? 0 : Number(usedRaw);
+  if (!Number.isInteger(used) || used < 0 || used > totalSessions) {
+    return { error: `Số buổi đã học phải từ 0 đến ${totalSessions}` };
+  }
+  if (amount < 0 || Number.isNaN(amount)) return { error: "Số tiền không hợp lệ" };
+  if (amount > 0) {
+    if (session.role !== "admin") return { error: "Chỉ admin mới ghi nhận được học phí" };
+    if (!paidAt) return { error: "Vui lòng chọn ngày đóng học phí" };
+  }
+
+  const cls = db.prepare("SELECT package_id FROM classes WHERE id = ?").get(classId) as
+    | { package_id: number | null }
+    | undefined;
+  if (!cls) return { error: "Không tìm thấy lớp học" };
+
+  db.transaction(() => {
+    let packageId = cls.package_id;
+    if (packageId) {
+      db.prepare("UPDATE packages SET total_sessions = ? WHERE id = ?").run(totalSessions, packageId);
+    } else {
+      const info = db
+        .prepare("INSERT INTO packages (total_sessions, started_at) VALUES (?, ?)")
+        .run(totalSessions, todayISO());
+      packageId = Number(info.lastInsertRowid);
+      db.prepare("UPDATE classes SET package_id = ? WHERE id = ?").run(packageId, classId);
+    }
+    // Chỉ ghi mốc "đã học" khi con số admin nhập khác với số đang đếm được —
+    // lưu mà không sửa gì thì gói vẫn tự đếm theo điểm danh như cũ, không bị
+    // đánh dấu là chỉnh tay. Số buổi đã học là một cái MỐC, không phải con số
+    // đóng băng: các buổi điểm danh ghi sau thời điểm này cộng tiếp lên trên.
+    const counted = getPackageProgressBatch([packageId]).get(packageId)?.used ?? 0;
+    if (used !== counted) {
+      db.prepare(
+        "UPDATE packages SET used_override = ?, used_override_set_at = datetime('now') WHERE id = ?"
+      ).run(used, packageId);
+    }
+    if (amount > 0) {
+      db.prepare("INSERT INTO payments (class_id, amount, paid_at, note) VALUES (?, ?, ?, ?)").run(
+        classId,
+        amount,
+        paidAt,
+        note || null
+      );
+    }
+  })();
+
+  revalidatePath("/admin/classes");
+  revalidatePath(`/admin/classes/${classId}`);
+  revalidatePath("/admin/finance");
+  revalidatePath("/teacher");
+  return { success: true };
 }
 
 export async function setPackageAction(classId: number, totalSessions: number | null) {
