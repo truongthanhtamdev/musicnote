@@ -1,8 +1,10 @@
 import { db } from "./db";
 import { addMinutesToTime, nextOccurrence, mostRecentOccurrence, toISODate, todayISO, now } from "./format";
 import {
+  getSuggestedPackagePrice,
   parseLanguages,
   parseSubjects,
+  NEW_CLASS_DAYS,
   TRIAL_SESSION_RATE,
   type AttendanceRow,
   type BusySlotRow,
@@ -277,6 +279,87 @@ export function listSiblingClasses(cls: ClassRow): ClassWithTeacher[] {
        ORDER BY c.day_of_week, c.start_time`
     )
     .all(cls.student_name, cls.id) as ClassWithTeacher[];
+}
+
+export interface TuitionStatus {
+  /** Tổng học phí đã thu cho lớp này (gộp cả các lịch học dùng chung gói). */
+  paid: number;
+  /** Học phí đáng lẽ phải thu theo giá gói — null khi lớp không theo gói hoặc gói không có giá niêm yết. */
+  expected: number | null;
+  /** Còn thiếu bao nhiêu; 0 khi đã đủ hoặc không xác định được. */
+  outstanding: number;
+  /** Lớp đang học mà chưa thu đủ học phí — cần gọi khách hàng. */
+  needsFollowUp: boolean;
+}
+
+/**
+ * Tình trạng học phí của từng lớp. Nhiều lịch học dùng chung một gói thì
+ * khách hàng chỉ đóng một lần, khoản thu gắn vào một lớp bất kỳ trong nhóm —
+ * nên tiền được cộng theo GÓI rồi mới chia về từng lớp, không thì các lịch
+ * còn lại đều bị hiểu nhầm là chưa đóng.
+ *
+ * Lớp không theo gói không có giá để đối chiếu, nên chỉ nhắc khi hoàn toàn
+ * chưa thu đồng nào và lớp còn mới (hoặc đang chờ buổi học thử) — tránh réo
+ * hàng loạt lớp cũ vốn thu tiền ngoài hệ thống.
+ */
+export function getTuitionStatusForClasses(
+  classes: ClassWithTeacher[]
+): Map<number, TuitionStatus> {
+  const result = new Map<number, TuitionStatus>();
+  if (classes.length === 0) return result;
+
+  const paidByClassId = new Map<number, number>();
+  for (const row of db
+    .prepare(
+      "SELECT class_id, SUM(amount) as total FROM payments WHERE class_id IS NOT NULL GROUP BY class_id"
+    )
+    .all() as { class_id: number; total: number }[]) {
+    paidByClassId.set(row.class_id, row.total);
+  }
+
+  // Gộp tiền theo gói: mọi lớp dùng chung một package_id chia nhau cùng một
+  // số tiền đã thu.
+  const paidByPackageId = new Map<number, number>();
+  const totalsByPackageId = new Map<number, number>();
+  for (const row of db
+    .prepare("SELECT id, package_id FROM classes WHERE package_id IS NOT NULL")
+    .all() as { id: number; package_id: number }[]) {
+    paidByPackageId.set(
+      row.package_id,
+      (paidByPackageId.get(row.package_id) ?? 0) + (paidByClassId.get(row.id) ?? 0)
+    );
+  }
+  for (const row of db
+    .prepare("SELECT id, total_sessions FROM packages")
+    .all() as { id: number; total_sessions: number }[]) {
+    totalsByPackageId.set(row.id, row.total_sessions);
+  }
+
+  const newestAcceptableCreatedAt = new Date(now());
+  newestAcceptableCreatedAt.setDate(newestAcceptableCreatedAt.getDate() - NEW_CLASS_DAYS);
+  const newClassCutoff = toISODate(newestAcceptableCreatedAt);
+
+  for (const cls of classes) {
+    const paid = cls.package_id
+      ? (paidByPackageId.get(cls.package_id) ?? 0)
+      : (paidByClassId.get(cls.id) ?? 0);
+    const packageTotal = cls.package_id ? totalsByPackageId.get(cls.package_id) : undefined;
+    const expected = packageTotal ? getSuggestedPackagePrice(cls.subject, packageTotal) : null;
+    const outstanding = expected ? Math.max(0, expected - paid) : 0;
+
+    let needsFollowUp = false;
+    if (cls.status === "active") {
+      if (cls.package_id) {
+        needsFollowUp = expected ? paid < expected : paid === 0;
+      } else {
+        needsFollowUp =
+          paid === 0 && (cls.trial_pending === 1 || cls.created_at.slice(0, 10) >= newClassCutoff);
+      }
+    }
+
+    result.set(cls.id, { paid, expected, outstanding, needsFollowUp });
+  }
+  return result;
 }
 
 export interface ClassWithSchedule extends ClassWithTeacher {

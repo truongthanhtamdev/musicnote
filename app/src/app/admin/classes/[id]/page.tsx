@@ -10,6 +10,7 @@ import {
   getPackageProgress,
   listSiblingClasses,
   sessionNumberMap,
+  getTuitionStatusForClasses,
 } from "@/lib/queries";
 import { LANGUAGE_LABELS, SOURCE_LABELS, formatClassSchedule } from "@/lib/types";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
@@ -48,6 +49,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   const sessionNumbers = sessionNumberMap([classId]);
   const students = listStudents();
   const progress = getPackageProgress(cls);
+  const tuition = getTuitionStatusForClasses([cls]).get(cls.id) ?? null;
   const siblings = listSiblingClasses(cls)
     .filter((s) => s.package_id)
     .map((s) => ({
@@ -111,6 +113,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
             subject={cls.subject}
             progress={progress}
             siblingsWithPackage={siblings}
+            tuition={tuition}
             canRecordPayment={isAdmin}
           />
           <StudentLinkWidget

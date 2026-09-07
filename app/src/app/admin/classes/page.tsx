@@ -1,7 +1,14 @@
 import Link from "next/link";
-import { listClasses, listTeachers, getPackageProgress, annotateSchedule } from "@/lib/queries";
+import {
+  listClasses,
+  listTeachers,
+  getPackageProgress,
+  annotateSchedule,
+  getTuitionStatusForClasses,
+} from "@/lib/queries";
 import { formatClassSchedule } from "@/lib/types";
-import { IconAlert, IconClasses, IconSearch, SubjectIcon } from "@/components/icons";
+import { formatVND } from "@/lib/format";
+import { IconAlert, IconClasses, IconSearch, IconWallet, SubjectIcon } from "@/components/icons";
 import {
   Avatar,
   Card,
@@ -21,24 +28,39 @@ import {
 import NewClassForm from "./new-class-form";
 import ClassStatusBadge from "./status-badge";
 
-type SP = { q?: string; status?: string; teacherId?: string };
+type SP = { q?: string; status?: string; teacherId?: string; tuition?: string };
 
 export default async function ClassesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const teachers = listTeachers(false);
   const all = annotateSchedule(listClasses());
+  const tuition = getTuitionStatusForClasses(all);
 
   const q = (sp.q || "").trim().toLowerCase();
-  const classes = all.filter((c) => {
-    if (q && !c.student_name.toLowerCase().includes(q)) return false;
-    if (sp.status && c.status !== sp.status) return false;
-    if (sp.teacherId && String(c.teacher_id ?? "") !== sp.teacherId) return false;
-    return true;
-  });
+  const classes = all
+    .filter((c) => {
+      if (q && !c.student_name.toLowerCase().includes(q)) return false;
+      if (sp.status && c.status !== sp.status) return false;
+      if (sp.teacherId && String(c.teacher_id ?? "") !== sp.teacherId) return false;
+      if (sp.tuition === "due" && !tuition.get(c.id)?.needsFollowUp) return false;
+      return true;
+    })
+    // Lớp chưa thu đủ học phí đẩy lên đầu, trong nhóm đó lớp mới tạo (và lớp
+    // đang chờ buổi học thử) lên trước — đó là những lớp cần gọi khách hàng
+    // ngay. Còn lại giữ nguyên thứ tự theo lịch tuần.
+    .sort((a, b) => {
+      const aDue = tuition.get(a.id)?.needsFollowUp ? 1 : 0;
+      const bDue = tuition.get(b.id)?.needsFollowUp ? 1 : 0;
+      if (aDue !== bDue) return bDue - aDue;
+      if (!aDue) return 0;
+      if (a.trial_pending !== b.trial_pending) return b.trial_pending - a.trial_pending;
+      return b.created_at.localeCompare(a.created_at);
+    });
 
   const activeCount = all.filter((c) => c.status === "active").length;
   const missedCount = all.filter((c) => c.missedLastSession).length;
   const unassigned = all.filter((c) => c.status === "active" && !c.teacher_id).length;
+  const dueCount = all.filter((c) => tuition.get(c.id)?.needsFollowUp).length;
 
   return (
     <div className="space-y-5">
@@ -48,7 +70,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
         action={<NewClassForm teachers={teachers} />}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <MetricCard
           label="Tổng số lớp"
           value={all.length}
@@ -76,6 +98,14 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
           unit="lớp"
           tone={missedCount ? "coral" : "navy"}
           icon={<IconAlert className="w-5 h-5" />}
+        />
+        <MetricCard
+          label="Chưa thu đủ học phí"
+          value={dueCount}
+          unit="lớp"
+          tone={dueCount ? "amber" : "navy"}
+          href="/admin/classes?tuition=due"
+          icon={<IconWallet className="w-5 h-5" />}
         />
       </div>
 
@@ -118,7 +148,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
           <button type="submit" className={btn.primary}>
             Lọc
           </button>
-          {(sp.q || sp.status || sp.teacherId) && (
+          {(sp.q || sp.status || sp.teacherId || sp.tuition) && (
             <Link href="/admin/classes" className={`${btn.ghost} text-coral-600`}>
               Xoá lọc
             </Link>
@@ -149,10 +179,17 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
             <tbody className="divide-y divide-navy-100">
               {classes.map((c) => {
                 const progress = getPackageProgress(c);
+                const owed = tuition.get(c.id);
                 return (
                   <tr
                     key={c.id}
-                    className={c.missedLastSession ? "bg-coral-50/40" : "hover:bg-ivory-50"}
+                    className={
+                      c.missedLastSession
+                        ? "bg-coral-50/40"
+                        : owed?.needsFollowUp
+                          ? "bg-amber-50/40"
+                          : "hover:bg-ivory-50"
+                    }
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
@@ -163,6 +200,11 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                             {c.language === "en" && (
                               <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-navy-50 text-navy-700 align-middle">
                                 EN
+                              </span>
+                            )}
+                            {c.trial_pending === 1 && (
+                              <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-mint-50 text-mint-700 align-middle">
+                                HỌC THỬ
                               </span>
                             )}
                           </p>
@@ -215,6 +257,14 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                         </>
                       ) : (
                         <span className="text-ink-400">Không theo gói</span>
+                      )}
+                      {owed?.needsFollowUp && (
+                        <span className="flex items-center gap-1 text-xs font-medium text-amber-700 mt-1">
+                          <IconWallet className="w-3.5 h-3.5 shrink-0" />
+                          {owed.paid === 0
+                            ? "Chưa đóng học phí"
+                            : `Còn thiếu ${formatVND(owed.outstanding)}`}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-ink-700 whitespace-nowrap">

@@ -11,7 +11,7 @@ import type { FormState } from "@/actions/teachers";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
 import { PACKAGE_OPTIONS, getSuggestedPackagePrice } from "@/lib/types";
 import { todayISO, formatVND } from "@/lib/format";
-import type { PackageProgress } from "@/lib/queries";
+import type { PackageProgress, TuitionStatus } from "@/lib/queries";
 
 const initialState: FormState = {};
 
@@ -20,12 +20,14 @@ export default function PackageWidget({
   subject,
   progress,
   siblingsWithPackage,
+  tuition,
   canRecordPayment,
 }: {
   classId: number;
   subject: string;
   progress: PackageProgress | null;
   siblingsWithPackage: { id: number; label: string; progress: PackageProgress }[];
+  tuition: TuitionStatus | null;
   canRecordPayment: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -93,6 +95,20 @@ export default function PackageWidget({
         </div>
       ) : (
         <p className="text-sm text-ink-500 mb-4">Lớp chưa đăng ký gói — nhập bên dưới để đăng ký.</p>
+      )}
+
+      {tuition && (tuition.paid > 0 || tuition.needsFollowUp) && (
+        <p
+          className={`text-sm mb-3 ${
+            tuition.needsFollowUp ? "text-amber-700 font-medium" : "text-mint-700"
+          }`}
+        >
+          {tuition.paid === 0
+            ? "Chưa đóng học phí"
+            : `Đã thu ${formatVND(tuition.paid)}${
+                tuition.outstanding > 0 ? ` · còn thiếu ${formatVND(tuition.outstanding)}` : " · đã đủ"
+              }`}
+        </p>
       )}
 
       <form key={formKey} action={formAction} className="space-y-3 border-t border-navy-100 pt-3">

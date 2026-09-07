@@ -168,6 +168,9 @@ export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Violin", "Saxophone", "T
 
 export const PACKAGE_OPTIONS = [20, 50, 100];
 
+/** Lớp tạo trong vòng bấy nhiêu ngày thì còn được coi là "mới", dùng để nhắc thu học phí. */
+export const NEW_CLASS_DAYS = 30;
+
 /** Flat rate paid to the teacher for a trial ("buổi thử") session, regardless of their normal per-session rate. */
 export const TRIAL_SESSION_RATE = 50000;
 
