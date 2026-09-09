@@ -106,6 +106,16 @@ const GUITAR_PACKAGE_PRICES: Record<number, number> = { 20: 7_500_000, 50: 15_00
 const OTHER_SUBJECT_PACKAGE_PRICES: Record<number, number> = { 20: 8_000_000, 50: 16_000_000 };
 const OTHER_PRICED_SUBJECTS = ["Piano", "Violin", "Thanh nhạc"];
 
+/**
+ * Bảng giá công khai cho trang chủ, dựng từ chính hai bảng giá ở trên — sửa
+ * giá một chỗ là trang chủ và số tiền tự điền lúc thu học phí đổi cùng nhau,
+ * không bao giờ có chuyện trang chủ ghi một đằng hệ thống tính một nẻo.
+ */
+export const PUBLIC_PRICE_TABLE: { subjects: string[]; prices: Record<number, number> }[] = [
+  { subjects: ["Guitar"], prices: GUITAR_PACKAGE_PRICES },
+  { subjects: OTHER_PRICED_SUBJECTS, prices: OTHER_SUBJECT_PACKAGE_PRICES },
+];
+
 export function getSuggestedPackagePrice(
   subject: string,
   totalSessions: number
