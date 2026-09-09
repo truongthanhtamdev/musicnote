@@ -13,6 +13,8 @@ export interface NavItem {
   label: string;
   /** Icon đã render sẵn ở server component và truyền xuống. */
   icon: ReactNode;
+  /** Số việc đang chờ ở mục này (VD đăng ký học thử chưa gọi); bỏ trống thì không hiện gì. */
+  badge?: number;
 }
 
 function isActive(pathname: string, href: string, roots: string[]): boolean {
@@ -44,6 +46,11 @@ function SidebarLink({
     >
       <span className={active ? "text-wood-300" : "text-navy-300"}>{item.icon}</span>
       <span className="truncate">{item.label}</span>
+      {item.badge ? (
+        <span className="ml-auto shrink-0 rounded-full bg-coral-500 px-2 py-0.5 text-[11px] font-bold text-white tabular">
+          {item.badge}
+        </span>
+      ) : null}
     </Link>
   );
 }

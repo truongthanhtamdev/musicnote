@@ -93,36 +93,184 @@ export interface NotificationRow {
   created_at: string;
 }
 
+export type TrialRequestStatus = "new" | "contacted" | "done" | "cancelled";
+
+/** Một lượt khách để lại thông tin xin học thử ở trang chủ. */
+export interface TrialRequestRow {
+  id: number;
+  name: string;
+  phone: string;
+  /** Facebook/Zalo/email — cách liên hệ phụ khách tự khai. */
+  contact: string | null;
+  subject: string;
+  language: ClassLanguage;
+  note: string | null;
+  status: TrialRequestStatus;
+  created_at: string;
+}
+
+export const TRIAL_REQUEST_STATUS_LABELS: Record<TrialRequestStatus, string> = {
+  new: "Mới",
+  contacted: "Đã liên hệ",
+  done: "Đã xếp lớp",
+  cancelled: "Không học",
+};
+
 export const EXPENSE_CATEGORY_SUGGESTIONS = ["Quảng cáo (Ads)", "Vận hành", "Mặt bằng", "Khác"];
 
-/**
- * Suggested tuition price per package size, keyed by subject then total
- * sessions. Not a strict per-tiết ratio (bigger packages are discounted), so
- * each size is listed explicitly rather than derived. Missing subject/size
- * combos (e.g. 100 tiết, or a custom typed-in subject) have no suggestion —
- * admin types the amount manually in that case.
- */
-const GUITAR_PACKAGE_PRICES: Record<number, number> = { 20: 7_500_000, 50: 15_000_000 };
-const OTHER_SUBJECT_PACKAGE_PRICES: Record<number, number> = { 20: 8_000_000, 50: 16_000_000 };
-const OTHER_PRICED_SUBJECTS = ["Piano", "Violin", "Thanh nhạc"];
+export interface PricingTier {
+  sessions: number;
+  /** Tên gói trên trang chủ, VD "Gói Khởi Đầu". */
+  name: string;
+  /** Học phí trọn gói (VNĐ); null = chưa niêm yết → trang chủ hiện "Liên hệ", hệ thống để admin tự gõ. */
+  price: number | null;
+  /** Giá niêm yết cho học viên trả bằng USD, nếu có. */
+  priceUSD?: number;
+  /** Nhãn nổi trên thẻ giá, VD "Phổ biến nhất". */
+  badge?: string;
+  features: string[];
+}
+
+const ONE_ON_ONE = "Học 1 kèm 1 online qua Zoom/Meet";
 
 /**
- * Bảng giá công khai cho trang chủ, dựng từ chính hai bảng giá ở trên — sửa
- * giá một chỗ là trang chủ và số tiền tự điền lúc thu học phí đổi cùng nhau,
- * không bao giờ có chuyện trang chủ ghi một đằng hệ thống tính một nẻo.
+ * Bảng giá niêm yết trên trang chủ, đồng thời là nguồn để tự điền học phí
+ * lúc thu tiền — sửa giá một chỗ là cả hai nơi đổi cùng nhau, không bao giờ
+ * có chuyện trang chủ ghi một đằng hệ thống tính một nẻo.
+ *
+ * Bộ môn không có trong bảng này (VD Saxophone, hoặc môn admin tự gõ) thì
+ * không có giá gợi ý, admin nhập số tiền bằng tay.
  */
-export const PUBLIC_PRICE_TABLE: { subjects: string[]; prices: Record<number, number> }[] = [
-  { subjects: ["Guitar"], prices: GUITAR_PACKAGE_PRICES },
-  { subjects: OTHER_PRICED_SUBJECTS, prices: OTHER_SUBJECT_PACKAGE_PRICES },
+export const PRICING: { subject: string; tiers: PricingTier[] }[] = [
+  {
+    subject: "Guitar",
+    tiers: [
+      {
+        sessions: 20,
+        name: "Gói Khởi Đầu",
+        price: 7_500_000,
+        priceUSD: 300,
+        features: [
+          ONE_ON_ONE,
+          "8+ hợp âm cơ bản và barre",
+          "Strumming & Fingerpicking",
+          "Đọc tab guitar",
+          "3–5 bài nhạc hoàn chỉnh",
+          "Hỗ trợ qua tin nhắn",
+          "Chứng nhận hoàn thành",
+        ],
+      },
+      {
+        sessions: 50,
+        name: "Gói Nâng Cao",
+        price: 15_000_000,
+        priceUSD: 600,
+        badge: "Phổ biến nhất",
+        features: [
+          ONE_ON_ONE,
+          "Toàn bộ nội dung gói 20 buổi",
+          "Solo guitar & lead playing",
+          "Fingerstyle nâng cao",
+          "Lý thuyết âm nhạc cơ bản",
+          "10+ bài nhạc đa thể loại",
+          "Ưu tiên đặt lịch & hỗ trợ 24/7",
+        ],
+      },
+      {
+        sessions: 100,
+        name: "Gói Toàn Diện",
+        price: 28_000_000,
+        badge: "Tiết kiệm nhất",
+        features: [
+          "Toàn bộ nội dung gói 50 buổi",
+          "Sáng tác & improvisation",
+          "Pop, Folk, Ballad, Fingerstyle",
+          "20+ bài nhạc đa thể loại",
+          "Tự học bài mới độc lập",
+          "Video ghi lại từng buổi học",
+          "Mini concert tốt nghiệp",
+        ],
+      },
+    ],
+  },
+  {
+    subject: "Piano",
+    tiers: [
+      {
+        sessions: 20,
+        name: "Gói Khởi Đầu",
+        price: 8_000_000,
+        priceUSD: 325,
+        features: [
+          ONE_ON_ONE,
+          "Kỹ thuật tay trái & tay phải",
+          "Đọc nốt nhạc cơ bản",
+          "Hòa âm & đệm bài hát",
+          "3–5 bài nhạc hoàn chỉnh",
+          "Hỗ trợ qua tin nhắn",
+          "Chứng nhận hoàn thành",
+        ],
+      },
+      {
+        sessions: 50,
+        name: "Gói Nâng Cao",
+        price: 16_000_000,
+        priceUSD: 650,
+        badge: "Phổ biến nhất",
+        features: [
+          ONE_ON_ONE,
+          "Toàn bộ nội dung gói 20 buổi",
+          "Kỹ thuật nâng cao: pedal, dynamics",
+          "Lý thuyết âm nhạc & hòa âm",
+          "10+ bài nhạc đa thể loại",
+          "Ưu tiên đặt lịch & hỗ trợ 24/7",
+          "Video ghi lại từng buổi học",
+        ],
+      },
+      {
+        sessions: 100,
+        name: "Gói Toàn Diện",
+        price: 30_000_000,
+        badge: "Tiết kiệm nhất",
+        features: [
+          "Toàn bộ nội dung gói 50 buổi",
+          "Hòa âm nâng cao & nhạc lý",
+          "Pop, Ballad, Bossa Nova, Classic nhẹ",
+          "20+ bài nhạc đa thể loại",
+          "Tự sáng tạo intro/outro riêng",
+          "Video ghi lại từng buổi học",
+          "Mini concert tốt nghiệp",
+        ],
+      },
+    ],
+  },
+  // Violin và Thanh nhạc: mới có giá gói 20/50 (bằng Piano, theo bảng giá cũ
+  // của hệ thống). Gói 100 và danh sách nội dung chưa lấy được từ trang chủ
+  // nên để trống — bổ sung khi có.
+  {
+    subject: "Violin",
+    tiers: [
+      { sessions: 20, name: "Gói Khởi Đầu", price: 8_000_000, features: [ONE_ON_ONE] },
+      { sessions: 50, name: "Gói Nâng Cao", price: 16_000_000, badge: "Phổ biến nhất", features: [ONE_ON_ONE] },
+      { sessions: 100, name: "Gói Toàn Diện", price: null, features: [] },
+    ],
+  },
+  {
+    subject: "Thanh nhạc",
+    tiers: [
+      { sessions: 20, name: "Gói Khởi Đầu", price: 8_000_000, features: [ONE_ON_ONE] },
+      { sessions: 50, name: "Gói Nâng Cao", price: 16_000_000, badge: "Phổ biến nhất", features: [ONE_ON_ONE] },
+      { sessions: 100, name: "Gói Toàn Diện", price: null, features: [] },
+    ],
+  },
 ];
 
 export function getSuggestedPackagePrice(
   subject: string,
   totalSessions: number
 ): number | null {
-  if (subject === "Guitar") return GUITAR_PACKAGE_PRICES[totalSessions] ?? null;
-  if (OTHER_PRICED_SUBJECTS.includes(subject)) return OTHER_SUBJECT_PACKAGE_PRICES[totalSessions] ?? null;
-  return null;
+  const tiers = PRICING.find((p) => p.subject === subject)?.tiers;
+  return tiers?.find((t) => t.sessions === totalSessions)?.price ?? null;
 }
 
 /** A half-hour block a teacher has marked BUSY (personal, not a class) — everything else on the grid defaults to free. */

@@ -1,8 +1,9 @@
 import { requireRole } from "@/lib/guard";
 import { AppShell, type NavItem } from "@/components/app-shell";
-import { listClassesByDay, listAttendance } from "@/lib/queries";
+import { listClassesByDay, listAttendance, countNewTrialRequests } from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
 import {
+  IconBell,
   IconCalendarCheck,
   IconChart,
   IconClasses,
@@ -35,6 +36,8 @@ function overdueTodayCount(): number {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole(["admin", "coordinator"]);
 
+  const newTrialRequests = countNewTrialRequests();
+
   const links: NavItem[] = [
     { href: "/admin", label: "Tổng quan", icon: <IconHome className={ICON} /> },
     { href: "/admin/classes", label: "Lớp học", icon: <IconClasses className={ICON} /> },
@@ -52,6 +55,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           },
         ]
       : []),
+    {
+      href: "/admin/trial-requests",
+      label: "Đăng ký học thử",
+      icon: <IconBell className={ICON} />,
+      badge: newTrialRequests || undefined,
+    },
     { href: "/admin/assign", label: "Giao lớp", icon: <IconUsers className={ICON} /> },
     { href: "/admin/teachers", label: "Giáo viên", icon: <IconTeacher className={ICON} /> },
     ...(session.role === "admin"

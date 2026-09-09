@@ -13,6 +13,8 @@ import {
   type NotificationRow,
   type PackageRow,
   type PaymentRow,
+  type TrialRequestRow,
+  type TrialRequestStatus,
   type UserRow,
 } from "./types";
 
@@ -657,4 +659,21 @@ export function notifyUser(userId: number, message: string, classId: number | nu
     message,
     classId
   );
+}
+
+/** Đăng ký học thử từ trang chủ, mới nhất lên đầu. */
+export function listTrialRequests(status?: TrialRequestStatus): TrialRequestRow[] {
+  const sql = status
+    ? "SELECT * FROM trial_requests WHERE status = ? ORDER BY created_at DESC, id DESC"
+    : "SELECT * FROM trial_requests ORDER BY created_at DESC, id DESC";
+  return (status ? db.prepare(sql).all(status) : db.prepare(sql).all()) as TrialRequestRow[];
+}
+
+/** Số đăng ký học thử chưa ai đụng tới — hiện thành badge ở menu admin. */
+export function countNewTrialRequests(): number {
+  return (
+    db.prepare("SELECT COUNT(*) as c FROM trial_requests WHERE status = 'new'").get() as {
+      c: number;
+    }
+  ).c;
 }

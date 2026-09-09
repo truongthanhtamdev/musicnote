@@ -155,9 +155,22 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS trial_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      contact TEXT,
+      subject TEXT NOT NULL,
+      language TEXT NOT NULL DEFAULT 'vi',
+      note TEXT,
+      status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','contacted','done','cancelled')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);
+    CREATE INDEX IF NOT EXISTS idx_trial_requests_status ON trial_requests(status, created_at);
     CREATE INDEX IF NOT EXISTS idx_attendance_teacher_date ON attendance(teacher_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_availability_teacher ON availability(teacher_id);
