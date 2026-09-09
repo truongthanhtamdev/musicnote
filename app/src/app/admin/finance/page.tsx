@@ -101,7 +101,7 @@ export default async function FinancePage({
         />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 [&>*]:min-w-0">
         <div className="space-y-5">
           <Card padded={false}>
             <CardHeader title="Ghi nhận thanh toán" />

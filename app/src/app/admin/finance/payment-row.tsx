@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { inlineAction } from "@/components/ui";
 import { updatePaymentAction } from "@/actions/finance";
 import type { FormState } from "@/actions/teachers";
 import { formatVND } from "@/lib/format";
@@ -113,7 +114,7 @@ export default function PaymentRow({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-xs font-semibold text-wood-600 hover:underline"
+          className={`${inlineAction} text-xs font-semibold text-wood-600 hover:underline`}
         >
           Sửa
         </button>

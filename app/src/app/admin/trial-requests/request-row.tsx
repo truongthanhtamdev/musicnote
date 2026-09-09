@@ -8,7 +8,7 @@ import {
   type TrialRequestRow,
   type TrialRequestStatus,
 } from "@/lib/types";
-import { StatusChip } from "@/components/ui";
+import { StatusChip, inlineAction } from "@/components/ui";
 
 const TONE: Record<TrialRequestStatus, "coral" | "amber" | "mint" | "neutral"> = {
   new: "coral",
@@ -74,7 +74,7 @@ export default function RequestRow({ request }: { request: TrialRequestRow }) {
                 startTransition(() => deleteTrialRequestAction(request.id));
               }
             }}
-            className="text-xs text-coral-600 hover:underline disabled:opacity-60"
+            className={`${inlineAction} text-xs text-coral-600 hover:underline disabled:opacity-60`}
           >
             Xoá
           </button>

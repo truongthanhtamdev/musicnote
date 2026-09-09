@@ -56,7 +56,7 @@ export default async function TeacherSchedulePage() {
             </Card>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 [&>*]:min-w-0 gap-4 sm:grid-cols-2">
             {DAY_ORDER.map((d) => {
               const dayClasses = classes
                 .filter((c) => c.day_of_week === d)

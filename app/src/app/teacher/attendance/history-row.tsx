@@ -3,7 +3,7 @@
 import { useState } from "react";
 import AttendanceForm from "../attendance-form";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
-import { Avatar, btn } from "@/components/ui";
+import { Avatar, btn, inlineAction } from "@/components/ui";
 import type { AttendanceRow } from "@/lib/types";
 
 export default function TeacherAttendanceHistoryRow({
@@ -65,7 +65,7 @@ export default function TeacherAttendanceHistoryRow({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-wood-600 hover:text-wood-700 font-semibold text-sm"
+          className={`${inlineAction} text-wood-600 hover:text-wood-700 font-semibold text-sm`}
         >
           Sửa
         </button>

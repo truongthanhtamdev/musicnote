@@ -55,7 +55,7 @@ export default function MakeupAttendanceForm({
         subtitle="Dùng khi buổi học dời sang ngày khác, khi điểm danh lớp linh động, hoặc khi bổ sung cho lớp đã tạm dừng. Buổi này vẫn tính vào gói học của học viên."
       >
         <form action={formAction} className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 [&>*]:min-w-0 sm:grid-cols-2 gap-4">
             <div>
               <label className={label} htmlFor="m-class">
                 Lớp học

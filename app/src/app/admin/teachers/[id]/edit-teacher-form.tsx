@@ -45,11 +45,11 @@ export default function EditTeacherForm({ teacher }: { teacher: UserRow }) {
       <div>
         <label className="block text-xs text-ink-500 mb-1">Ngôn ngữ dạy được</label>
         <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-1.5">
-            <input type="checkbox" name="languages" value="vi" defaultChecked={langs.includes("vi")} /> Tiếng Việt
+          <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+            <input type="checkbox" className="w-[18px] h-[18px] accent-wood-600" name="languages" value="vi" defaultChecked={langs.includes("vi")} /> Tiếng Việt
           </label>
-          <label className="flex items-center gap-1.5">
-            <input type="checkbox" name="languages" value="en" defaultChecked={langs.includes("en")} /> Tiếng Anh
+          <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+            <input type="checkbox" className="w-[18px] h-[18px] accent-wood-600" name="languages" value="en" defaultChecked={langs.includes("en")} /> Tiếng Anh
           </label>
         </div>
       </div>
@@ -57,8 +57,8 @@ export default function EditTeacherForm({ teacher }: { teacher: UserRow }) {
         <label className="block text-xs text-ink-500 mb-1">Chuyên môn (chọn được nhiều môn)</label>
         <div className="flex flex-wrap gap-4 text-sm">
           {SUBJECT_SUGGESTIONS.map((s) => (
-            <label key={s} className="flex items-center gap-1.5">
-              <input type="checkbox" name="subjects" value={s} defaultChecked={subjects.includes(s)} /> {s}
+            <label key={s} className="flex items-center gap-2 py-1.5 cursor-pointer">
+              <input type="checkbox" className="w-[18px] h-[18px] accent-wood-600" name="subjects" value={s} defaultChecked={subjects.includes(s)} /> {s}
             </label>
           ))}
         </div>

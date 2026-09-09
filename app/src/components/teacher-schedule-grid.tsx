@@ -237,7 +237,7 @@ export function TeacherScheduleGrid({
                       <button
                         type="button"
                         onClick={() => startTransition(() => clearDayBusyAction(d))}
-                        className="text-[10px] font-medium text-ink-400 hover:text-coral-600 transition"
+                        className="inline-flex items-center px-2.5 py-2 text-[10px] font-medium text-ink-400 hover:text-coral-600 transition"
                         title="Bỏ hết đánh dấu bận trong ngày này"
                       >
                         <span className="sm:hidden">xoá</span>

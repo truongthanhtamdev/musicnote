@@ -73,7 +73,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-400">
               Thông tin học viên
             </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 [&>*]:min-w-0 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className={label} htmlFor="a-name">
                   Tên học viên <span className="text-coral-500">*</span>
@@ -139,7 +139,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-400">
               Bộ môn, gói học &amp; giáo viên
             </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 [&>*]:min-w-0 sm:grid-cols-2 gap-4">
               <div>
                 <label className={label} htmlFor="a-subject">
                   Bộ môn

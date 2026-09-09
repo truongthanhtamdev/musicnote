@@ -123,14 +123,17 @@ export function MetricCard({
   const t = METRIC_TONES[tone];
   const body = (
     <div className="bg-white rounded-2xl border border-navy-100 p-3.5 sm:p-4 flex items-start gap-2.5 sm:gap-3.5 h-full transition hover:border-wood-300 hover:shadow-[0_2px_10px_rgba(16,36,62,0.06)]">
+      {/* Điện thoại hẹp xếp 2 thẻ một hàng nên ô chữ chỉ còn ~60px — không đủ
+          cho số tiền kiểu 24.250.000đ. Ẩn icon và thu nhỏ cỡ chữ ở mobile để
+          con số nằm gọn thay vì đẩy cả trang tràn ngang. */}
       {icon && (
-        <span className={`shrink-0 rounded-xl p-2 sm:p-2.5 ${t.icon}`} aria-hidden="true">
+        <span className={`hidden sm:inline-flex shrink-0 rounded-xl p-2 sm:p-2.5 ${t.icon}`} aria-hidden="true">
           {icon}
         </span>
       )}
       <div className="min-w-0">
-        <p className="text-sm text-ink-500 leading-snug">{label}</p>
-        <p className={`text-2xl sm:text-3xl font-bold mt-0.5 tabular ${t.value}`}>
+        <p className="text-xs sm:text-sm text-ink-500 leading-snug">{label}</p>
+        <p className={`text-lg sm:text-3xl font-bold mt-0.5 tabular break-words ${t.value}`}>
           {value}
           {unit && <span className="text-xs sm:text-sm font-medium text-ink-400 ml-1 sm:ml-1.5">{unit}</span>}
         </p>
@@ -399,6 +402,13 @@ export function CustomerName({
     </a>
   );
 }
+
+/**
+ * Nút chữ nhỏ nằm trong bảng hoặc danh sách (Sửa, Xoá...). Chữ trần chỉ cao
+ * 16-20px, nhỏ hơn mức ngón tay bấm trúng trên điện thoại; lớp này nới vùng
+ * bấm lên khoảng 40px rồi kéo lại bằng lề âm nên dòng gần như không cao thêm.
+ */
+export const inlineAction = "inline-flex items-center justify-center px-2 -mx-2 py-2.5 -my-2";
 
 export function DetailLink({ href, children = "Chi tiết" }: { href: string; children?: ReactNode }) {
   return (

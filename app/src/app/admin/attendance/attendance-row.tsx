@@ -11,7 +11,7 @@ import {
 } from "@/lib/types";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 import { IconAlert } from "@/components/icons";
-import { Avatar, StatusChip, btn, field } from "@/components/ui";
+import { Avatar, StatusChip, btn, field, inlineAction } from "@/components/ui";
 
 const initialState: FormState = {};
 
@@ -158,7 +158,7 @@ export default function AttendanceRow({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-wood-600 hover:text-wood-700 font-semibold"
+          className={`${inlineAction} text-wood-600 hover:text-wood-700 font-semibold`}
         >
           Sửa
         </button>

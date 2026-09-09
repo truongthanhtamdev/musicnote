@@ -123,7 +123,7 @@ export default async function HomePage() {
               đúng ngôn ngữ đó.
             </p>
 
-            <div className="grid sm:grid-cols-3 gap-5 mt-9">
+            <div className="grid grid-cols-1 [&>*]:min-w-0 sm:grid-cols-3 gap-5 mt-9">
               {BILINGUAL_POINTS.map((p) => (
                 <div key={p.title} className="rounded-2xl bg-white/5 border border-white/10 p-5">
                   <h3 className="font-semibold">{p.title}</h3>

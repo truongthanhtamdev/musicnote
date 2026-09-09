@@ -64,7 +64,7 @@ export function UsedSessionsEditor({
         type="button"
         disabled={isPending}
         onClick={() => setEditing(true)}
-        className="ml-1.5 font-semibold text-wood-600 hover:text-wood-700 disabled:opacity-60"
+        className="ml-1.5 inline-flex items-center px-1.5 py-1.5 -my-1 font-semibold text-wood-600 hover:text-wood-700 disabled:opacity-60"
       >
         Sửa
       </button>

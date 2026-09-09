@@ -40,7 +40,7 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
     <div className="space-y-5">
       <Link
         href="/admin/teachers"
-        className="inline-flex items-center gap-1 text-sm font-medium text-ink-500 hover:text-ink-900"
+        className="inline-flex items-center gap-1 py-2 -my-2 text-sm font-medium text-ink-500 hover:text-ink-900"
       >
         <IconChevronLeft className="w-4 h-4" />
         Danh sách giáo viên
@@ -63,7 +63,7 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
         {isAdmin && <ToggleActiveButton teacherId={teacher.id} active={!!teacher.active} />}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 [&>*]:min-w-0">
         <Card padded={false}>
           <CardHeader title="Thông tin giáo viên" />
           <div className="p-5">

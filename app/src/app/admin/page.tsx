@@ -184,7 +184,7 @@ export default async function AdminDashboard() {
         />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 [&>*]:min-w-0 lg:grid-cols-3 gap-4">
         {/* Cần xử lý hôm nay */}
         <Card padded={false}>
           <CardHeader
@@ -358,9 +358,11 @@ export default async function AdminDashboard() {
               return (
                 <li
                   key={c.id}
-                  className={`px-5 py-3 flex items-center gap-3 ${late ? "bg-coral-50/50" : ""}`}
+                  className={`px-4 sm:px-5 py-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 ${
+                    late ? "bg-coral-50/50" : ""
+                  }`}
                 >
-                  <span className="text-sm font-semibold text-ink-900 tabular w-24 shrink-0">
+                  <span className="text-sm font-semibold text-ink-900 tabular w-20 sm:w-24 shrink-0">
                     {formatTimeRange(c.start_time, c.duration_minutes)}
                   </span>
                   <Avatar name={c.student_name} className="w-8 h-8 text-[11px]" />

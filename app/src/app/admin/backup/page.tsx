@@ -58,7 +58,7 @@ export default async function BackupPage() {
         <CardHeader title="Bản sao lưu tự động trên máy chủ" count={backups.length} />
         <p className="text-xs text-ink-400 px-5 pt-3">
           Chạy tự động mỗi đêm, giữ lại {KEEP_BACKUPS} bản gần nhất tại{" "}
-          <code className="text-ink-600">{BACKUP_DIR}</code>
+          <code className="text-ink-600 break-all">{BACKUP_DIR}</code>
         </p>
         {backups.length === 0 ? (
           <EmptyState

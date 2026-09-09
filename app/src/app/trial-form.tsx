@@ -54,7 +54,7 @@ export function TrialForm() {
       action={formAction}
       className="bg-white rounded-2xl border border-navy-100 p-5 sm:p-7 space-y-4"
     >
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 [&>*]:min-w-0 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass} htmlFor="t-name">
             Họ tên học viên <span className="text-coral-500">*</span>

@@ -43,7 +43,7 @@ export function PricingTabs() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-5 mt-7 items-start">
+      <div className="grid grid-cols-1 [&>*]:min-w-0 md:grid-cols-3 gap-5 mt-7 items-start">
         {group.tiers.map((tier) => {
           const featured = tier.badge === "Phổ biến nhất";
           // Chỉ gói rẻ nhất theo đơn giá mới khoe mức tiết kiệm — gói giữa tuy

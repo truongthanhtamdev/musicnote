@@ -16,7 +16,7 @@ export default function ResetPasswordButton({ userId }: { userId: number }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-wood-600 hover:text-wood-700"
+        className="inline-flex items-center gap-1.5 px-2 -mx-2 py-2 -my-1 text-xs font-semibold text-wood-600 hover:text-wood-700"
       >
         <IconKey className="w-3.5 h-3.5" />
         Đặt lại mật khẩu

@@ -239,7 +239,7 @@ export function AppShell({
                   key={l.href}
                   href={l.href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition ${
+                  className={`flex flex-col items-center gap-0.5 py-2.5 min-w-0 text-[10px] font-medium transition ${
                     active ? "text-wood-600" : "text-ink-400 hover:text-ink-700"
                   }`}
                 >

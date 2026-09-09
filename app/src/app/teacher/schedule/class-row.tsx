@@ -18,7 +18,7 @@ import {
 } from "@/lib/types";
 import type { PackageProgress } from "@/lib/queries";
 import { IconAlert, SubjectIcon } from "@/components/icons";
-import { ProgressBar, btn, field, packageTone } from "@/components/ui";
+import { ProgressBar, btn, field, packageTone, inlineAction } from "@/components/ui";
 
 const initialState: FormState = {};
 
@@ -83,14 +83,14 @@ export default function TeacherClassRow({
           <div className="flex items-center gap-3 shrink-0">
             <Link
               href={`/teacher/attendance?classId=${cls.id}`}
-              className="text-sm font-semibold text-ink-500 hover:text-wood-600"
+              className={`${inlineAction} text-sm font-semibold text-ink-500 hover:text-wood-600`}
             >
               Lịch sử
             </Link>
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-sm font-semibold text-wood-600 hover:text-wood-700"
+              className={`${inlineAction} text-sm font-semibold text-wood-600 hover:text-wood-700`}
             >
               Sửa
             </button>
