@@ -7,18 +7,20 @@ import {
   listUpcomingSessionsForStudent,
   type FreeSlotOption,
 } from "@/lib/queries";
-import { toISODate, nextOccurrence, formatTimeRange } from "@/lib/format";
+import { toISODate, nextOccurrence, formatTimeRange, now } from "@/lib/format";
 import {
   ATTENDANCE_STATUS_LABELS,
+  CANCEL_NOTICE_HOURS,
   DAY_LABELS,
   MAKEUP_WINDOW_DAYS,
   REMINDER_DAYS,
   formatClassSchedule,
+  isNoticeInTime,
 } from "@/lib/types";
-import { IconAlert, IconClock, IconMusic, SubjectIcon } from "@/components/icons";
+import { IconClock, IconMusic, SubjectIcon } from "@/components/icons";
 import { Card, CardHeader, EmptyState, ProgressBar, StatusChip, packageTone } from "@/components/ui";
 import { ContactButtons } from "@/components/contact-buttons";
-import RescheduleButton from "./reschedule-button";
+import SessionActions from "./session-actions";
 
 function countdownLabel(daysAway: number): string {
   if (daysAway <= 0) return "Hôm nay";
@@ -30,12 +32,13 @@ export default async function StudentHomePage() {
   const session = await getSession();
   const classes = listClassesForStudent(session!.userId);
   const upcoming = listUpcomingSessionsForStudent(session!.userId);
+  const rightNow = now();
 
   // Khung trống của mỗi giáo viên chỉ cần lấy một lần cho cả trang, dù học viên
   // có nhiều buổi sắp tới cùng một giáo viên.
   const freeSlotsByClass = new Map<number, FreeSlotOption[]>();
   for (const item of upcoming) {
-    if (item.isMakeup || item.pendingRequest || !item.cls.teacher_id) continue;
+    if (item.isMakeup || item.recorded || item.pendingRequest || !item.cls.teacher_id) continue;
     if (freeSlotsByClass.has(item.cls.id)) continue;
     freeSlotsByClass.set(
       item.cls.id,
@@ -95,27 +98,41 @@ export default async function StudentHomePage() {
                       <StatusChip tone={item.daysAway <= 1 ? "coral" : "navy"}>
                         {countdownLabel(item.daysAway)}
                       </StatusChip>
-                      {!item.isMakeup && item.cls.teacher_id && (
-                        <RescheduleButton
+                      {item.recorded ? (
+                        <StatusChip tone={item.recorded.countsAsUsed ? "amber" : "neutral"}>
+                          {item.recorded.status === "rescheduled"
+                            ? "Đã dời lịch"
+                            : item.recorded.status === "teacher_absent"
+                              ? "Giáo viên báo bận"
+                              : item.recorded.countsAsUsed
+                                ? "Đã xin nghỉ · có trừ tiết"
+                                : "Đã xin nghỉ · không trừ tiết"}
+                        </StatusChip>
+                      ) : item.cls.teacher_id ? (
+                        <SessionActions
                           classId={item.cls.id}
                           sessionDate={item.date}
                           sessionLabel={label}
+                          confirmed={item.confirmed}
+                          canReschedule={!item.isMakeup}
                           freeSlots={freeSlotsByClass.get(item.cls.id) ?? []}
                           pendingRequest={item.pendingRequest}
+                          noticeInTime={isNoticeInTime(item.date, item.time, rightNow)}
                         />
-                      )}
+                      ) : null}
                     </div>
                   </li>
                 );
               })}
             </ul>
           )}
-          <div className="px-5 py-3 border-t border-navy-100 bg-amber-50 text-sm text-ink-700 flex gap-2">
-            <IconAlert className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
-            <span>
-              Bận đột xuất thì xin dời trước giờ học nhé. Nghỉ mà không báo thì buổi đó vẫn bị tính
-              vào gói, vì giáo viên đã giữ chỗ sẵn cho bạn.
-            </span>
+          <div className="px-5 py-4 border-t border-navy-100 bg-ivory-100 text-sm text-ink-600 leading-relaxed">
+            Bạn bấm <span className="font-semibold text-ink-800">Xác nhận tham gia</span> để giáo
+            viên chuẩn bị bài trước cho buổi học nhé. Nếu bận, bạn có thể{" "}
+            <span className="font-semibold text-ink-800">xin dời</span> sang giờ khác hoặc{" "}
+            <span className="font-semibold text-ink-800">xin nghỉ</span> buổi đó — báo trước{" "}
+            {CANCEL_NOTICE_HOURS} tiếng thì buổi học không bị trừ vào gói. Cảm ơn bạn đã báo sớm để
+            trung tâm sắp xếp lịch chu đáo hơn.
           </div>
         </Card>
       )}

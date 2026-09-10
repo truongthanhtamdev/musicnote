@@ -344,13 +344,26 @@ export interface CenterContact {
 }
 
 /**
- * Báo dời/hủy trước bấy nhiêu tiếng thì mới coi là "có báo". Sát giờ hơn thì
- * giáo viên đã dành sẵn khung đó rồi, nên buổi vẫn bị tính tiết.
+ * Báo nghỉ trước bấy nhiêu tiếng thì mới coi là "có báo" và không bị trừ tiết.
+ * Sát giờ hơn thì giáo viên đã dành sẵn khung đó rồi, không nhận lớp khác
+ * được nữa, nên buổi vẫn tính vào gói.
  */
 export const CANCEL_NOTICE_HOURS = 12;
 
-/** Nhắc lịch cho học viên trong vòng bấy nhiêu ngày tới. */
-export const REMINDER_DAYS = 7;
+/** Buổi học báo nghỉ lúc này thì còn được miễn trừ tiết không? */
+export function isNoticeInTime(sessionDate: string, startTime: string, at: Date): boolean {
+  const [h, m] = startTime.split(":").map(Number);
+  const [y, mo, d] = sessionDate.split("-").map(Number);
+  const startsAt = new Date(y, mo - 1, d, h, m);
+  return startsAt.getTime() - at.getTime() >= CANCEL_NOTICE_HOURS * 60 * 60 * 1000;
+}
+
+/**
+ * Nhắc lịch cho học viên trong vòng bấy nhiêu ngày tới. Đủ dài để sau khi xin
+ * nghỉ một buổi, học viên thấy ngay buổi kế tiếp của tuần sau thay vì thấy
+ * danh sách trống.
+ */
+export const REMINDER_DAYS = 14;
 
 /** Học viên chọn giờ học bù trong vòng bấy nhiêu ngày tới. */
 export const MAKEUP_WINDOW_DAYS = 21;

@@ -5,6 +5,7 @@ import {
   getPackageProgress,
   listAttendance,
   listRescheduleRequests,
+  listConfirmedClassIdsOn,
 } from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
@@ -40,6 +41,7 @@ export default async function TeacherTodayPage() {
   const doneCount = classes.length - pendingClasses.length;
   const firstName = session!.name.split(" ").pop();
   const pendingReschedules = listRescheduleRequests({ teacherId, status: "pending" });
+  const confirmedToday = listConfirmedClassIdsOn(todayStr);
 
   return (
     <div className="space-y-5">
@@ -144,6 +146,7 @@ export default async function TeacherTodayPage() {
                   // the teacher sees the trial rate is what applies today.
                   sessionNumber={c.trial_pending ? 0 : progress ? progress.used + 1 : undefined}
                   overdue={nowMinutes > classEndMinutes(c.start_time, c.duration_minutes)}
+                  confirmed={confirmedToday.has(c.id)}
                 />
               );
             })}

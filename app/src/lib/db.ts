@@ -194,6 +194,18 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Học viên bấm "Xác nhận tham gia" cho một buổi sắp tới. Chỉ là lời báo
+    -- trước cho giáo viên, không phải điểm danh — điểm danh vẫn do giáo viên
+    -- ghi sau buổi học như cũ.
+    CREATE TABLE IF NOT EXISTS session_confirmations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      session_date TEXT NOT NULL,
+      confirmed_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(class_id, session_date)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);
@@ -205,6 +217,7 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
     CREATE INDEX IF NOT EXISTS idx_reschedule_status ON reschedule_requests(status, created_at);
     CREATE INDEX IF NOT EXISTS idx_reschedule_class ON reschedule_requests(class_id, session_date);
+    CREATE INDEX IF NOT EXISTS idx_confirmations_date ON session_confirmations(session_date);
   `);
 
   // CREATE TABLE IF NOT EXISTS above only helps on a brand-new database file;

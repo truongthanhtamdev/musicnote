@@ -17,6 +17,7 @@ import {
   TIME_SLOTS,
   TRIAL_SESSION_RATE,
   type AttendanceRow,
+  type AttendanceStatus,
   type BusySlotRow,
   type ClassRow,
   type ExpenseRow,
@@ -815,6 +816,14 @@ export interface UpcomingSession {
   isMakeup: boolean;
   /** Đơn xin dời buổi này đang chờ duyệt, nếu có. */
   pendingRequest: RescheduleRequestRow | null;
+  /** Học viên đã bấm "Xác nhận tham gia" cho buổi này. */
+  confirmed: boolean;
+  /**
+   * Buổi đã có trong sổ điểm danh nhưng chưa dạy (xin nghỉ, dời lịch, GV vắng)
+   * — vẫn hiện để học viên thấy kết quả yêu cầu của mình, chỉ là hết thao tác
+   * được. `null` là buổi bình thường chưa ghi gì.
+   */
+  recorded: { status: AttendanceStatus; countsAsUsed: boolean } | null;
 }
 
 /**
@@ -835,16 +844,27 @@ export function listUpcomingSessionsForStudent(
   const todayStr = toISODate(today);
   const lastStr = toISODate(addDays(today, days - 1));
 
-  const taken = new Set(
-    (
-      db
-        .prepare(
-          `SELECT class_id, session_date FROM attendance
-           WHERE class_id IN (${placeholders}) AND session_date >= ?`
-        )
-        .all(...classIds, todayStr) as { class_id: number; session_date: string }[]
-    ).map((a) => `${a.class_id}|${a.session_date}`)
-  );
+  // Buổi đã dạy xong thì thôi nhắc; buổi đã ghi nhưng chưa dạy (xin nghỉ, dời
+  // lịch) vẫn hiện kèm trạng thái, để học viên thấy yêu cầu của mình đã vào sổ.
+  const recordedByKey = new Map<string, { status: AttendanceStatus; countsAsUsed: boolean }>();
+  const doneKeys = new Set<string>();
+  for (const a of db
+    .prepare(
+      `SELECT class_id, session_date, status, counts_as_used FROM attendance
+       WHERE class_id IN (${placeholders}) AND session_date >= ?`
+    )
+    .all(...classIds, todayStr) as {
+    class_id: number;
+    session_date: string;
+    status: AttendanceStatus;
+    counts_as_used: number;
+  }[]) {
+    const key = `${a.class_id}|${a.session_date}`;
+    if (a.status === "completed") doneKeys.add(key);
+    else recordedByKey.set(key, { status: a.status, countsAsUsed: !!a.counts_as_used });
+  }
+
+  const confirmed = listConfirmedSessions(classIds, todayStr);
 
   const pendingByKey = new Map<string, RescheduleRequestRow>();
   for (const r of db
@@ -864,14 +884,17 @@ export function listUpcomingSessionsForStudent(
       const date = addDays(today, i);
       if (date.getDay() !== cls.day_of_week) continue;
       const iso = toISODate(date);
-      if (taken.has(`${cls.id}|${iso}`)) continue;
+      const key = `${cls.id}|${iso}`;
+      if (doneKeys.has(key)) continue;
       out.push({
         cls,
         date: iso,
         time: cls.start_time,
         daysAway: i,
         isMakeup: false,
-        pendingRequest: pendingByKey.get(`${cls.id}|${iso}`) ?? null,
+        pendingRequest: pendingByKey.get(key) ?? null,
+        confirmed: confirmed.has(key),
+        recorded: recordedByKey.get(key) ?? null,
       });
     }
   }
@@ -903,6 +926,8 @@ export function listUpcomingSessionsForStudent(
       ),
       isMakeup: true,
       pendingRequest: null,
+      confirmed: confirmed.has(`${cls.id}|${m.date}`),
+      recorded: null,
     });
   }
 
@@ -964,4 +989,26 @@ export function countPendingRescheduleRequests(teacherId?: number): number {
   return (
     (teacherId ? db.prepare(sql).get(teacherId) : db.prepare(sql).get()) as { c: number }
   ).c;
+}
+
+/**
+ * Khoá "classId|ngày" của những buổi học viên đã xác nhận tham gia, từ `from`
+ * trở đi. Trả về Set để trang nào cũng tra được bằng một truy vấn.
+ */
+export function listConfirmedSessions(classIds: number[], from?: string): Set<string> {
+  if (classIds.length === 0) return new Set();
+  const placeholders = classIds.map(() => "?").join(",");
+  const sql = `SELECT class_id, session_date FROM session_confirmations
+     WHERE class_id IN (${placeholders})${from ? " AND session_date >= ?" : ""}`;
+  const params = from ? [...classIds, from] : classIds;
+  const rows = db.prepare(sql).all(...params) as { class_id: number; session_date: string }[];
+  return new Set(rows.map((r) => `${r.class_id}|${r.session_date}`));
+}
+
+/** Lớp nào đã được học viên xác nhận tham gia trong đúng một ngày — dùng cho trang "Hôm nay". */
+export function listConfirmedClassIdsOn(sessionDate: string): Set<number> {
+  const rows = db
+    .prepare("SELECT class_id FROM session_confirmations WHERE session_date = ?")
+    .all(sessionDate) as { class_id: number }[];
+  return new Set(rows.map((r) => r.class_id));
 }

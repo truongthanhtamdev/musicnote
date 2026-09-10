@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/modal";
-import { IconAlert, SubjectIcon } from "@/components/icons";
+import { IconAlert, IconCheckCircle, SubjectIcon } from "@/components/icons";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
 import { Avatar, CustomerName, ProgressBar, StatusChip, btn, packageTone } from "@/components/ui";
 import { formatTimeRange } from "@/lib/format";
@@ -28,6 +28,7 @@ export default function TodayClassCard({
   progress,
   sessionNumber,
   overdue,
+  confirmed,
 }: {
   cls: TodayClass;
   sessionDate: string;
@@ -36,6 +37,8 @@ export default function TodayClassCard({
   sessionNumber?: number;
   /** Đã qua giờ kết thúc mà chưa điểm danh. */
   overdue: boolean;
+  /** Học viên đã báo trước là sẽ tham gia buổi hôm nay. */
+  confirmed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const isTrial = !!cls.trial_pending;
@@ -140,6 +143,11 @@ export default function TodayClassCard({
           </div>
 
           <div className="w-full sm:w-auto sm:ml-auto shrink-0 flex sm:flex-col items-center sm:items-end justify-between gap-2">
+            {confirmed && (
+              <StatusChip tone="mint" icon={<IconCheckCircle className="w-3.5 h-3.5" />}>
+                HV đã xác nhận
+              </StatusChip>
+            )}
             {isTrial ? (
               <StatusChip tone="wood">Buổi học thử</StatusChip>
             ) : sessionNumber !== undefined ? (

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import {
   listClassesByDay,
+  listConfirmedClassIdsOn,
   listAttendance,
   listClasses,
   listPackagesNearingCompletion,
@@ -93,6 +94,7 @@ export default async function AdminDashboard() {
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
 
   const todaysClasses = listClassesByDay(dow);
+  const confirmedToday = listConfirmedClassIdsOn(todayStr);
   const todaysAttendance = listAttendance({ from: todayStr, to: todayStr });
   const marked = new Set(todaysAttendance.map((a) => a.class_id));
 
@@ -373,6 +375,9 @@ export default async function AdminDashboard() {
                       {c.subject} · {c.teacher_name || "Chưa có GV"}
                     </p>
                   </div>
+                  {!done && confirmedToday.has(c.id) && (
+                    <StatusChip tone="mint">HV đã xác nhận</StatusChip>
+                  )}
                   {done ? (
                     <StatusChip tone="mint" icon={<IconCheckCircle className="w-3.5 h-3.5" />}>
                       Đã điểm danh
