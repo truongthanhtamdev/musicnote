@@ -387,10 +387,14 @@ export const MAKEUP_WINDOW_DAYS = 21;
 export const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-/** 30-min time-of-day labels from 07:00 to 21:30, shared by every day×time schedule grid. */
+/**
+ * Nhãn giờ theo bước 30 phút từ 07:00 đến 23:30, dùng chung cho mọi lưới
+ * ngày×giờ và ô chọn giờ. Kéo tới 23:30 vì trung tâm có lớp học tối muộn —
+ * lớp 23:00 dài 60 phút kết thúc đúng 24:00.
+ */
 export const TIME_SLOTS: string[] = (() => {
   const slots: string[] = [];
-  for (let h = 7; h < 22; h++) {
+  for (let h = 7; h < 24; h++) {
     slots.push(`${String(h).padStart(2, "0")}:00`);
     slots.push(`${String(h).padStart(2, "0")}:30`);
   }

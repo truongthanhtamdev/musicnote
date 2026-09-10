@@ -1,10 +1,11 @@
 import { db } from "./db";
 import {
   addDays,
-  addMinutesToTime,
+  endMinutesOfDay,
   nextOccurrence,
   mostRecentOccurrence,
   toISODate,
+  toMinutesOfDay,
   todayISO,
   now,
 } from "./format";
@@ -487,17 +488,13 @@ export function listBusySlots(teacherId: number): BusySlotRow[] {
     .all(teacherId) as BusySlotRow[];
 }
 
-function timeRangesOverlap(
-  aStart: string,
-  aEnd: string,
-  bStart: string,
-  bEnd: string
-): boolean {
-  const toMin = (t: string) => {
-    const [h, m] = t.split(":").map(Number);
-    return h * 60 + m;
-  };
-  return toMin(aStart) < toMin(bEnd) && toMin(aEnd) > toMin(bStart);
+/**
+ * Hai khoảng thời gian (tính bằng phút từ 00:00) có đè lên nhau không.
+ * Nhận số chứ không nhận "HH:MM": lớp tối muộn kết thúc lúc 24:00 hoặc qua
+ * nửa đêm, chuỗi giờ đã vòng về "00:00" thì so sánh ra sai.
+ */
+function rangesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
+  return aStart < bEnd && aEnd > bStart;
 }
 
 /**
@@ -508,16 +505,23 @@ function timeRangesOverlap(
 function loadTeacherBusyRanges(
   teacherId: number,
   excludeClassId?: number
-): Map<number, { start: string; end: string }[]> {
-  const byDay = new Map<number, { start: string; end: string }[]>();
-  const push = (day: number, start: string, end: string) => {
+): Map<number, { start: number; end: number }[]> {
+  const byDay = new Map<number, { start: number; end: number }[]>();
+  const push = (day: number, startTime: string, durationMinutes: number) => {
+    const range = {
+      start: toMinutesOfDay(startTime),
+      end: endMinutesOfDay(startTime, durationMinutes),
+    };
     const list = byDay.get(day);
-    if (list) list.push({ start, end });
-    else byDay.set(day, [{ start, end }]);
+    if (list) list.push(range);
+    else byDay.set(day, [range]);
   };
 
+  // Ô bận luôn là một khối 30 phút (toggleBusySlotAction ghi vậy), nên tính lại
+  // giờ kết thúc từ giờ bắt đầu thay vì đọc end_time đã lưu — ô 23:30 lưu
+  // end_time là "00:00", đọc thẳng sẽ thành khoảng âm.
   for (const slot of listBusySlots(teacherId)) {
-    push(slot.day_of_week, slot.start_time, slot.end_time);
+    push(slot.day_of_week, slot.start_time, 30);
   }
 
   const existingClasses = db
@@ -531,20 +535,21 @@ function loadTeacherBusyRanges(
     duration_minutes: number;
   }[];
   for (const c of existingClasses) {
-    push(c.day_of_week, c.start_time, addMinutesToTime(c.start_time, c.duration_minutes));
+    push(c.day_of_week, c.start_time, c.duration_minutes);
   }
   return byDay;
 }
 
 function isRangeFree(
-  busyByDay: Map<number, { start: string; end: string }[]>,
+  busyByDay: Map<number, { start: number; end: number }[]>,
   dayOfWeek: number,
   startTime: string,
   durationMinutes: number
 ): boolean {
-  const endTime = addMinutesToTime(startTime, durationMinutes);
+  const start = toMinutesOfDay(startTime);
+  const end = endMinutesOfDay(startTime, durationMinutes);
   const busy = busyByDay.get(dayOfWeek);
-  return !busy?.some((b) => timeRangesOverlap(startTime, endTime, b.start, b.end));
+  return !busy?.some((b) => rangesOverlap(start, end, b.start, b.end));
 }
 
 /**

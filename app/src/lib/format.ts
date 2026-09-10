@@ -35,10 +35,29 @@ export function formatVND(amount: number): string {
   return amount.toLocaleString("vi-VN") + "đ";
 }
 
+/** "HH:MM" thành số phút tính từ 00:00. */
+export function toMinutesOfDay(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * Giờ kết thúc tính từ 00:00, KHÔNG vòng qua nửa đêm — lớp 23:00 dài 60 phút
+ * trả về 1440. Dùng cho mọi phép so trùng giờ, vì giờ đã vòng ("00:00") so
+ * sánh ra sai với giờ bắt đầu buổi tối.
+ */
+export function endMinutesOfDay(startTime: string, durationMinutes: number): number {
+  return toMinutesOfDay(startTime) + durationMinutes;
+}
+
 export function formatTimeRange(startTime: string, durationMinutes: number): string {
-  const [h, m] = startTime.split(":").map(Number);
-  const end = new Date(2000, 0, 1, h, m + durationMinutes);
-  const endStr = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+  const total = endMinutesOfDay(startTime, durationMinutes);
+  // Kết thúc đúng nửa đêm ghi "24:00" cho dễ đọc với lớp tối muộn; qua nửa đêm
+  // thì ghi giờ thật của ngày hôm sau.
+  const endStr =
+    total === 1440
+      ? "24:00"
+      : `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
   return `${startTime} - ${endStr}`;
 }
 
