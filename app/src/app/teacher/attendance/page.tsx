@@ -5,6 +5,7 @@ import {
   listClassesForTeacher,
   getClass,
   sessionNumberMap,
+  getLateCheckinQuota,
 } from "@/lib/queries";
 import { addDays, toISODate, todayISO, now } from "@/lib/format";
 import { formatClassSchedule, CLASS_STATUS_LABELS } from "@/lib/types";
@@ -22,6 +23,8 @@ import {
 } from "@/components/ui";
 import MakeupAttendanceForm from "./makeup-attendance-form";
 import TeacherAttendanceHistoryRow from "./history-row";
+import MissedCheckinPanel from "../missed-checkin-panel";
+import { missedRowsForTeacher } from "../missed-rows";
 
 export default async function TeacherAttendanceHistoryPage({
   searchParams,
@@ -54,6 +57,7 @@ export default async function TeacherAttendanceHistoryPage({
     ? (rows[0]?.student_name ?? getClass(classId)?.student_name)
     : null;
 
+  const missedRows = missedRowsForTeacher(session!.userId);
   const taught = rows.filter((r) => r.status === "completed").length;
   const trials = rows.filter((r) => r.is_trial).length;
 
@@ -76,6 +80,8 @@ export default async function TeacherAttendanceHistoryPage({
         }
         action={<MakeupAttendanceForm classes={myClasses} />}
       />
+
+      <MissedCheckinPanel rows={missedRows} quota={getLateCheckinQuota()} />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <MetricCard

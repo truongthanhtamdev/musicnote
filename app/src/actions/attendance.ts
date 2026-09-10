@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { nowHHMM } from "@/lib/format";
+import { nowHHMM, todayISO } from "@/lib/format";
 import { assertRole } from "@/lib/guard";
 import { getAttendance, getClass, getPackageProgress } from "@/lib/queries";
 import { hasRescheduleInfo, type AttendanceStatus } from "@/lib/types";
@@ -119,9 +119,13 @@ export async function markAttendanceAction(
     if (owned.trial_pending) {
       db.prepare("UPDATE classes SET trial_pending = 0 WHERE id = ?").run(classId);
     }
+    // Điểm danh sau ngày học là "điểm danh bù": ghi lại để bảng lương áp quy
+    // định số lần được tha. Chỉ đánh dấu lúc tạo mới — sửa lại bản ghi cũ sau
+    // này không biến nó thành buổi bù.
+    const lateCheckin = sessionDate < todayISO() ? 1 : 0;
     db.prepare(
-      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note, rescheduled_to_date, rescheduled_to_time, counts_as_used)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note, rescheduled_to_date, rescheduled_to_time, counts_as_used, late_checkin)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       classId,
       session.userId,
@@ -135,7 +139,8 @@ export async function markAttendanceAction(
       note || null,
       rescheduledToDate || null,
       rescheduledToTime || null,
-      countsAsUsed
+      countsAsUsed,
+      lateCheckin
     );
   }
 

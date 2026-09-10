@@ -244,6 +244,7 @@ function migrate() {
   ensureColumn("attendance", "rescheduled_to_time", "TEXT");
   ensureColumn("classes", "trial_pending", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("attendance", "counts_as_used", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn("attendance", "late_checkin", "INTEGER NOT NULL DEFAULT 0");
   seedDefaultSettings();
   ensureStudentRoleSupported();
   migratePackagesToTable();

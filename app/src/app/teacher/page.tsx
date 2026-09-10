@@ -6,6 +6,7 @@ import {
   listAttendance,
   listRescheduleRequests,
   listConfirmedClassIdsOn,
+  getLateCheckinQuota,
 } from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
@@ -14,6 +15,8 @@ import { Card, CardHeader, EmptyState, TableShell, Th, btn } from "@/components/
 import RescheduleRow from "@/components/reschedule-row";
 import FbReminder from "./fb-reminder";
 import TodayClassCard from "./today-class-card";
+import MissedCheckinPanel from "./missed-checkin-panel";
+import { missedRowsForTeacher } from "./missed-rows";
 
 function classEndMinutes(startTime: string, durationMinutes: number): number {
   const [h, m] = startTime.split(":").map(Number);
@@ -42,6 +45,7 @@ export default async function TeacherTodayPage() {
   const firstName = session!.name.split(" ").pop();
   const pendingReschedules = listRescheduleRequests({ teacherId, status: "pending" });
   const confirmedToday = listConfirmedClassIdsOn(todayStr);
+  const missedRows = missedRowsForTeacher(teacherId);
 
   return (
     <div className="space-y-5">
@@ -70,6 +74,8 @@ export default async function TeacherTodayPage() {
           </div>
         )}
       </section>
+
+      <MissedCheckinPanel rows={missedRows} quota={getLateCheckinQuota()} />
 
       <FbReminder today={todayStr} />
 

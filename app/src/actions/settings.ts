@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { assertRole } from "@/lib/guard";
 import { normalizeFacebookUrl } from "@/lib/format";
-import { CONTACT_KEYS, setSetting } from "@/lib/queries";
+import { CONTACT_KEYS, LATE_CHECKIN_QUOTA_KEY, setSetting } from "@/lib/queries";
 import type { FormState } from "./teachers";
 
 /** Chỉ giữ chữ số để làm link zalo.me — khách hay gõ "0965 817 021" hoặc "+84...". */
@@ -37,5 +37,30 @@ export async function saveContactSettingsAction(
   revalidatePath("/");
   revalidatePath("/student");
   revalidatePath("/admin/settings");
+  return { success: true };
+}
+
+/**
+ * Số lần điểm danh bù được tha trong mỗi kỳ tính lương. Vượt hạn mức thì buổi
+ * đó không tính công — đây là con số tiền bạc nên để chủ trung tâm tự đặt.
+ */
+export async function saveLateCheckinQuotaAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  await assertRole(["admin"]);
+
+  const raw = String(formData.get("late_checkin_free_quota") || "").trim();
+  const quota = Number(raw);
+  if (!Number.isInteger(quota) || quota < 0 || quota > 99) {
+    return { error: "Nhập số lần từ 0 đến 99" };
+  }
+
+  setSetting(LATE_CHECKIN_QUOTA_KEY, String(quota));
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/payroll");
+  revalidatePath("/teacher");
+  revalidatePath("/teacher/attendance");
   return { success: true };
 }

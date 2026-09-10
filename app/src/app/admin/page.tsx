@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   listClassesByDay,
   listConfirmedClassIdsOn,
+  listMissedCheckins,
   listAttendance,
   listClasses,
   listPackagesNearingCompletion,
@@ -95,6 +96,9 @@ export default async function AdminDashboard() {
 
   const todaysClasses = listClassesByDay(dow);
   const confirmedToday = listConfirmedClassIdsOn(todayStr);
+  // Buổi đã qua mà giáo viên chưa điểm danh — nợ cả điểm danh lẫn nội dung bài
+  // cho khách, nên tô đậm cho giáo vụ nhắc.
+  const missed = listMissedCheckins();
   const todaysAttendance = listAttendance({ from: todayStr, to: todayStr });
   const marked = new Set(todaysAttendance.map((a) => a.class_id));
 
@@ -337,6 +341,53 @@ export default async function AdminDashboard() {
           </div>
         </Card>
       </div>
+
+      {missed.length > 0 && (
+        <Card padded={false} className="border-2 border-coral-300">
+          <CardHeader
+            title="Buổi đã qua chưa điểm danh"
+            count={missed.length}
+            icon={<IconAlert className="w-4.5 h-4.5" />}
+            tone="warning"
+            action={<DetailLink href="/admin/payroll">Xem ảnh hưởng tới lương</DetailLink>}
+          />
+          <ul className="divide-y divide-coral-100">
+            {missed.slice(0, 12).map((m) => (
+              <li
+                key={`${m.cls.id}-${m.date}`}
+                className="px-4 sm:px-5 py-3 bg-coral-50/60 flex flex-wrap items-center gap-x-3 gap-y-1.5"
+              >
+                <span className="text-sm font-bold text-coral-800 tabular w-24 shrink-0">
+                  {m.date}
+                </span>
+                <Avatar name={m.cls.student_name} className="w-8 h-8 text-[11px]" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-coral-800 truncate">
+                    {m.cls.student_name}
+                  </p>
+                  <p className="text-xs text-ink-600 flex items-center gap-1">
+                    <SubjectIcon subject={m.cls.subject} className="w-3.5 h-3.5" />
+                    {formatTimeRange(m.cls.start_time, m.cls.duration_minutes)} ·{" "}
+                    {m.cls.teacher_name || "Chưa có GV"}
+                  </p>
+                </div>
+                <StatusChip tone="coral" icon={<IconAlert className="w-3.5 h-3.5" />}>
+                  {m.daysLate === 0 ? "Quá giờ hôm nay" : `Trễ ${m.daysLate} ngày`}
+                </StatusChip>
+              </li>
+            ))}
+          </ul>
+          {missed.length > 12 && (
+            <p className="px-5 py-2.5 text-sm text-ink-500 border-t border-coral-100">
+              và {missed.length - 12} buổi khác.
+            </p>
+          )}
+          <p className="px-5 py-3 border-t border-coral-100 bg-white text-sm text-ink-600">
+            Giáo viên thấy đúng danh sách này ở trang của mình kèm nút &ldquo;Điểm danh
+            bù&rdquo;. Số lần điểm danh bù vượt hạn mức sẽ tự bị trừ trong bảng lương.
+          </p>
+        </Card>
+      )}
 
       {/* Lịch hôm nay */}
       <Card padded={false}>

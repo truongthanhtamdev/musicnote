@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
-import { computePayroll } from "@/lib/queries";
+import { computePayroll, getLateCheckinQuota } from "@/lib/queries";
 import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
 import { TRIAL_SESSION_RATE } from "@/lib/types";
-import { IconCheckCircle, IconDownload, IconFilter, IconWallet } from "@/components/icons";
+import { IconAlert, IconCheckCircle, IconDownload, IconFilter, IconWallet } from "@/components/icons";
 import {
   Avatar,
   Card,
@@ -27,16 +27,18 @@ export default async function PayrollPage({
   const from = sp.from || firstDayOfMonth();
   const to = sp.to || lastDayOfMonth();
 
-  const rows = computePayroll(from, to);
+  const quota = getLateCheckinQuota();
+  const rows = computePayroll(from, to, quota);
   const total = rows.reduce((sum, r) => sum + r.total_pay, 0);
   const sessions = rows.reduce((sum, r) => sum + r.completed_sessions, 0);
   const trials = rows.reduce((sum, r) => sum + r.trial_sessions, 0);
+  const unpaidLate = rows.reduce((sum, r) => sum + r.unpaid_late_sessions, 0);
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="Chấm công / Tính lương"
-        subtitle={`Lương = số buổi "Đã dạy" × đơn giá/buổi, cộng số buổi học thử × ${formatVND(TRIAL_SESSION_RATE)}/buổi (không theo đơn giá thường).`}
+        subtitle={`Lương = số buổi "Đã dạy" × đơn giá/buổi, cộng số buổi học thử × ${formatVND(TRIAL_SESSION_RATE)}/buổi (không theo đơn giá thường), trừ các buổi điểm danh bù vượt hạn mức ${quota} lần/kỳ.`}
       />
 
       <Card>
@@ -85,7 +87,13 @@ export default async function PayrollPage({
           icon={<IconCheckCircle className="w-5 h-5" />}
         />
         <MetricCard label="Buổi học thử" value={trials} unit="buổi" tone="wood" />
-        <MetricCard label="Số giáo viên có lương" value={rows.filter((r) => r.total_pay > 0).length} unit="người" />
+        <MetricCard
+          label="Buổi bù không tính công"
+          value={unpaidLate}
+          unit="buổi"
+          tone={unpaidLate ? "coral" : "navy"}
+          icon={<IconAlert className="w-5 h-5" />}
+        />
         <MetricCard
           label="Tổng chi lương"
           value={formatVND(total)}
@@ -108,6 +116,8 @@ export default async function PayrollPage({
                 <Th>Giáo viên</Th>
                 <Th className="text-right">Số buổi đã dạy</Th>
                 <Th className="text-right">Buổi thử</Th>
+                <Th className="text-right">Điểm danh bù</Th>
+                <Th className="text-right">Không tính công</Th>
                 <Th className="text-right">Đơn giá/buổi</Th>
                 <Th className="text-right">Thành tiền</Th>
               </tr>
@@ -131,6 +141,24 @@ export default async function PayrollPage({
                   <td className="px-4 py-3 text-right tabular text-ink-700">
                     {r.trial_sessions > 0 ? r.trial_sessions : "–"}
                   </td>
+                  <td className="px-4 py-3 text-right tabular text-ink-700">
+                    {r.late_sessions > 0 ? (
+                      <span className={r.unpaid_late_sessions > 0 ? "font-semibold text-coral-700" : ""}>
+                        {r.late_sessions}
+                      </span>
+                    ) : (
+                      "–"
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular whitespace-nowrap">
+                    {r.unpaid_late_sessions > 0 ? (
+                      <span className="font-semibold text-coral-700">
+                        −{r.unpaid_late_sessions} buổi · −{formatVND(r.late_deduction)}
+                      </span>
+                    ) : (
+                      <span className="text-ink-400">–</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right tabular text-ink-700 whitespace-nowrap">
                     {r.pay_per_session ? formatVND(r.pay_per_session) : "–"}
                   </td>
@@ -142,7 +170,7 @@ export default async function PayrollPage({
             </tbody>
             <tfoot>
               <tr className="bg-ivory-100 font-semibold text-ink-900">
-                <td className="px-4 py-3" colSpan={4}>
+                <td className="px-4 py-3" colSpan={6}>
                   Tổng cộng
                 </td>
                 <td className="px-4 py-3 text-right tabular whitespace-nowrap">

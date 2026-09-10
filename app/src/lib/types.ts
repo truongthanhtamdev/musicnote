@@ -310,6 +310,11 @@ export interface AttendanceRow {
    * thái khác luôn là 0.
    */
   counts_as_used: number;
+  /**
+   * Buổi được điểm danh sau ngày học (điểm danh bù) thay vì ngay hôm đó. Đặt
+   * lúc giáo viên tạo bản ghi; sửa lại sau này không làm thay đổi cờ.
+   */
+  late_checkin: number;
   created_at: string;
 }
 
@@ -357,6 +362,17 @@ export function isNoticeInTime(sessionDate: string, startTime: string, at: Date)
   const startsAt = new Date(y, mo - 1, d, h, m);
   return startsAt.getTime() - at.getTime() >= CANCEL_NOTICE_HOURS * 60 * 60 * 1000;
 }
+
+/**
+ * Số lần điểm danh bù được "tha" trong mỗi kỳ tính lương. Từ lần thứ
+ * LATE_CHECKIN_FREE_QUOTA + 1 trở đi, buổi điểm danh bù không được tính công —
+ * điểm danh và ghi nội dung bài học đúng buổi là việc bắt buộc, vì khách hàng
+ * đọc phần nội dung đó. Chủ trung tâm đổi được trong "Cài đặt trung tâm".
+ */
+export const LATE_CHECKIN_FREE_QUOTA = 2;
+
+/** Truy ngược bấy nhiêu ngày để tìm buổi giáo viên quên điểm danh. */
+export const MISSED_CHECKIN_DAYS = 30;
 
 /**
  * Nhắc lịch cho học viên trong vòng bấy nhiêu ngày tới. Đủ dài để sau khi xin

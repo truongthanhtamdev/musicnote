@@ -36,6 +36,7 @@
   /* Ink — chữ */
   --color-ink-900: #17212b;
   --color-ink-700: #3d4a58;
+  --color-ink-600: #4e5c6e;
   --color-ink-500: #64748b;
   --color-ink-400: #94a3b8;
 
@@ -54,6 +55,7 @@
   /* Mint — hoàn thành, hoạt động */
   --color-mint-50: #eaf7f3;
   --color-mint-100: #d0ede4;
+  --color-mint-200: #a7dccc;
   --color-mint-300: #7fcbb4;
   --color-mint-500: #38a889;
   --color-mint-600: #2d8b71;
@@ -62,6 +64,7 @@
   /* Amber — sắp tới, sắp hết khóa */
   --color-amber-50: #fdf5e7;
   --color-amber-100: #fae8c8;
+  --color-amber-200: #f5d9a2;
   --color-amber-300: #f0c479;
   --color-amber-500: #e9a23b;
   --color-amber-600: #cc8722;
@@ -74,6 +77,7 @@
   --color-coral-500: #d9685c;
   --color-coral-600: #c04d41;
   --color-coral-700: #99392f;
+  --color-coral-800: #7a2c24;
 
   /* Alias giữ tương thích với các trang chưa redesign */
   --color-gold-50: #fbf5ec;

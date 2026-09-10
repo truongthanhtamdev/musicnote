@@ -12,6 +12,8 @@ import {
   getSuggestedPackagePrice,
   parseLanguages,
   parseSubjects,
+  LATE_CHECKIN_FREE_QUOTA,
+  MISSED_CHECKIN_DAYS,
   NEW_CLASS_DAYS,
   REMINDER_DAYS,
   TIME_SLOTS,
@@ -654,16 +656,32 @@ export interface PayrollRow {
   pay_per_session: number | null;
   completed_sessions: number;
   trial_sessions: number;
+  /** Số buổi đã dạy nhưng điểm danh bù (ghi sau ngày học). */
+  late_sessions: number;
+  /** Trong số đó, bao nhiêu buổi vượt hạn mức được tha nên không tính công. */
+  unpaid_late_sessions: number;
+  /** Tiền bị trừ vì các buổi không tính công ở trên. */
+  late_deduction: number;
   total_pay: number;
 }
 
-/** Trial ("buổi thử") sessions are paid a flat TRIAL_SESSION_RATE regardless of the teacher's normal per-session rate. */
-export function computePayroll(from: string, to: string): PayrollRow[] {
+/**
+ * Lương = số buổi "Đã dạy" × đơn giá, cộng buổi học thử theo giá riêng, trừ
+ * các buổi điểm danh bù vượt hạn mức.
+ *
+ * Quy định điểm danh bù: mỗi kỳ tính lương, `quota` lần đầu vẫn được tính công
+ * bình thường; từ lần kế tiếp trở đi buổi đó không tính công, vì điểm danh và
+ * ghi nội dung bài học đúng buổi là việc bắt buộc — khách hàng đọc phần nội
+ * dung đó trong trang học viên. Buổi học thử không nằm trong diện trừ.
+ */
+export function computePayroll(from: string, to: string, quota?: number): PayrollRow[] {
+  const freeQuota = quota ?? getLateCheckinQuota();
   const rows = db
     .prepare(
       `SELECT u.id as teacher_id, u.name as teacher_name, u.pay_per_session as pay_per_session,
               SUM(CASE WHEN a.id IS NOT NULL AND a.is_trial = 0 THEN 1 ELSE 0 END) as completed_sessions,
-              SUM(CASE WHEN a.id IS NOT NULL AND a.is_trial = 1 THEN 1 ELSE 0 END) as trial_sessions
+              SUM(CASE WHEN a.id IS NOT NULL AND a.is_trial = 1 THEN 1 ELSE 0 END) as trial_sessions,
+              SUM(CASE WHEN a.id IS NOT NULL AND a.is_trial = 0 AND a.late_checkin = 1 THEN 1 ELSE 0 END) as late_sessions
        FROM users u
        LEFT JOIN attendance a ON a.teacher_id = u.id
          AND a.status = 'completed' AND a.session_date >= ? AND a.session_date <= ?
@@ -671,12 +689,22 @@ export function computePayroll(from: string, to: string): PayrollRow[] {
        GROUP BY u.id
        ORDER BY u.name`
     )
-    .all(from, to) as Omit<PayrollRow, "total_pay">[];
+    .all(from, to) as Omit<
+    PayrollRow,
+    "total_pay" | "unpaid_late_sessions" | "late_deduction"
+  >[];
 
-  return rows.map((r) => ({
-    ...r,
-    total_pay: (r.pay_per_session || 0) * r.completed_sessions + TRIAL_SESSION_RATE * r.trial_sessions,
-  }));
+  return rows.map((r) => {
+    const unpaid = Math.max(0, r.late_sessions - freeQuota);
+    const rate = r.pay_per_session || 0;
+    const deduction = rate * unpaid;
+    return {
+      ...r,
+      unpaid_late_sessions: unpaid,
+      late_deduction: deduction,
+      total_pay: rate * r.completed_sessions + TRIAL_SESSION_RATE * r.trial_sessions - deduction,
+    };
+  });
 }
 
 export function listPayments(
@@ -787,6 +815,15 @@ export function setSetting(key: string, value: string) {
 }
 
 export const CONTACT_KEYS = { facebook: "contact_facebook", zalo: "contact_zalo" } as const;
+
+export const LATE_CHECKIN_QUOTA_KEY = "late_checkin_free_quota";
+
+/** Số lần điểm danh bù được tha mỗi kỳ lương — lấy từ Cài đặt, chưa khai thì dùng mặc định. */
+export function getLateCheckinQuota(): number {
+  const raw = getSetting(LATE_CHECKIN_QUOTA_KEY);
+  const n = raw == null ? NaN : Number(raw);
+  return Number.isInteger(n) && n >= 0 ? n : LATE_CHECKIN_FREE_QUOTA;
+}
 
 /**
  * Facebook + Zalo của trung tâm, dùng cho nút liên hệ ở trang chủ và trang học
@@ -1011,4 +1048,82 @@ export function listConfirmedClassIdsOn(sessionDate: string): Set<number> {
     .prepare("SELECT class_id FROM session_confirmations WHERE session_date = ?")
     .all(sessionDate) as { class_id: number }[];
   return new Set(rows.map((r) => r.class_id));
+}
+
+// ---------------------------------------------------------------------------
+// Quên điểm danh / điểm danh bù
+// ---------------------------------------------------------------------------
+
+export interface MissedCheckin {
+  cls: ClassWithTeacher;
+  /** YYYY-MM-DD của buổi đã qua mà chưa có bản ghi điểm danh. */
+  date: string;
+  /** Đã trễ bao nhiêu ngày so với hôm nay. */
+  daysLate: number;
+}
+
+/**
+ * Buổi học cố định đã qua giờ mà chưa ai điểm danh — giáo viên còn nợ cả điểm
+ * danh lẫn nội dung bài học cho khách. Chỉ tính từ ngày lớp được tạo trở đi và
+ * trong `days` ngày gần nhất, để lớp mới nhập không kéo theo một đống buổi cũ
+ * chưa từng tồn tại.
+ */
+export function listMissedCheckins(opts?: {
+  teacherId?: number;
+  days?: number;
+}): MissedCheckin[] {
+  const days = opts?.days ?? MISSED_CHECKIN_DAYS;
+  const today = now();
+  const todayStr = toISODate(today);
+  const nowMinutes = today.getHours() * 60 + today.getMinutes();
+  const fromStr = toISODate(addDays(today, -days));
+
+  const classes = (
+    opts?.teacherId ? listClassesForTeacher(opts.teacherId) : listClasses()
+  ).filter((c) => c.status === "active" && c.schedule_type === "fixed" && c.teacher_id);
+  if (classes.length === 0) return [];
+
+  const classIds = classes.map((c) => c.id);
+  const placeholders = classIds.map(() => "?").join(",");
+  const marked = new Set(
+    (
+      db
+        .prepare(
+          `SELECT class_id, session_date FROM attendance
+           WHERE class_id IN (${placeholders}) AND session_date >= ?`
+        )
+        .all(...classIds, fromStr) as { class_id: number; session_date: string }[]
+    ).map((a) => `${a.class_id}|${a.session_date}`)
+  );
+
+  const out: MissedCheckin[] = [];
+  for (const cls of classes) {
+    const createdDate = cls.created_at.slice(0, 10);
+    for (let i = 1; i <= days; i++) {
+      const date = addDays(today, -i);
+      if (date.getDay() !== cls.day_of_week) continue;
+      const iso = toISODate(date);
+      if (iso < fromStr || iso < createdDate) continue;
+      if (marked.has(`${cls.id}|${iso}`)) continue;
+      out.push({ cls, date: iso, daysLate: i });
+    }
+    // Buổi hôm nay chỉ tính là quên khi đã qua giờ kết thúc.
+    if (today.getDay() === cls.day_of_week && todayStr >= createdDate) {
+      const [h, m] = cls.start_time.split(":").map(Number);
+      if (nowMinutes > h * 60 + m + cls.duration_minutes && !marked.has(`${cls.id}|${todayStr}`)) {
+        out.push({ cls, date: todayStr, daysLate: 0 });
+      }
+    }
+  }
+  return out.sort((a, b) => b.date.localeCompare(a.date) || a.cls.start_time.localeCompare(b.cls.start_time));
+}
+
+/** Số buổi quên điểm danh của từng giáo viên — dùng cho bảng lương và trang giáo vụ. */
+export function countMissedCheckinsByTeacher(days?: number): Map<number, number> {
+  const counts = new Map<number, number>();
+  for (const m of listMissedCheckins({ days })) {
+    if (m.cls.teacher_id == null) continue;
+    counts.set(m.cls.teacher_id, (counts.get(m.cls.teacher_id) ?? 0) + 1);
+  }
+  return counts;
 }
