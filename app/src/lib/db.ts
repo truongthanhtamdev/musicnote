@@ -231,9 +231,22 @@ function migrate() {
   ensureColumn("attendance", "rescheduled_to_time", "TEXT");
   ensureColumn("classes", "trial_pending", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("attendance", "counts_as_used", "INTEGER NOT NULL DEFAULT 0");
+  seedDefaultSettings();
   ensureStudentRoleSupported();
   migratePackagesToTable();
   invertAvailabilityToBusyOnce();
+}
+
+// Thông tin liên hệ mặc định của trung tâm. INSERT OR IGNORE nên chỉ điền khi
+// khoá chưa tồn tại: admin sửa lại (kể cả xoá trắng) trong "Cài đặt trung tâm"
+// thì khoá vẫn còn, lần chạy sau không ghi đè.
+function seedDefaultSettings() {
+  const defaults: [string, string][] = [
+    ["contact_facebook", "https://www.facebook.com/TruongNThanhTam"],
+    ["contact_zalo", "0965817021"],
+  ];
+  const stmt = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
+  for (const [key, value] of defaults) stmt.run(key, value);
 }
 
 // Packages used to live as two columns directly on `classes`
