@@ -12,6 +12,7 @@ import {
   type ClassRow,
   type ClassScheduleType,
 } from "@/lib/types";
+import { TimeSelect } from "@/components/time-select";
 
 const initialState: FormState = {};
 
@@ -109,12 +110,12 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
                 </option>
               ))}
             </select>
-            <input
+            <TimeSelect
               name="start_time"
-              type="time"
               defaultValue={cls.start_time}
               required
               className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
+              emptyLabel="Giờ học"
             />
           </>
         )}

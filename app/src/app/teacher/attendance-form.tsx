@@ -13,6 +13,7 @@ import {
 import { formatVND } from "@/lib/format";
 import { IconAlert, IconCheck } from "@/components/icons";
 import { btn, field, label } from "@/components/ui";
+import { TimeSelect } from "@/components/time-select";
 
 const initialState: FormState = {};
 
@@ -98,10 +99,9 @@ export default function AttendanceForm({
               <label className={label} htmlFor={`resched-time-${classId}`}>
                 Giờ đã chốt
               </label>
-              <input
+              <TimeSelect
                 id={`resched-time-${classId}`}
                 name="rescheduled_to_time"
-                type="time"
                 defaultValue={existing?.rescheduled_to_time || ""}
                 className={field}
               />

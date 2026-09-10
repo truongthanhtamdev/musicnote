@@ -13,6 +13,7 @@ import { formatVND, todayISO } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { IconAlert, IconPlus } from "@/components/icons";
 import { btn, field, label } from "@/components/ui";
+import { TimeSelect } from "@/components/time-select";
 
 const initialState: FormState = {};
 
@@ -146,10 +147,9 @@ export default function MakeupAttendanceForm({
                   <label className={label} htmlFor="m-resched-time">
                     Giờ đã chốt
                   </label>
-                  <input
+                  <TimeSelect
                     id="m-resched-time"
                     name="rescheduled_to_time"
-                    type="time"
                     className={field}
                   />
                 </div>

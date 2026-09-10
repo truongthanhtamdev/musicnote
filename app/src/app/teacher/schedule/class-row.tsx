@@ -19,6 +19,7 @@ import {
 import type { PackageProgress } from "@/lib/queries";
 import { IconAlert, SubjectIcon } from "@/components/icons";
 import { ProgressBar, btn, field, packageTone, inlineAction } from "@/components/ui";
+import { TimeSelect } from "@/components/time-select";
 
 const initialState: FormState = {};
 
@@ -148,13 +149,13 @@ export default function TeacherClassRow({
                   </option>
                 ))}
               </select>
-              <input
+              <TimeSelect
                 name="start_time"
-                type="time"
                 defaultValue={cls.start_time}
                 required
                 className={field}
                 aria-label="Giờ bắt đầu"
+                emptyLabel="Giờ học"
               />
             </>
           )}

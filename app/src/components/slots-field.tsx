@@ -4,6 +4,7 @@ import { useState } from "react";
 import { DAY_LABELS, DAY_ORDER, DURATION_OPTIONS } from "@/lib/types";
 import { IconPlus, IconX } from "./icons";
 import { field } from "./ui";
+import { TimeSelect } from "@/components/time-select";
 
 interface Slot {
   day: string;
@@ -51,14 +52,14 @@ export function SlotsField() {
               </option>
             ))}
           </select>
-          <input
+          <TimeSelect
             name="slot_time"
-            type="time"
             required
             value={slot.time}
             onChange={(e) => updateSlot(i, { time: e.target.value })}
             aria-label={`Giờ bắt đầu buổi ${i + 1}`}
             className={`${field} py-2`}
+            emptyLabel="Giờ học"
           />
           <select
             name="slot_duration"

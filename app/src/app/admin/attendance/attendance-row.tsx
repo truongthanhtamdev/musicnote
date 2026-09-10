@@ -12,6 +12,7 @@ import {
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 import { IconAlert } from "@/components/icons";
 import { Avatar, StatusChip, btn, field, inlineAction } from "@/components/ui";
+import { TimeSelect } from "@/components/time-select";
 
 const initialState: FormState = {};
 
@@ -66,12 +67,12 @@ export default function AttendanceRow({
                   aria-label="Ngày học bù đã chốt"
                   className={`${field} w-auto py-1.5`}
                 />
-                <input
+                <TimeSelect
                   name="rescheduled_to_time"
-                  type="time"
                   defaultValue={row.rescheduled_to_time || ""}
                   aria-label="Giờ đã chốt"
                   className={`${field} w-auto py-1.5`}
+                  emptyLabel="Giờ"
                 />
               </>
             )}
