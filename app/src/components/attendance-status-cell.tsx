@@ -9,12 +9,15 @@ const STATUS_TONE: Record<string, ChipTone> = {
   rescheduled: "navy",
 };
 
-/** Status label + số buổi/buổi thử + ngày giờ học bù đã chốt — dùng chung cho mọi bảng điểm danh. */
+/** Status label + số buổi/buổi thử + buổi vắng không báo + ngày giờ học bù đã chốt — dùng chung cho mọi bảng điểm danh. */
 export function AttendanceStatusCell({
   row,
   sessionNumber,
 }: {
-  row: Pick<AttendanceRow, "status" | "is_trial" | "rescheduled_to_date" | "rescheduled_to_time">;
+  row: Pick<
+    AttendanceRow,
+    "status" | "is_trial" | "rescheduled_to_date" | "rescheduled_to_time" | "counts_as_used"
+  >;
   /** Buổi thứ mấy của học viên, tính từ sessionNumberMap(). */
   sessionNumber?: number;
 }) {
@@ -32,6 +35,8 @@ export function AttendanceStatusCell({
       >
         {ATTENDANCE_STATUS_LABELS[row.status]}
       </StatusChip>
+
+      {row.counts_as_used ? <StatusChip tone="amber">Không báo — tính tiết</StatusChip> : null}
 
       {row.is_trial ? (
         <StatusChip tone="wood">Buổi học thử</StatusChip>

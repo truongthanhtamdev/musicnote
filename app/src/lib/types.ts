@@ -304,8 +304,56 @@ export interface AttendanceRow {
   // teacher and student agreed to move this session to.
   rescheduled_to_date: string | null;
   rescheduled_to_time: string | null;
+  /**
+   * Buổi này vẫn trừ vào gói dù không dạy: khách vắng mà không báo trước nên
+   * giáo viên đã giữ chỗ suốt khung giờ đó. Chỉ dùng cho "HS vắng"; các trạng
+   * thái khác luôn là 0.
+   */
+  counts_as_used: number;
   created_at: string;
 }
+
+export interface RescheduleRequestRow {
+  id: number;
+  class_id: number;
+  requested_by: number;
+  /** Buổi gốc bị dời (YYYY-MM-DD). */
+  session_date: string;
+  to_date: string;
+  to_time: string;
+  reason: string | null;
+  status: RescheduleStatus;
+  response_note: string | null;
+  responded_by: number | null;
+  responded_at: string | null;
+  created_at: string;
+}
+
+export type RescheduleStatus = "pending" | "approved" | "declined" | "cancelled";
+
+export const RESCHEDULE_STATUS_LABELS: Record<RescheduleStatus, string> = {
+  pending: "Chờ giáo viên duyệt",
+  approved: "Đã duyệt",
+  declined: "Không duyệt",
+  cancelled: "Đã hủy",
+};
+
+export interface CenterContact {
+  facebook: string | null;
+  zalo: string | null;
+}
+
+/**
+ * Báo dời/hủy trước bấy nhiêu tiếng thì mới coi là "có báo". Sát giờ hơn thì
+ * giáo viên đã dành sẵn khung đó rồi, nên buổi vẫn bị tính tiết.
+ */
+export const CANCEL_NOTICE_HOURS = 12;
+
+/** Nhắc lịch cho học viên trong vòng bấy nhiêu ngày tới. */
+export const REMINDER_DAYS = 7;
+
+/** Học viên chọn giờ học bù trong vòng bấy nhiêu ngày tới. */
+export const MAKEUP_WINDOW_DAYS = 21;
 
 export const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];

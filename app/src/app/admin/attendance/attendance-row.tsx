@@ -76,6 +76,17 @@ export default function AttendanceRow({
                 />
               </>
             )}
+            {status === "student_absent" && (
+              <label className="flex items-center gap-1.5 text-sm text-ink-700 whitespace-nowrap rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5">
+                <input
+                  type="checkbox"
+                  name="counts_as_used"
+                  defaultChecked={!!row.counts_as_used}
+                  className="w-4 h-4 rounded border-amber-300 accent-[var(--color-amber-500)]"
+                />
+                Không báo trước — tính tiết
+              </label>
+            )}
             <input
               name="lesson_content"
               defaultValue={row.lesson_content || ""}

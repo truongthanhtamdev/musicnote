@@ -1,7 +1,12 @@
 import { requireRole } from "@/lib/guard";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import { NotificationsBanner } from "@/components/notifications-banner";
-import { listClassesForTeacher, getAttendance, listUnreadNotifications } from "@/lib/queries";
+import {
+  listClassesForTeacher,
+  getAttendance,
+  listUnreadNotifications,
+  countPendingRescheduleRequests,
+} from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
 import {
   IconCalendarCheck,
@@ -28,7 +33,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
     { href: "/teacher/earnings", label: "Thu nhập", icon: <IconWallet className={ICON} /> },
   ];
 
-  // Badge chuông: lớp hôm nay chưa điểm danh + thông báo chưa đọc.
+  // Badge chuông: lớp hôm nay chưa điểm danh + thông báo chưa đọc + đơn xin dời lịch chờ duyệt.
   const todayStr = todayISO();
   const dow = now().getDay();
   const pending = listClassesForTeacher(session.userId).filter(
@@ -39,6 +44,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
       !getAttendance(c.id, todayStr)
   ).length;
   const unread = listUnreadNotifications(session.userId).length;
+  const reschedules = countPendingRescheduleRequests(session.userId);
 
   return (
     <AppShell
@@ -49,7 +55,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
       bottomNav={links.map((l) =>
         l.href === "/teacher/availability" ? { ...l, label: "Lịch tuần" } : l
       )}
-      alertCount={pending + unread}
+      alertCount={pending + unread + reschedules}
       maxWidth="max-w-5xl"
     >
       <NotificationsBanner userId={session.userId} />

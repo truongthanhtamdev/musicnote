@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { listClassesForTeacher, getPackageProgress, listAttendance } from "@/lib/queries";
+import {
+  listClassesForTeacher,
+  getPackageProgress,
+  listAttendance,
+  listRescheduleRequests,
+} from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
 import { DAY_LABELS } from "@/lib/types";
-import { IconCalendarCheck, IconCheckCircle, IconMusic } from "@/components/icons";
-import { Card, EmptyState, btn } from "@/components/ui";
+import { IconCalendarCheck, IconCheckCircle, IconClock, IconMusic } from "@/components/icons";
+import { Card, CardHeader, EmptyState, TableShell, Th, btn } from "@/components/ui";
+import RescheduleRow from "@/components/reschedule-row";
 import FbReminder from "./fb-reminder";
 import TodayClassCard from "./today-class-card";
 
@@ -33,6 +39,7 @@ export default async function TeacherTodayPage() {
   const pendingClasses = classes.filter((c) => !c.existing);
   const doneCount = classes.length - pendingClasses.length;
   const firstName = session!.name.split(" ").pop();
+  const pendingReschedules = listRescheduleRequests({ teacherId, status: "pending" });
 
   return (
     <div className="space-y-5">
@@ -63,6 +70,34 @@ export default async function TeacherTodayPage() {
       </section>
 
       <FbReminder today={todayStr} />
+
+      {pendingReschedules.length > 0 && (
+        <Card padded={false} className="border-amber-200">
+          <CardHeader
+            title="Học viên xin dời lịch"
+            count={pendingReschedules.length}
+            icon={<IconClock className="w-5 h-5" />}
+            tone="warning"
+          />
+          <TableShell>
+            <thead>
+              <tr>
+                <Th>Học viên</Th>
+                <Th>Buổi gốc</Th>
+                <Th>Xin dời sang</Th>
+                <Th>Lý do</Th>
+                <Th>Trạng thái</Th>
+                <Th />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-navy-100">
+              {pendingReschedules.map((r) => (
+                <RescheduleRow key={r.id} request={r} />
+              ))}
+            </tbody>
+          </TableShell>
+        </Card>
+      )}
 
       {classes.length === 0 ? (
         <Card padded={false}>

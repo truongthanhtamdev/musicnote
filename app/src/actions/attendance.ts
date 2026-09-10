@@ -63,6 +63,10 @@ export async function markAttendanceAction(
   // the teacher says "this one is the trial". Left blank = keep counting
   // automatically and leave the trial flag alone.
   const statedSessionNumber = readStatedSessionNumber(formData);
+  // "Khách không báo trước" — chỉ hỏi khi học viên vắng, vì đó là lúc duy nhất
+  // buổi vừa không dạy được vừa có thể tính tiết. Trạng thái khác luôn về 0 để
+  // sửa từ "HS vắng" sang trạng thái khác là hết tính.
+  const countsAsUsed = status === "student_absent" && formData.get("counts_as_used") ? 1 : 0;
 
   if (!classId || !sessionDate || !VALID_STATUS.includes(status)) {
     return { error: "Dữ liệu điểm danh không hợp lệ" };
@@ -85,7 +89,7 @@ export async function markAttendanceAction(
     // (updated separately below when the teacher states one), so a
     // correction that leaves that box alone keeps whatever was saved.
     db.prepare(
-      `UPDATE attendance SET status=?, fb_checkin_confirmed=?, lesson_content=?, note=?, rescheduled_to_date=?, rescheduled_to_time=?, check_out_time=? WHERE id=?`
+      `UPDATE attendance SET status=?, fb_checkin_confirmed=?, lesson_content=?, note=?, rescheduled_to_date=?, rescheduled_to_time=?, counts_as_used=?, check_out_time=? WHERE id=?`
     ).run(
       status,
       fbConfirmed,
@@ -93,6 +97,7 @@ export async function markAttendanceAction(
       note || null,
       rescheduledToDate || null,
       rescheduledToTime || null,
+      countsAsUsed,
       nowStr,
       existing.id
     );
@@ -115,8 +120,8 @@ export async function markAttendanceAction(
       db.prepare("UPDATE classes SET trial_pending = 0 WHERE id = ?").run(classId);
     }
     db.prepare(
-      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note, rescheduled_to_date, rescheduled_to_time)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note, rescheduled_to_date, rescheduled_to_time, counts_as_used)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       classId,
       session.userId,
@@ -129,7 +134,8 @@ export async function markAttendanceAction(
       isTrial,
       note || null,
       rescheduledToDate || null,
-      rescheduledToTime || null
+      rescheduledToTime || null,
+      countsAsUsed
     );
   }
 
@@ -159,6 +165,7 @@ export async function correctAttendanceAction(
   const rescheduledToTime =
     hasRescheduleInfo(status) ? String(formData.get("rescheduled_to_time") || "").trim() : "";
   const statedSessionNumber = readStatedSessionNumber(formData);
+  const countsAsUsed = status === "student_absent" && formData.get("counts_as_used") ? 1 : 0;
 
   if (!id || !VALID_STATUS.includes(status)) {
     return { error: "Dữ liệu không hợp lệ" };
@@ -177,7 +184,7 @@ export async function correctAttendanceAction(
     statedSessionNumber !== null ? (statedSessionNumber === 0 ? 1 : 0) : existing.is_trial;
 
   db.prepare(
-    `UPDATE attendance SET status = ?, lesson_content = ?, is_trial = ?, note = ?, rescheduled_to_date = ?, rescheduled_to_time = ? WHERE id = ?`
+    `UPDATE attendance SET status = ?, lesson_content = ?, is_trial = ?, note = ?, rescheduled_to_date = ?, rescheduled_to_time = ?, counts_as_used = ? WHERE id = ?`
   ).run(
     status,
     lessonContent || null,
@@ -185,6 +192,7 @@ export async function correctAttendanceAction(
     note || null,
     rescheduledToDate || null,
     rescheduledToTime || null,
+    countsAsUsed,
     id
   );
 

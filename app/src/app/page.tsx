@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { roleHomePath } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import { IconCheck, IconChevronRight, IconClock, IconUsers } from "@/components/icons";
+import { ContactButtons } from "@/components/contact-buttons";
 import { PricingTabs } from "./pricing-tabs";
 import { TrialForm } from "./trial-form";
 
@@ -174,6 +175,8 @@ export default async function HomePage() {
           </Link>
         </div>
       </footer>
+
+      <ContactButtons variant="floating" />
     </div>
   );
 }

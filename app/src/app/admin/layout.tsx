@@ -1,12 +1,18 @@
 import { requireRole } from "@/lib/guard";
 import { AppShell, type NavItem } from "@/components/app-shell";
-import { listClassesByDay, listAttendance, countNewTrialRequests } from "@/lib/queries";
+import {
+  listClassesByDay,
+  listAttendance,
+  countNewTrialRequests,
+  countPendingRescheduleRequests,
+} from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
 import {
   IconBell,
   IconCalendarCheck,
   IconChart,
   IconClasses,
+  IconClock,
   IconDownload,
   IconHome,
   IconPackage,
@@ -37,6 +43,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await requireRole(["admin", "coordinator"]);
 
   const newTrialRequests = countNewTrialRequests();
+  const pendingReschedules = countPendingRescheduleRequests();
 
   const links: NavItem[] = [
     { href: "/admin", label: "Tổng quan", icon: <IconHome className={ICON} /> },
@@ -61,6 +68,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       icon: <IconBell className={ICON} />,
       badge: newTrialRequests || undefined,
     },
+    {
+      href: "/admin/reschedule",
+      label: "Yêu cầu dời lịch",
+      icon: <IconClock className={ICON} />,
+      badge: pendingReschedules || undefined,
+    },
     { href: "/admin/assign", label: "Giao lớp", icon: <IconUsers className={ICON} /> },
     { href: "/admin/teachers", label: "Giáo viên", icon: <IconTeacher className={ICON} /> },
     ...(session.role === "admin"
@@ -84,6 +97,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {
             href: "/admin/staff",
             label: "Nhân sự quản lý",
+            icon: <IconUsers className={ICON} />,
+          },
+          {
+            href: "/admin/settings",
+            label: "Cài đặt trung tâm",
             icon: <IconSettings className={ICON} />,
           },
           {

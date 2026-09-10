@@ -81,6 +81,23 @@ export default function AttendanceForm({
           )}
         </div>
 
+        {status === "student_absent" && (
+          <label className="flex items-start gap-3 mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="counts_as_used"
+              defaultChecked={existing ? !!existing.counts_as_used : true}
+              className="w-4.5 h-4.5 mt-0.5 rounded border-amber-300 accent-[var(--color-amber-500)]"
+            />
+            <span className="text-sm text-ink-700">
+              Khách không báo trước — vẫn tính tiết buổi này
+              <span className="block text-xs text-ink-500 mt-0.5">
+                Bỏ tick nếu khách đã báo nghỉ trước giờ học.
+              </span>
+            </span>
+          </label>
+        )}
+
         {hasRescheduleInfo(status) && (
           <div className="grid grid-cols-2 gap-3 mt-3 rounded-2xl border border-navy-100 bg-ivory-50 p-3">
             <div>

@@ -167,6 +167,33 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Cấu hình chung của trung tâm dạng khoá-giá trị (link Facebook, số Zalo,
+    -- hạn báo hủy...). Dùng bảng thay vì hằng số trong code để chủ trung tâm
+    -- tự sửa được trong phần Cài đặt, không cần deploy lại.
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Học viên xin dời một buổi cụ thể sang giờ khác. Giờ đề xuất chỉ được
+    -- chọn trong những khung giáo viên đang rảnh, nhưng vẫn phải chờ giáo
+    -- viên/trung tâm duyệt mới thành lịch thật (ghi vào attendance).
+    CREATE TABLE IF NOT EXISTS reschedule_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      requested_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      session_date TEXT NOT NULL,
+      to_date TEXT NOT NULL,
+      to_time TEXT NOT NULL,
+      reason TEXT,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','declined','cancelled')),
+      response_note TEXT,
+      responded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      responded_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);
@@ -176,6 +203,8 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_availability_teacher ON availability(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_payments_paid_at ON payments(paid_at);
     CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
+    CREATE INDEX IF NOT EXISTS idx_reschedule_status ON reschedule_requests(status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_reschedule_class ON reschedule_requests(class_id, session_date);
   `);
 
   // CREATE TABLE IF NOT EXISTS above only helps on a brand-new database file;
@@ -201,6 +230,7 @@ function migrate() {
   ensureColumn("attendance", "rescheduled_to_date", "TEXT");
   ensureColumn("attendance", "rescheduled_to_time", "TEXT");
   ensureColumn("classes", "trial_pending", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn("attendance", "counts_as_used", "INTEGER NOT NULL DEFAULT 0");
   ensureStudentRoleSupported();
   migratePackagesToTable();
   invertAvailabilityToBusyOnce();

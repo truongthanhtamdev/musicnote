@@ -1,10 +1,20 @@
 import { db } from "./db";
-import { addMinutesToTime, nextOccurrence, mostRecentOccurrence, toISODate, todayISO, now } from "./format";
+import {
+  addDays,
+  addMinutesToTime,
+  nextOccurrence,
+  mostRecentOccurrence,
+  toISODate,
+  todayISO,
+  now,
+} from "./format";
 import {
   getSuggestedPackagePrice,
   parseLanguages,
   parseSubjects,
   NEW_CLASS_DAYS,
+  REMINDER_DAYS,
+  TIME_SLOTS,
   TRIAL_SESSION_RATE,
   type AttendanceRow,
   type BusySlotRow,
@@ -13,6 +23,9 @@ import {
   type NotificationRow,
   type PackageRow,
   type PaymentRow,
+  type CenterContact,
+  type RescheduleRequestRow,
+  type RescheduleStatus,
   type TrialRequestRow,
   type TrialRequestStatus,
   type UserRow,
@@ -183,7 +196,7 @@ export function getPackageProgressBatch(packageIds: number[]): Map<number, Packa
     .prepare(
       `SELECT p.id as packageId, p.total_sessions as total, p.started_at as startedAt, p.used_override as usedOverride,
         (SELECT COUNT(*) FROM attendance a JOIN classes c ON c.id = a.class_id
-         WHERE c.package_id = p.id AND a.status = 'completed' AND a.is_trial = 0
+         WHERE c.package_id = p.id AND (a.status = 'completed' OR a.counts_as_used = 1) AND a.is_trial = 0
            AND a.session_date >= p.started_at
            AND (p.used_override_set_at IS NULL OR a.created_at > p.used_override_set_at)) as computedUsed
        FROM packages p WHERE p.id IN (${placeholders})`
@@ -215,7 +228,8 @@ export function getPackageProgressBatch(packageIds: number[]): Map<number, Packa
  * single weekly slot — a student who comes 2-3 times a week has several
  * `classes` rows (one per weekly day/time) all pointing at the same
  * `package_id`, and usage is counted across all of them together.
- * Sessions taught ("Đã dạy") since the package's start date count against it.
+ * Sessions taught ("Đã dạy") since the package's start date count against it,
+ * cùng với buổi học viên vắng không báo trước (counts_as_used).
  */
 export function getPackageProgress(cls: ClassRow): PackageProgress | null {
   if (!cls.package_id) return null;
@@ -410,7 +424,7 @@ export function sessionNumberMap(classIds: number[]): Map<number, number> {
   const placeholders = classIds.map(() => "?").join(",");
   const rows = db
     .prepare(
-      `SELECT a.id, a.is_trial, a.status, a.created_at, COALESCE(c.package_id, -c.id) AS pool,
+      `SELECT a.id, a.is_trial, a.status, a.counts_as_used, a.created_at, COALESCE(c.package_id, -c.id) AS pool,
               p.used_override AS baseline, p.used_override_set_at AS baselineAt
        FROM attendance a
        JOIN classes c ON c.id = a.class_id
@@ -424,6 +438,7 @@ export function sessionNumberMap(classIds: number[]): Map<number, number> {
     id: number;
     is_trial: number;
     status: string;
+    counts_as_used: number;
     created_at: string;
     pool: number;
     baseline: number | null;
@@ -432,7 +447,9 @@ export function sessionNumberMap(classIds: number[]): Map<number, number> {
 
   const byPool = new Map<number, typeof rows>();
   for (const r of rows) {
-    if (r.status !== "completed" || r.is_trial) continue;
+    // Đánh số đúng theo cách gói học đếm: buổi đã dạy, cộng buổi khách vắng
+    // không báo trước (cũng trừ tiết), trừ buổi học thử.
+    if ((r.status !== "completed" && !r.counts_as_used) || r.is_trial) continue;
     const list = byPool.get(r.pool) ?? [];
     list.push(r);
     byPool.set(r.pool, list);
@@ -481,6 +498,53 @@ function timeRangesOverlap(
 }
 
 /**
+ * Mọi thứ giáo viên đã chiếm chỗ trong tuần: khung tự đánh dấu bận + lớp đang
+ * dạy. Đọc một lần rồi kiểm tra trong bộ nhớ, để quét cả lưới ngày×giờ (hàng
+ * trăm ô, như lúc gợi ý giờ dời lớp) không thành hàng trăm truy vấn.
+ */
+function loadTeacherBusyRanges(
+  teacherId: number,
+  excludeClassId?: number
+): Map<number, { start: string; end: string }[]> {
+  const byDay = new Map<number, { start: string; end: string }[]>();
+  const push = (day: number, start: string, end: string) => {
+    const list = byDay.get(day);
+    if (list) list.push({ start, end });
+    else byDay.set(day, [{ start, end }]);
+  };
+
+  for (const slot of listBusySlots(teacherId)) {
+    push(slot.day_of_week, slot.start_time, slot.end_time);
+  }
+
+  const existingClasses = db
+    .prepare(
+      `SELECT day_of_week, start_time, duration_minutes FROM classes
+       WHERE teacher_id = ? AND schedule_type = 'fixed' AND status = 'active' AND id != ?`
+    )
+    .all(teacherId, excludeClassId ?? -1) as {
+    day_of_week: number;
+    start_time: string;
+    duration_minutes: number;
+  }[];
+  for (const c of existingClasses) {
+    push(c.day_of_week, c.start_time, addMinutesToTime(c.start_time, c.duration_minutes));
+  }
+  return byDay;
+}
+
+function isRangeFree(
+  busyByDay: Map<number, { start: string; end: string }[]>,
+  dayOfWeek: number,
+  startTime: string,
+  durationMinutes: number
+): boolean {
+  const endTime = addMinutesToTime(startTime, durationMinutes);
+  const busy = busyByDay.get(dayOfWeek);
+  return !busy?.some((b) => timeRangesOverlap(startTime, endTime, b.start, b.end));
+}
+
+/**
  * Free unless the requested time range overlaps a slot the teacher marked
  * busy, or a class they already teach. `excludeClassId` leaves out one
  * class from the "already teaching" check — pass the class being edited so
@@ -493,26 +557,51 @@ export function isTeacherAvailable(
   durationMinutes: number,
   excludeClassId?: number
 ): boolean {
-  const endTime = addMinutesToTime(startTime, durationMinutes);
+  const busyByDay = loadTeacherBusyRanges(teacherId, excludeClassId);
+  return isRangeFree(busyByDay, dayOfWeek, startTime, durationMinutes);
+}
 
-  const busySlots = listBusySlots(teacherId).filter((s) => s.day_of_week === dayOfWeek);
-  if (busySlots.some((s) => timeRangesOverlap(startTime, endTime, s.start_time, s.end_time))) {
-    return false;
+export interface FreeSlotOption {
+  /** YYYY-MM-DD */
+  date: string;
+  /** HH:MM */
+  time: string;
+  dayOfWeek: number;
+}
+
+/**
+ * Những khung giờ trong `days` ngày tới mà giáo viên còn trống, để học viên
+ * chọn khi xin dời buổi — khách chỉ thấy giờ giáo viên dạy được, khỏi hẹn tới
+ * hẹn lui. Bỏ qua giờ đã qua trong hôm nay và giờ quá sát (dưới `minLeadHours`
+ * tiếng nữa), vì giáo viên cũng cần thời gian sắp xếp.
+ */
+export function listTeacherFreeSlots(opts: {
+  teacherId: number;
+  durationMinutes: number;
+  days: number;
+  excludeClassId?: number;
+  minLeadHours?: number;
+}): FreeSlotOption[] {
+  const { teacherId, durationMinutes, days, excludeClassId, minLeadHours = 2 } = opts;
+  const busyByDay = loadTeacherBusyRanges(teacherId, excludeClassId);
+  const from = now();
+  const earliest = new Date(from.getTime() + minLeadHours * 60 * 60 * 1000);
+  const out: FreeSlotOption[] = [];
+
+  for (let i = 0; i < days; i++) {
+    const date = addDays(from, i);
+    const dayOfWeek = date.getDay();
+    const iso = toISODate(date);
+    for (const time of TIME_SLOTS) {
+      const [h, m] = time.split(":").map(Number);
+      const at = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
+      if (at < earliest) continue;
+      if (isRangeFree(busyByDay, dayOfWeek, time, durationMinutes)) {
+        out.push({ date: iso, time, dayOfWeek });
+      }
+    }
   }
-
-  const existingClasses = db
-    .prepare(
-      `SELECT start_time, duration_minutes FROM classes
-       WHERE teacher_id = ? AND day_of_week = ? AND schedule_type = 'fixed' AND status = 'active'
-         AND id != ?`
-    )
-    .all(teacherId, dayOfWeek, excludeClassId ?? -1) as {
-    start_time: string;
-    duration_minutes: number;
-  }[];
-  return !existingClasses.some((c) =>
-    timeRangesOverlap(startTime, endTime, c.start_time, addMinutesToTime(c.start_time, c.duration_minutes))
-  );
+  return out;
 }
 
 export function getAttendance(classId: number, sessionDate: string): AttendanceRow | undefined {
@@ -675,5 +764,204 @@ export function countNewTrialRequests(): number {
     db.prepare("SELECT COUNT(*) as c FROM trial_requests WHERE status = 'new'").get() as {
       c: number;
     }
+  ).c;
+}
+
+// ---------------------------------------------------------------------------
+// Cấu hình trung tâm (bảng settings)
+// ---------------------------------------------------------------------------
+
+export function getSetting(key: string): string | null {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key) as
+    | { value: string }
+    | undefined;
+  return row?.value ?? null;
+}
+
+export function setSetting(key: string, value: string) {
+  db.prepare(
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+  ).run(key, value);
+}
+
+export const CONTACT_KEYS = { facebook: "contact_facebook", zalo: "contact_zalo" } as const;
+
+/**
+ * Facebook + Zalo của trung tâm, dùng cho nút liên hệ ở trang chủ và trang học
+ * viên. Chưa khai thì trả null và nút tương ứng không hiện — thà thiếu một nút
+ * còn hơn dẫn khách tới link sai.
+ */
+export function getCenterContact(): CenterContact {
+  return {
+    facebook: getSetting(CONTACT_KEYS.facebook) || null,
+    zalo: getSetting(CONTACT_KEYS.zalo) || null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Nhắc lịch + xin dời buổi
+// ---------------------------------------------------------------------------
+
+export interface UpcomingSession {
+  cls: ClassWithTeacher;
+  /** YYYY-MM-DD */
+  date: string;
+  /** HH:MM */
+  time: string;
+  /** 0 = hôm nay, 1 = ngày mai... */
+  daysAway: number;
+  /** Buổi bù đã chốt từ một buổi bị dời trước đó. */
+  isMakeup: boolean;
+  /** Đơn xin dời buổi này đang chờ duyệt, nếu có. */
+  pendingRequest: RescheduleRequestRow | null;
+}
+
+/**
+ * Các buổi sắp tới của học viên trong `days` ngày tới, để nhắc lịch ngay đầu
+ * trang. Gồm buổi cố định hàng tuần (trừ những buổi đã điểm danh rồi) và buổi
+ * học bù đã chốt. Lớp linh động không có lịch cố định nên không nhắc được.
+ */
+export function listUpcomingSessionsForStudent(
+  studentUserId: number,
+  days = REMINDER_DAYS
+): UpcomingSession[] {
+  const classes = listClassesForStudent(studentUserId).filter((c) => c.status === "active");
+  if (classes.length === 0) return [];
+
+  const classIds = classes.map((c) => c.id);
+  const placeholders = classIds.map(() => "?").join(",");
+  const today = now();
+  const todayStr = toISODate(today);
+  const lastStr = toISODate(addDays(today, days - 1));
+
+  const taken = new Set(
+    (
+      db
+        .prepare(
+          `SELECT class_id, session_date FROM attendance
+           WHERE class_id IN (${placeholders}) AND session_date >= ?`
+        )
+        .all(...classIds, todayStr) as { class_id: number; session_date: string }[]
+    ).map((a) => `${a.class_id}|${a.session_date}`)
+  );
+
+  const pendingByKey = new Map<string, RescheduleRequestRow>();
+  for (const r of db
+    .prepare(
+      `SELECT * FROM reschedule_requests
+       WHERE class_id IN (${placeholders}) AND status = 'pending'`
+    )
+    .all(...classIds) as RescheduleRequestRow[]) {
+    pendingByKey.set(`${r.class_id}|${r.session_date}`, r);
+  }
+
+  const out: UpcomingSession[] = [];
+
+  for (const cls of classes) {
+    if (cls.schedule_type !== "fixed") continue;
+    for (let i = 0; i < days; i++) {
+      const date = addDays(today, i);
+      if (date.getDay() !== cls.day_of_week) continue;
+      const iso = toISODate(date);
+      if (taken.has(`${cls.id}|${iso}`)) continue;
+      out.push({
+        cls,
+        date: iso,
+        time: cls.start_time,
+        daysAway: i,
+        isMakeup: false,
+        pendingRequest: pendingByKey.get(`${cls.id}|${iso}`) ?? null,
+      });
+    }
+  }
+
+  // Buổi bù đã chốt: nằm trong chính bản ghi điểm danh của buổi bị dời.
+  const makeups = db
+    .prepare(
+      `SELECT class_id, rescheduled_to_date as date, rescheduled_to_time as time FROM attendance
+       WHERE class_id IN (${placeholders}) AND rescheduled_to_date IS NOT NULL
+         AND rescheduled_to_date >= ? AND rescheduled_to_date <= ?`
+    )
+    .all(...classIds, todayStr, lastStr) as {
+    class_id: number;
+    date: string;
+    time: string | null;
+  }[];
+  const byId = new Map(classes.map((c) => [c.id, c]));
+  for (const m of makeups) {
+    const cls = byId.get(m.class_id);
+    if (!cls) continue;
+    out.push({
+      cls,
+      date: m.date,
+      time: m.time || cls.start_time,
+      daysAway: Math.round(
+        (new Date(`${m.date}T00:00:00`).getTime() -
+          new Date(`${todayStr}T00:00:00`).getTime()) /
+          86400000
+      ),
+      isMakeup: true,
+      pendingRequest: null,
+    });
+  }
+
+  return out.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+
+export interface RescheduleRequestWithContext extends RescheduleRequestRow {
+  student_name: string;
+  guardian_name: string | null;
+  subject: string;
+  teacher_id: number | null;
+  teacher_name: string | null;
+  duration_minutes: number;
+  requester_name: string;
+}
+
+export function listRescheduleRequests(filter?: {
+  teacherId?: number;
+  studentUserId?: number;
+  status?: RescheduleStatus;
+  limit?: number;
+}): RescheduleRequestWithContext[] {
+  const clauses: string[] = [];
+  const params: Record<string, unknown> = {};
+  if (filter?.teacherId) {
+    clauses.push("c.teacher_id = @teacherId");
+    params.teacherId = filter.teacherId;
+  }
+  if (filter?.studentUserId) {
+    clauses.push("r.requested_by = @studentUserId");
+    params.studentUserId = filter.studentUserId;
+  }
+  if (filter?.status) {
+    clauses.push("r.status = @status");
+    params.status = filter.status;
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const limit = filter?.limit ? `LIMIT ${Number(filter.limit)}` : "";
+  return db
+    .prepare(
+      `SELECT r.*, c.student_name, c.guardian_name, c.subject, c.teacher_id, c.duration_minutes,
+              t.name as teacher_name, u.name as requester_name
+       FROM reschedule_requests r
+       JOIN classes c ON c.id = r.class_id
+       LEFT JOIN users t ON t.id = c.teacher_id
+       JOIN users u ON u.id = r.requested_by
+       ${where}
+       ORDER BY r.status = 'pending' DESC, r.created_at DESC ${limit}`
+    )
+    .all(params) as RescheduleRequestWithContext[];
+}
+
+/** Số đơn xin dời buổi đang chờ duyệt — hiện thành badge ở menu. */
+export function countPendingRescheduleRequests(teacherId?: number): number {
+  const sql = teacherId
+    ? `SELECT COUNT(*) as c FROM reschedule_requests r JOIN classes c ON c.id = r.class_id
+       WHERE r.status = 'pending' AND c.teacher_id = ?`
+    : "SELECT COUNT(*) as c FROM reschedule_requests WHERE status = 'pending'";
+  return (
+    (teacherId ? db.prepare(sql).get(teacherId) : db.prepare(sql).get()) as { c: number }
   ).c;
 }
