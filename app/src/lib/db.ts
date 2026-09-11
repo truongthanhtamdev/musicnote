@@ -245,6 +245,11 @@ function migrate() {
   ensureColumn("classes", "trial_pending", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("attendance", "counts_as_used", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("attendance", "late_checkin", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn("classes", "stage", "TEXT NOT NULL DEFAULT 'studying'");
+  ensureColumn("classes", "paused_until", "TEXT");
+  ensureColumn("packages", "bonus_sessions", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn("packages", "course_count", "INTEGER NOT NULL DEFAULT 1");
+  backfillClassStages();
   seedDefaultSettings();
   ensureStudentRoleSupported();
   migratePackagesToTable();
@@ -261,6 +266,17 @@ function seedDefaultSettings() {
   ];
   const stmt = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
   for (const [key, value] of defaults) stmt.run(key, value);
+}
+
+// Lớp có sẵn từ trước khi có cột `stage` đều nhận giá trị mặc định "studying",
+// kể cả lớp đang tạm dừng hay đã kết thúc. Suy ngược một lần từ `status` để
+// bảng trạng thái không hiện sai ngay lần mở đầu tiên. Chỉ chạy một lần, và
+// chỉ đụng tới những dòng còn đúng y mặc định.
+function backfillClassStages() {
+  runOnce("backfill_class_stages", () => {
+    db.prepare("UPDATE classes SET stage = 'paused' WHERE status = 'paused' AND stage = 'studying'").run();
+    db.prepare("UPDATE classes SET stage = 'done' WHERE status = 'ended' AND stage = 'studying'").run();
+  });
 }
 
 // Packages used to live as two columns directly on `classes`
@@ -297,12 +313,20 @@ function migratePackagesToTable() {
 // every previously-unmarked (implicitly busy) slot gets an explicit busy
 // row. Teachers who never touched the old grid are left with zero rows,
 // which now correctly means "free all week" instead of "busy all week".
-// Runs exactly once, guarded by schema_migrations.
-function invertAvailabilityToBusyOnce() {
-  const name = "invert_availability_to_busy";
+/**
+ * Chạy `fn` đúng một lần trong đời của database, ghi dấu vào schema_migrations
+ * trong cùng một transaction để lần chạy dở dang không bị tính là đã xong.
+ */
+function runOnce(name: string, fn: () => void) {
   if (db.prepare("SELECT 1 FROM schema_migrations WHERE name = ?").get(name)) return;
+  db.transaction(() => {
+    fn();
+    db.prepare("INSERT INTO schema_migrations (name) VALUES (?)").run(name);
+  })();
+}
 
-  const run = db.transaction(() => {
+function invertAvailabilityToBusyOnce() {
+  runOnce("invert_availability_to_busy", () => {
     const wasFreeByTeacher = new Map<number, Set<string>>();
     for (const r of db
       .prepare("SELECT teacher_id, day_of_week, start_time FROM availability")
@@ -325,9 +349,7 @@ function invertAvailabilityToBusyOnce() {
         }
       }
     }
-    db.prepare("INSERT INTO schema_migrations (name) VALUES (?)").run(name);
   });
-  run();
 }
 
 function ensureColumn(table: string, column: string, definition: string) {

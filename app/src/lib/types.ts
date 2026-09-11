@@ -52,12 +52,20 @@ export interface ClassRow {
   notes: string | null;
   /** 1 while the class is still waiting on its first session, which counts as the trial ("buổi 0"). */
   trial_pending: number;
+  /** Trạng thái nghiệp vụ chi tiết (xem CLASS_STAGES); `status` được suy ra từ đây. */
+  stage: ClassStage;
+  /** Ngày dự kiến học lại, chỉ có nghĩa khi stage đang là một trạng thái Tạm OFF. */
+  paused_until: string | null;
   created_at: string;
 }
 
 export interface PackageRow {
   id: number;
   total_sessions: number;
+  /** Số buổi trung tâm tặng thêm — cộng vào tổng nhưng khách không trả tiền. */
+  bonus_sessions: number;
+  /** Khách đã đăng ký bao nhiêu khóa tính tới gói này (khóa 1, khóa 2...). */
+  course_count: number;
   started_at: string;
   /** A manually-entered baseline for "sessions used"; null = use the plain computed count. */
   used_override: number | null;
@@ -427,6 +435,81 @@ export const SCHEDULE_TYPE_LABELS: Record<ClassScheduleType, string> = {
   fixed: "Cố định hàng tuần",
   flexible: "Linh động (hẹn từng buổi)",
 };
+
+/**
+ * Trạng thái nghiệp vụ của lớp theo đúng bảng màu trung tâm đang dùng tay.
+ * Chi tiết hơn `status` rất nhiều vì phần lớn nói về chuyện học phí.
+ *
+ * `status` (Đang học / Tạm dừng / Đã kết thúc) vẫn giữ nguyên và là thứ duy
+ * nhất chi phối lịch dạy, điểm danh, lương — mỗi stage chỉ khai nó thuộc nhóm
+ * nào rồi hệ thống tự đặt `status` theo. Nhờ vậy sau này thêm/đổi tên một
+ * trạng thái nghiệp vụ không bao giờ làm hỏng phần tính tiết hay chấm công.
+ */
+export type ClassStage =
+  | "trial"
+  | "trial_awaiting_fee"
+  | "dropped"
+  | "new_course_paid"
+  | "studying_unpaid"
+  | "studying_partial"
+  | "studying"
+  | "done"
+  | "paused"
+  | "paused_partial"
+  | "new_course_announced"
+  | "new_course_awaiting"
+  | "study_later"
+  | "not_studying";
+
+export interface ClassStageInfo {
+  value: ClassStage;
+  label: string;
+  /** Lớp này có đang chạy lịch không — nguồn để suy ra `status`. */
+  status: ClassStatus;
+  /** Lớp đang nghỉ tạm, cần khai ngày quay lại. */
+  paused: boolean;
+  /** Màu nền/chữ đúng như bảng màu trung tâm đang dùng. */
+  className: string;
+}
+
+export const CLASS_STAGES: ClassStageInfo[] = [
+  { value: "trial", label: "Học thử", status: "active", paused: false, className: "bg-[#0f9b8e] text-white" },
+  { value: "trial_awaiting_fee", label: "Đã học thử, chờ đóng HP", status: "active", paused: false, className: "bg-[#7ec8e3] text-ink-900" },
+  { value: "dropped", label: "Rớt lớp", status: "ended", paused: false, className: "bg-[#e81123] text-white font-bold" },
+  { value: "new_course_paid", label: "Đã đóng HP khóa mới", status: "active", paused: false, className: "bg-[#7bc043] text-ink-900" },
+  { value: "studying_unpaid", label: "Đang học, chưa đóng HP", status: "active", paused: false, className: "bg-[#ffe600] text-ink-900" },
+  { value: "studying_partial", label: "Đang học, chưa hoàn thành HP", status: "active", paused: false, className: "bg-[#ff9a2e] text-ink-900" },
+  { value: "studying", label: "Đang học", status: "active", paused: false, className: "bg-white text-ink-900 border border-navy-200" },
+  { value: "done", label: "DONE", status: "ended", paused: false, className: "bg-white text-[#e81123] font-bold border border-navy-200" },
+  { value: "paused", label: "Tạm OFF", status: "paused", paused: true, className: "bg-[#9a9a9a] text-white italic" },
+  { value: "paused_partial", label: "Tạm OFF – Chưa hoàn thành HP", status: "paused", paused: true, className: "bg-[#9a9a9a] text-white italic" },
+  { value: "new_course_announced", label: "Báo HP khóa mới", status: "active", paused: false, className: "bg-[#5bc8f5] text-ink-900" },
+  { value: "new_course_awaiting", label: "Chờ đóng HP (khóa mới)", status: "active", paused: false, className: "bg-[#dda0dd] text-ink-900" },
+  { value: "study_later", label: "Hẹn học sau", status: "paused", paused: true, className: "bg-[#111111] text-white" },
+  { value: "not_studying", label: "Không học", status: "ended", paused: false, className: "bg-[#111111] text-white" },
+];
+
+const STAGE_BY_VALUE = new Map(CLASS_STAGES.map((s) => [s.value, s]));
+
+/** Thông tin của một stage; giá trị lạ (dữ liệu cũ) thì coi như "Đang học". */
+export function classStage(value: string): ClassStageInfo {
+  return STAGE_BY_VALUE.get(value as ClassStage) ?? STAGE_BY_VALUE.get("studying")!;
+}
+
+/** `status` suy ra từ stage — chỉ dùng ở chỗ ghi dữ liệu, không đoán lại khi đọc. */
+export function statusForStage(value: string): ClassStatus {
+  return classStage(value).status;
+}
+
+/** Stage mặc định khi chưa khai, suy ngược từ status cũ. */
+export function defaultStageForStatus(status: ClassStatus): ClassStage {
+  if (status === "paused") return "paused";
+  if (status === "ended") return "done";
+  return "studying";
+}
+
+/** Báo trước bấy nhiêu ngày khi lớp Tạm OFF sắp tới hạn quay lại. */
+export const PAUSE_RETURN_WARNING_DAYS = 7;
 
 export const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
   active: "Đang học",

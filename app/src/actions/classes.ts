@@ -4,8 +4,13 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole, ForbiddenError } from "@/lib/guard";
 import { normalizeFacebookUrl, todayISO } from "@/lib/format";
-import { notifyUser, getClass, getPackageProgressBatch } from "@/lib/queries";
-import { formatClassSchedule } from "@/lib/types";
+import {
+  notifyUser,
+  getClass,
+  getPackageProgressBatch,
+  isTeacherAvailable,
+} from "@/lib/queries";
+import { classStage, formatClassSchedule, type ClassRow } from "@/lib/types";
 import type { FormState } from "./teachers";
 
 function notifyTeacherOfAssignment(params: {
@@ -20,7 +25,11 @@ function notifyTeacherOfAssignment(params: {
   // the trial session — only reached via the center-assigns-a-teacher flow,
   // never a teacher's own self-add, so backfilled old classes never get
   // flagged as trials.
-  db.prepare("UPDATE classes SET trial_pending = 1 WHERE id = ?").run(params.classId);
+  // Lớp trung tâm vừa giao thì buổi đầu là buổi học thử, nên trạng thái nghiệp
+  // vụ cũng bắt đầu ở "Học thử" — trừ khi giáo vụ đã đặt trạng thái khác.
+  db.prepare(
+    "UPDATE classes SET trial_pending = 1, stage = CASE WHEN stage = 'studying' THEN 'trial' ELSE stage END WHERE id = ?"
+  ).run(params.classId);
   const scheduleNote =
     params.schedules.length > 1 ? params.schedules.join(", ") : params.schedules[0];
   notifyUser(
@@ -143,6 +152,113 @@ export async function createClassAction(
   return { success: true };
 }
 
+/**
+ * Thêm một buổi/tuần nữa cho lớp đang có (học viên học 2-3 buổi/tuần).
+ *
+ * Mỗi buổi trong tuần vẫn là một dòng `classes` riêng dùng chung `package_id`
+ * — đúng mô hình lúc tạo lớp — nên tiến độ gói, học phí và điểm danh gộp
+ * chung mà không cần bảng nào khác. Buổi mới chép toàn bộ thông tin học viên
+ * và giáo viên từ buổi gốc, chỉ khác ngày/giờ.
+ */
+export async function addWeeklySlotAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const session = await assertRole(["admin", "coordinator", "teacher"]);
+
+  const classId = Number(formData.get("class_id"));
+  const dayOfWeek = Number(formData.get("day_of_week"));
+  const startTime = String(formData.get("start_time") || "").trim();
+  const durationMinutes = Number(formData.get("duration_minutes") || 60) || 60;
+
+  if (!classId || Number.isNaN(dayOfWeek) || !startTime) {
+    return { error: "Vui lòng chọn ngày và giờ học" };
+  }
+
+  const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(classId) as ClassRow | undefined;
+  if (!cls) return { error: "Không tìm thấy lớp học" };
+  if (session.role === "teacher" && cls.teacher_id !== session.userId) {
+    return { error: "Bạn không phụ trách lớp này" };
+  }
+  if (cls.schedule_type !== "fixed") {
+    return { error: "Lớp lịch linh động hẹn từng buổi, không có lịch cố định để thêm" };
+  }
+
+  const siblings = db
+    .prepare(
+      "SELECT day_of_week, start_time FROM classes WHERE id = ? OR (package_id IS NOT NULL AND package_id = ?)"
+    )
+    .all(classId, cls.package_id) as { day_of_week: number; start_time: string }[];
+  if (siblings.some((s) => s.day_of_week === dayOfWeek && s.start_time === startTime)) {
+    return { error: "Buổi này đã có trong lịch của lớp" };
+  }
+  if (cls.teacher_id && !isTeacherAvailable(cls.teacher_id, dayOfWeek, startTime, durationMinutes)) {
+    return { error: "Giáo viên đã bận vào giờ này" };
+  }
+
+  // Buổi thêm sau không phải buổi học thử của lớp, nên trial_pending để 0.
+  db.prepare(
+    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, student_user_id, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, status, stage, paused_until)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'fixed', ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    cls.student_name,
+    cls.student_phone,
+    cls.guardian_name,
+    cls.facebook_url,
+    cls.student_user_id,
+    cls.level,
+    cls.subject,
+    cls.language,
+    cls.source,
+    cls.package_id,
+    dayOfWeek,
+    startTime,
+    durationMinutes,
+    cls.teacher_id,
+    cls.notes,
+    cls.status,
+    cls.stage,
+    cls.paused_until
+  );
+
+  revalidateClassViews(classId);
+  return { success: true };
+}
+
+/** Bỏ một buổi/tuần khỏi lớp. Buổi đã có điểm danh thì giữ lại để không mất lịch sử. */
+export async function removeWeeklySlotAction(slotClassId: number) {
+  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(slotClassId) as
+    | ClassRow
+    | undefined;
+  if (!cls) throw new ForbiddenError("Không tìm thấy buổi học này");
+  if (session.role === "teacher" && cls.teacher_id !== session.userId) {
+    throw new ForbiddenError();
+  }
+
+  const attended = db
+    .prepare("SELECT COUNT(*) as c FROM attendance WHERE class_id = ?")
+    .get(slotClassId) as { c: number };
+  if (attended.c > 0) {
+    throw new ForbiddenError(
+      "Buổi này đã có lịch sử điểm danh — đổi trạng thái lớp thay vì xoá để giữ lịch sử"
+    );
+  }
+
+  db.prepare("DELETE FROM classes WHERE id = ?").run(slotClassId);
+  revalidateClassViews(slotClassId);
+}
+
+/** Mọi trang đổi theo khi lịch tuần của một lớp thay đổi. */
+function revalidateClassViews(classId: number) {
+  revalidatePath("/admin/classes");
+  revalidatePath(`/admin/classes/${classId}`);
+  revalidatePath("/admin/assign");
+  revalidatePath("/teacher");
+  revalidatePath("/teacher/schedule");
+  revalidatePath("/student");
+}
+
 export async function updateClassAction(
   _prev: FormState,
   formData: FormData
@@ -248,6 +364,8 @@ export async function saveClassPackageAction(
 
   const classId = Number(formData.get("class_id"));
   const totalSessions = Number(formData.get("total_sessions") || 0);
+  const bonusSessions = Number(formData.get("bonus_sessions") || 0);
+  const courseCount = Number(formData.get("course_count") || 1);
   const usedRaw = String(formData.get("used_sessions") || "").trim();
   const amount = Number(formData.get("amount") || 0);
   const paidAt = String(formData.get("paid_at") || "");
@@ -256,9 +374,17 @@ export async function saveClassPackageAction(
   if (!classId || !Number.isInteger(totalSessions) || totalSessions <= 0) {
     return { error: "Vui lòng nhập số buổi đã đăng ký" };
   }
+  if (!Number.isInteger(bonusSessions) || bonusSessions < 0) {
+    return { error: "Số buổi tặng không hợp lệ" };
+  }
+  if (!Number.isInteger(courseCount) || courseCount < 1) {
+    return { error: "Số khóa đã đăng ký phải từ 1 trở lên" };
+  }
+  // Buổi tặng cũng là buổi được học, nên mốc "đã học" tính trên tổng.
+  const totalAvailable = totalSessions + bonusSessions;
   const used = usedRaw === "" ? 0 : Number(usedRaw);
-  if (!Number.isInteger(used) || used < 0 || used > totalSessions) {
-    return { error: `Số buổi đã học phải từ 0 đến ${totalSessions}` };
+  if (!Number.isInteger(used) || used < 0 || used > totalAvailable) {
+    return { error: `Số buổi đã học phải từ 0 đến ${totalAvailable}` };
   }
   if (amount < 0 || Number.isNaN(amount)) return { error: "Số tiền không hợp lệ" };
   if (amount > 0) {
@@ -274,11 +400,15 @@ export async function saveClassPackageAction(
   db.transaction(() => {
     let packageId = cls.package_id;
     if (packageId) {
-      db.prepare("UPDATE packages SET total_sessions = ? WHERE id = ?").run(totalSessions, packageId);
+      db.prepare(
+        "UPDATE packages SET total_sessions = ?, bonus_sessions = ?, course_count = ? WHERE id = ?"
+      ).run(totalSessions, bonusSessions, courseCount, packageId);
     } else {
       const info = db
-        .prepare("INSERT INTO packages (total_sessions, started_at) VALUES (?, ?)")
-        .run(totalSessions, todayISO());
+        .prepare(
+          "INSERT INTO packages (total_sessions, bonus_sessions, course_count, started_at) VALUES (?, ?, ?, ?)"
+        )
+        .run(totalSessions, bonusSessions, courseCount, todayISO());
       packageId = Number(info.lastInsertRowid);
       db.prepare("UPDATE classes SET package_id = ? WHERE id = ?").run(packageId, classId);
     }
@@ -380,14 +510,33 @@ export async function assignTeacherAction(classId: number, teacherId: number | n
   revalidatePath(`/admin/classes/${classId}`);
 }
 
-export async function setClassStatusAction(
+/**
+ * Đổi trạng thái nghiệp vụ của lớp. `status` (Đang học/Tạm dừng/Đã kết thúc)
+ * luôn được đặt theo stage chứ không nhận riêng, nên lịch dạy và điểm danh
+ * không bao giờ lệch với trạng thái đang hiện trên màn hình.
+ *
+ * Ngày học lại chỉ giữ khi stage đúng là một trạng thái Tạm OFF — chuyển sang
+ * trạng thái khác thì xoá luôn, khỏi còn cảnh báo mồ côi.
+ */
+export async function setClassStageAction(
   classId: number,
-  status: "active" | "paused" | "ended"
+  stage: string,
+  pausedUntil?: string | null
 ) {
   await assertRole(["admin", "coordinator"]);
-  db.prepare("UPDATE classes SET status = ? WHERE id = ?").run(status, classId);
+  const info = classStage(stage);
+  db.prepare("UPDATE classes SET stage = ?, status = ?, paused_until = ? WHERE id = ?").run(
+    info.value,
+    info.status,
+    info.paused ? pausedUntil || null : null,
+    classId
+  );
   revalidatePath("/admin/classes");
   revalidatePath(`/admin/classes/${classId}`);
+  revalidatePath("/admin");
+  revalidatePath("/teacher");
+  revalidatePath("/teacher/schedule");
+  revalidatePath("/student");
 }
 
 export async function deleteClassAction(classId: number) {

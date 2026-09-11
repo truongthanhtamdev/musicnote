@@ -2,11 +2,8 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  assignTeacherAction,
-  setClassStatusAction,
-  deleteClassAction,
-} from "@/actions/classes";
+import { assignTeacherAction, deleteClassAction } from "@/actions/classes";
+import ClassStagePicker from "./stage-picker";
 
 interface TeacherOption {
   id: number;
@@ -16,13 +13,15 @@ interface TeacherOption {
 
 export default function ClassActions({
   classId,
-  status,
+  stage,
+  pausedUntil,
   teacherId,
   teachers,
   canDelete,
 }: {
   classId: number;
-  status: string;
+  stage: string;
+  pausedUntil: string | null;
   teacherId: number | null;
   teachers: TeacherOption[];
   canDelete: boolean;
@@ -50,33 +49,7 @@ export default function ClassActions({
         ))}
       </select>
 
-      {status === "active" ? (
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => startTransition(() => setClassStatusAction(classId, "paused"))}
-          className="text-sm border border-amber-200 text-amber-700 hover:bg-amber-50 rounded-lg px-3 py-1.5"
-        >
-          Tạm dừng
-        </button>
-      ) : (
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => startTransition(() => setClassStatusAction(classId, "active"))}
-          className="text-sm border border-mint-100 text-mint-700 hover:bg-mint-50 rounded-lg px-3 py-1.5"
-        >
-          Kích hoạt
-        </button>
-      )}
-      <button
-        type="button"
-        disabled={isPending}
-        onClick={() => startTransition(() => setClassStatusAction(classId, "ended"))}
-        className="text-sm border border-navy-200 text-ink-600 hover:bg-ivory-100 rounded-lg px-3 py-1.5"
-      >
-        Kết thúc lớp
-      </button>
+      <ClassStagePicker classId={classId} stage={stage} pausedUntil={pausedUntil} />
       {canDelete && (
         <button
           type="button"

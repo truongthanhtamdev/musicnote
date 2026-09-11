@@ -15,6 +15,7 @@ import {
   parseSubjects,
   LATE_CHECKIN_FREE_QUOTA,
   MISSED_CHECKIN_DAYS,
+  PAUSE_RETURN_WARNING_DAYS,
   NEW_CLASS_DAYS,
   REMINDER_DAYS,
   TIME_SLOTS,
@@ -154,7 +155,14 @@ export function listClassesForStudent(studentUserId: number): ClassWithTeacher[]
 
 export interface PackageProgress {
   packageId: number;
+  /** Tổng tiết được học = số buổi đã đăng ký + số buổi tặng. */
   total: number;
+  /** Số buổi khách đăng ký (chưa cộng buổi tặng). */
+  registered: number;
+  /** Số buổi trung tâm tặng thêm. */
+  bonus: number;
+  /** Khách đã đăng ký tới khóa thứ mấy. */
+  courseCount: number;
   used: number;
   remaining: number;
   startedAt: string;
@@ -198,7 +206,8 @@ export function getPackageProgressBatch(packageIds: number[]): Map<number, Packa
   // to the count even though it may already be reflected in the baseline.
   const rows = db
     .prepare(
-      `SELECT p.id as packageId, p.total_sessions as total, p.started_at as startedAt, p.used_override as usedOverride,
+      `SELECT p.id as packageId, p.total_sessions as registered, p.bonus_sessions as bonus,
+              p.course_count as courseCount, p.started_at as startedAt, p.used_override as usedOverride,
         (SELECT COUNT(*) FROM attendance a JOIN classes c ON c.id = a.class_id
          WHERE c.package_id = p.id AND (a.status = 'completed' OR a.counts_as_used = 1) AND a.is_trial = 0
            AND a.session_date >= p.started_at
@@ -207,18 +216,24 @@ export function getPackageProgressBatch(packageIds: number[]): Map<number, Packa
     )
     .all(...packageIds) as {
     packageId: number;
-    total: number;
+    registered: number;
+    bonus: number;
+    courseCount: number;
     startedAt: string;
     usedOverride: number | null;
     computedUsed: number;
   }[];
   for (const r of rows) {
     const used = r.usedOverride != null ? r.usedOverride + r.computedUsed : r.computedUsed;
+    const total = r.registered + r.bonus;
     map.set(r.packageId, {
       packageId: r.packageId,
-      total: r.total,
+      total,
+      registered: r.registered,
+      bonus: r.bonus,
+      courseCount: r.courseCount,
       used,
-      remaining: Math.max(0, r.total - used),
+      remaining: Math.max(0, total - used),
       startedAt: r.startedAt,
       isManuallyAdjusted: r.usedOverride != null,
       sharedWith: [],
@@ -1131,4 +1146,51 @@ export function countMissedCheckinsByTeacher(days?: number): Map<number, number>
     counts.set(m.cls.teacher_id, (counts.get(m.cls.teacher_id) ?? 0) + 1);
   }
   return counts;
+}
+
+export interface PausedClassDue extends ClassWithTeacher {
+  /** Còn bao nhiêu ngày tới ngày hẹn học lại; số âm là đã quá hạn. */
+  daysUntilReturn: number;
+}
+
+/**
+ * Lớp đang Tạm OFF mà ngày hẹn học lại đã tới gần (hoặc đã qua) — giáo vụ cần
+ * gọi khách chốt lịch trước khi lớp rơi vào quên lãng. Lớp Tạm OFF chưa khai
+ * ngày học lại thì không nhắc được, nên không tính vào đây.
+ */
+export function listPausedClassesDue(withinDays = PAUSE_RETURN_WARNING_DAYS): PausedClassDue[] {
+  const today = now();
+  const todayStr = toISODate(today);
+  const limit = toISODate(addDays(today, withinDays));
+
+  const rows = db
+    .prepare(
+      `SELECT c.*, u.name as teacher_name
+       FROM classes c LEFT JOIN users u ON u.id = c.teacher_id
+       WHERE c.status = 'paused' AND c.paused_until IS NOT NULL AND c.paused_until != ''
+         AND c.paused_until <= ?
+       ORDER BY c.paused_until`
+    )
+    .all(limit) as ClassWithTeacher[];
+
+  return rows.map((c) => ({
+    ...c,
+    daysUntilReturn: Math.round(
+      (new Date(`${c.paused_until}T00:00:00`).getTime() -
+        new Date(`${todayStr}T00:00:00`).getTime()) /
+        86400000
+    ),
+  }));
+}
+
+/**
+ * Các buổi trong tuần của cùng một lớp — mọi dòng `classes` dùng chung
+ * `package_id`, kể cả chính nó. Lớp chưa đăng ký gói thì chỉ có một buổi, vì
+ * chưa có gì để nhóm chúng lại.
+ */
+export function listPackageSlots(cls: ClassRow): ClassRow[] {
+  if (!cls.package_id) return [cls];
+  return db
+    .prepare("SELECT * FROM classes WHERE package_id = ? ORDER BY day_of_week, start_time")
+    .all(cls.package_id) as ClassRow[];
 }

@@ -6,7 +6,7 @@ import {
   annotateSchedule,
   getTuitionStatusForClasses,
 } from "@/lib/queries";
-import { formatClassSchedule } from "@/lib/types";
+import { CLASS_STAGES, formatClassSchedule } from "@/lib/types";
 import { formatVND } from "@/lib/format";
 import { IconAlert, IconClasses, IconSearch, IconWallet, SubjectIcon } from "@/components/icons";
 import {
@@ -40,7 +40,12 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
   const classes = all
     .filter((c) => {
       if (q && !c.student_name.toLowerCase().includes(q)) return false;
-      if (sp.status && c.status !== sp.status) return false;
+      // Bộ lọc nhận cả nhóm ("group:active") lẫn từng trạng thái chi tiết.
+      if (sp.status?.startsWith("group:")) {
+        if (c.status !== sp.status.slice(6)) return false;
+      } else if (sp.status && c.stage !== sp.status) {
+        return false;
+      }
       if (sp.teacherId && String(c.teacher_id ?? "") !== sp.teacherId) return false;
       if (sp.tuition === "due" && !tuition.get(c.id)?.needsFollowUp) return false;
       return true;
@@ -128,9 +133,18 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
             aria-label="Lọc theo trạng thái"
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="active">Đang học</option>
-            <option value="paused">Tạm dừng</option>
-            <option value="ended">Đã kết thúc</option>
+            <optgroup label="Nhóm">
+              <option value="group:active">Đang chạy lịch</option>
+              <option value="group:paused">Tạm dừng</option>
+              <option value="group:ended">Đã kết thúc</option>
+            </optgroup>
+            <optgroup label="Chi tiết">
+              {CLASS_STAGES.map((st) => (
+                <option key={st.value} value={st.value}>
+                  {st.label}
+                </option>
+              ))}
+            </optgroup>
           </select>
           <select
             name="teacherId"
@@ -271,7 +285,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                       {c.teacher_name || <StatusChip tone="amber">Chưa xếp GV</StatusChip>}
                     </td>
                     <td className="px-4 py-3">
-                      <ClassStatusBadge status={c.status} />
+                      <ClassStatusBadge stage={c.stage} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <DetailLink href={`/admin/classes/${c.id}`} />

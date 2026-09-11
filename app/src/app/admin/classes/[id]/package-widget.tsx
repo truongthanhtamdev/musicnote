@@ -33,7 +33,11 @@ export default function PackageWidget({
   const [isPending, startTransition] = useTransition();
   const [state, formAction, saving] = useActionState(saveClassPackageAction, initialState);
   const [formKey, setFormKey] = useState(0);
-  const [total, setTotal] = useState(progress ? String(progress.total) : "");
+  // Ô này là số buổi khách TRẢ TIỀN, không gồm buổi tặng — nên đọc `registered`
+  // chứ không phải `total` (total = registered + bonus).
+  const [total, setTotal] = useState(progress ? String(progress.registered) : "");
+  const [bonus, setBonus] = useState(progress ? String(progress.bonus) : "0");
+  const [courseCount, setCourseCount] = useState(progress ? String(progress.courseCount) : "1");
   const [used, setUsed] = useState(progress ? String(progress.used) : "0");
   const [amount, setAmount] = useState("");
 
@@ -44,7 +48,9 @@ export default function PackageWidget({
   if (state !== handledState) {
     setHandledState(state);
     if (state.success) {
-      setTotal(progress ? String(progress.total) : total);
+      setTotal(progress ? String(progress.registered) : total);
+      setBonus(progress ? String(progress.bonus) : bonus);
+      setCourseCount(progress ? String(progress.courseCount) : courseCount);
       setUsed(progress ? String(progress.used) : used);
       setAmount("");
       setFormKey((k) => k + 1);
@@ -146,6 +152,48 @@ export default function PackageWidget({
             />
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-ink-500 mb-1" htmlFor="pk-bonus">
+              Số buổi tặng
+            </label>
+            <input
+              id="pk-bonus"
+              name="bonus_sessions"
+              type="number"
+              min={0}
+              value={bonus}
+              onChange={(e) => setBonus(e.target.value)}
+              placeholder="0"
+              className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm tabular"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-ink-500 mb-1" htmlFor="pk-courses">
+              Số khóa đã đăng ký
+            </label>
+            <input
+              id="pk-courses"
+              name="course_count"
+              type="number"
+              min={1}
+              value={courseCount}
+              onChange={(e) => setCourseCount(e.target.value)}
+              className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm tabular"
+            />
+          </div>
+        </div>
+
+        {Number(bonus) > 0 && (
+          <p className="text-xs text-ink-500">
+            Tổng được học:{" "}
+            <span className="font-semibold text-ink-900 tabular">
+              {Number(total || 0) + Number(bonus || 0)} tiết
+            </span>{" "}
+            ({total || 0} đăng ký + {bonus} tặng). Học phí chỉ tính trên số buổi đăng ký.
+          </p>
+        )}
 
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-ink-400">Chọn nhanh:</span>

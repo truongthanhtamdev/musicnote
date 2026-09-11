@@ -9,6 +9,7 @@ import {
   listStudents,
   getPackageProgress,
   listSiblingClasses,
+  listPackageSlots,
   sessionNumberMap,
   getTuitionStatusForClasses,
 } from "@/lib/queries";
@@ -26,6 +27,7 @@ import {
   Th,
 } from "@/components/ui";
 import EditClassForm from "./edit-class-form";
+import WeeklySlots from "./weekly-slots";
 import ClassActions from "./class-actions";
 import PackageWidget from "./package-widget";
 import StudentLinkWidget from "./student-link-widget";
@@ -50,6 +52,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   const students = listStudents();
   const progress = getPackageProgress(cls);
   const tuition = getTuitionStatusForClasses([cls]).get(cls.id) ?? null;
+  const weeklySlots = listPackageSlots(cls);
   const siblings = listSiblingClasses(cls)
     .filter((s) => s.package_id)
     .map((s) => ({
@@ -93,7 +96,8 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
         </div>
         <ClassActions
           classId={cls.id}
-          status={cls.status}
+          stage={cls.stage}
+          pausedUntil={cls.paused_until}
           teacherId={cls.teacher_id}
           teachers={teachers}
           canDelete={isAdmin}
@@ -101,12 +105,20 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 [&>*]:min-w-0">
-        <Card padded={false}>
-          <CardHeader title="Thông tin lớp" />
-          <div className="p-5">
-            <EditClassForm cls={cls} />
-          </div>
-        </Card>
+        <div className="space-y-5">
+          <Card padded={false}>
+            <CardHeader title="Thông tin lớp" />
+            <div className="p-5">
+              <EditClassForm cls={cls} />
+            </div>
+          </Card>
+          {cls.schedule_type === "fixed" && (
+            <Card padded={false}>
+              <CardHeader title="Buổi học trong tuần" count={weeklySlots.length} />
+              <WeeklySlots classId={cls.id} slots={weeklySlots} />
+            </Card>
+          )}
+        </div>
         <div className="space-y-5">
           <PackageWidget
             classId={cls.id}

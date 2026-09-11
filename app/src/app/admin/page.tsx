@@ -4,6 +4,7 @@ import {
   listClassesByDay,
   listConfirmedClassIdsOn,
   listMissedCheckins,
+  listPausedClassesDue,
   listAttendance,
   listClasses,
   listPackagesNearingCompletion,
@@ -99,6 +100,7 @@ export default async function AdminDashboard() {
   // Buổi đã qua mà giáo viên chưa điểm danh — nợ cả điểm danh lẫn nội dung bài
   // cho khách, nên tô đậm cho giáo vụ nhắc.
   const missed = listMissedCheckins();
+  const pausedDue = listPausedClassesDue();
   const todaysAttendance = listAttendance({ from: todayStr, to: todayStr });
   const marked = new Set(todaysAttendance.map((a) => a.class_id));
 
@@ -341,6 +343,52 @@ export default async function AdminDashboard() {
           </div>
         </Card>
       </div>
+
+      {pausedDue.length > 0 && (
+        <Card padded={false} className="border-2 border-amber-300">
+          <CardHeader
+            title="Lớp Tạm OFF sắp tới ngày học lại"
+            count={pausedDue.length}
+            icon={<IconClock className="w-4.5 h-4.5" />}
+            tone="warning"
+          />
+          <ul className="divide-y divide-amber-100">
+            {pausedDue.map((c) => (
+              <li
+                key={c.id}
+                className="px-4 sm:px-5 py-3 bg-amber-50/60 flex flex-wrap items-center gap-x-3 gap-y-1.5"
+              >
+                <Avatar name={c.student_name} className="w-8 h-8 text-[11px]" />
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/admin/classes/${c.id}`}
+                    className="text-sm font-semibold text-ink-900 hover:text-wood-700 truncate block"
+                  >
+                    {c.student_name}
+                  </Link>
+                  <p className="text-xs text-ink-500 flex items-center gap-1">
+                    <SubjectIcon subject={c.subject} className="w-3.5 h-3.5" />
+                    {c.subject} · {c.teacher_name || "Chưa có GV"}
+                  </p>
+                </div>
+                <span className="text-sm text-ink-600 tabular whitespace-nowrap">
+                  Học lại {c.paused_until}
+                </span>
+                <StatusChip tone={c.daysUntilReturn < 0 ? "coral" : "amber"}>
+                  {c.daysUntilReturn < 0
+                    ? `Quá hạn ${-c.daysUntilReturn} ngày`
+                    : c.daysUntilReturn === 0
+                      ? "Hôm nay"
+                      : `Còn ${c.daysUntilReturn} ngày`}
+                </StatusChip>
+              </li>
+            ))}
+          </ul>
+          <p className="px-5 py-3 border-t border-amber-100 bg-white text-sm text-ink-600">
+            Gọi khách chốt lịch học lại, rồi đổi trạng thái lớp về &ldquo;Đang học&rdquo;.
+          </p>
+        </Card>
+      )}
 
       {missed.length > 0 && (
         <Card padded={false} className="border-2 border-coral-300">

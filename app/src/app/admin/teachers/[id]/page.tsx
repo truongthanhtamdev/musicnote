@@ -6,9 +6,9 @@ import {
   LANGUAGE_LABELS,
   parseLanguages,
   parseSubjects,
-  formatClassSchedule,
 } from "@/lib/types";
 import { TeacherScheduleGrid } from "@/components/teacher-schedule-grid";
+import TeacherClassList from "./class-list";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 import { IconCalendarCheck, IconChevronLeft, IconClasses, IconClock } from "@/components/icons";
 import {
@@ -105,27 +105,7 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
             count={classes.length}
             icon={<IconClasses className="w-4.5 h-4.5 text-wood-500" />}
           />
-          {classes.length === 0 ? (
-            <EmptyState
-              icon={<IconClasses className="w-6 h-6" />}
-              title="Chưa được giao lớp nào"
-              description="Giao lớp cho giáo viên này ở trang Giao lớp."
-            />
-          ) : (
-            <ul className="divide-y divide-navy-100 max-h-80 overflow-y-auto scroll-thin">
-              {classes.map((c) => (
-                <li key={c.id}>
-                  <Link
-                    href={`/admin/classes/${c.id}`}
-                    className="px-5 py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-ivory-50 transition"
-                  >
-                    <span className="font-medium text-ink-900 truncate">{c.student_name}</span>
-                    <span className="text-ink-500 tabular shrink-0">{formatClassSchedule(c)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+          <TeacherClassList classes={classes} />
         </Card>
       </div>
 

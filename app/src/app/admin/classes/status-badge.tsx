@@ -1,12 +1,16 @@
-import { CLASS_STATUS_LABELS, type ClassStatus } from "@/lib/types";
-import { StatusChip, type ChipTone } from "@/components/ui";
+import { classStage } from "@/lib/types";
 
-const TONES: Record<ClassStatus, ChipTone> = {
-  active: "mint",
-  paused: "amber",
-  ended: "neutral",
-};
-
-export default function ClassStatusBadge({ status }: { status: ClassStatus }) {
-  return <StatusChip tone={TONES[status] ?? "neutral"}>{CLASS_STATUS_LABELS[status]}</StatusChip>;
+/**
+ * Nhãn trạng thái lớp theo đúng bảng màu trung tâm đang dùng tay, nên nhận
+ * className riêng thay vì dùng tone của StatusChip.
+ */
+export default function ClassStatusBadge({ stage }: { stage: string }) {
+  const info = classStage(stage);
+  return (
+    <span
+      className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${info.className}`}
+    >
+      {info.label}
+    </span>
+  );
 }
