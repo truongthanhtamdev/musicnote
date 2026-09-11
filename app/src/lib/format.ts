@@ -142,3 +142,15 @@ export function normalizeFacebookUrl(raw: string): string | null {
   }
   return `https://facebook.com/${encodeURIComponent(value)}`;
 }
+
+/**
+ * Bỏ dấu và hạ chữ thường, để gõ "tam" vẫn tìm ra "Tâm" và "dung" ra "Dũng".
+ * Dùng cho tra cứu và cho việc gom nhóm theo tên, không dùng để hiển thị.
+ */
+export function foldVietnamese(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[đĐ]/g, (c) => (c === "đ" ? "d" : "D"))
+    .toLowerCase();
+}

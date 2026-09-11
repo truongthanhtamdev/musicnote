@@ -8,7 +8,7 @@ import { assertRole } from "@/lib/guard";
 import { getUserByEmail } from "@/lib/auth";
 import { parseCSV, parseDayOfWeek } from "@/lib/csv";
 import { readXlsxRows } from "@/lib/xlsx";
-import { normalizeName, parseCenterSheet } from "@/lib/center-sheet";
+import { findSlotClashes, normalizeName, parseCenterSheet } from "@/lib/center-sheet";
 import { classStage } from "@/lib/types";
 import { todayISO } from "@/lib/format";
 
@@ -205,6 +205,7 @@ export interface CenterImportState extends ImportState {
     teachersMatched: { sheetName: string; userName: string }[];
     teachersCreated: { name: string; email: string; password: string }[];
     stageCounts: [string, number][];
+    clashes: { teacherName: string; dayLabel: string; a: string; b: string }[];
     warnings: { student: string; messages: string[] }[];
   };
 }
@@ -488,6 +489,7 @@ export async function importCenterSheetAction(
       teachersMatched: matched,
       teachersCreated: created,
       stageCounts: [...stageCounts.entries()].sort((a, b) => b[1] - a[1]),
+      clashes: findSlotClashes(parsed.rows),
       warnings: parsed.rows
         .filter((r) => r.warnings.length > 0)
         .map((r) => ({ student: r.studentName, messages: r.warnings })),

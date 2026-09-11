@@ -118,6 +118,26 @@ export default function CenterSheetImportForm() {
             </details>
           )}
 
+          {report.clashes.length > 0 && (
+            <details className="rounded-xl border border-coral-300 bg-coral-50 px-3 py-2" open>
+              <summary className="cursor-pointer font-medium text-ink-900">
+                Trùng giờ giáo viên ({report.clashes.length} cặp) — vẫn nhập, nhưng nên soát lại
+              </summary>
+              <ul className="mt-2 space-y-1 text-ink-700">
+                {report.clashes.map((c, i) => (
+                  <li key={`${c.teacherName}-${i}`}>
+                    <span className="font-medium text-ink-900">{c.teacherName}</span> {c.dayLabel}:{" "}
+                    {c.a} ↔ {c.b}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-ink-500 mt-2">
+                Có thể là lớp nhóm 2 người, cũng có thể gõ nhầm giờ trong file. Hệ thống ghi đúng
+                như file chứ không tự sửa.
+              </p>
+            </details>
+          )}
+
           {report.warnings.length > 0 && (
             <details className="rounded-xl border border-navy-100 px-3 py-2">
               <summary className="cursor-pointer font-medium text-ink-800">

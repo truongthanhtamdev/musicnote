@@ -16,6 +16,7 @@ import {
   IconDownload,
   IconHome,
   IconPackage,
+  IconSearch,
   IconSettings,
   IconTeacher,
   IconUpload,
@@ -48,6 +49,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const links: NavItem[] = [
     { href: "/admin", label: "Tổng quan", icon: <IconHome className={ICON} /> },
     { href: "/admin/classes", label: "Lớp học", icon: <IconClasses className={ICON} /> },
+    { href: "/admin/lookup", label: "Tra cứu học viên", icon: <IconSearch className={ICON} /> },
     {
       href: "/admin/attendance",
       label: "Lịch & điểm danh",

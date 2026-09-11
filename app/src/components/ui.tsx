@@ -351,9 +351,12 @@ export function Avatar({
   name: string;
   className?: string;
 }) {
+  // Bỏ phần đuôi kiểu "- USA", "- AUS" trong tên nhập từ bảng trung tâm, nếu
+  // không hai chữ cuối lại là dấu gạch và tên nước.
   const initials = name
     .trim()
     .split(/\s+/)
+    .filter((w) => /[\p{L}\p{N}]/u.test(w[0]))
     .slice(-2)
     .map((w) => w[0])
     .join("")

@@ -1194,3 +1194,207 @@ export function listPackageSlots(cls: ClassRow): ClassRow[] {
     .prepare("SELECT * FROM classes WHERE package_id = ? ORDER BY day_of_week, start_time")
     .all(cls.package_id) as ClassRow[];
 }
+
+// ---------------------------------------------------------------------------
+// Tra cứu học viên (chăm sóc khách hàng)
+// ---------------------------------------------------------------------------
+
+export interface StudentProfile {
+  /** Khoá gom nhóm: tài khoản học viên nếu có, không thì tên đã chuẩn hoá. */
+  key: string;
+  studentName: string;
+  guardianName: string | null;
+  phone: string | null;
+  facebookUrl: string | null;
+  /** Mọi lớp của người này, kể cả lớp đã kết thúc. */
+  classes: ClassWithTeacher[];
+  subjects: string[];
+  teachers: string[];
+  /** Gộp theo gói để hai buổi/tuần dùng chung gói không bị đếm hai lần. */
+  totalSessions: number;
+  usedSessions: number;
+  remainingSessions: number;
+  paid: number;
+  outstanding: number;
+  lastSession: { date: string; status: AttendanceStatus; lessonContent: string | null } | null;
+  attendedCount: number;
+  createdAt: string;
+}
+
+/**
+ * Gộp toàn bộ dữ liệu của một học viên để chăm sóc khách hàng: một người có
+ * thể học nhiều buổi/tuần, nhiều bộ môn, nhiều giáo viên — nhìn từng lớp rời
+ * rạc thì không nắm được tình hình.
+ *
+ * Gom theo tài khoản học viên nếu lớp đã gắn tài khoản; còn lại gom theo tên,
+ * đúng cách listSiblingClasses đang làm.
+ */
+export function listStudentProfiles(): StudentProfile[] {
+  const classes = listClasses();
+  if (classes.length === 0) return [];
+
+  const progressByPackage = getPackageProgressForClasses(classes);
+  const tuition = getTuitionStatusForClasses(classes);
+
+  const lastByClass = new Map<
+    number,
+    { date: string; status: AttendanceStatus; lessonContent: string | null }
+  >();
+  const attendedByClass = new Map<number, number>();
+  for (const a of db
+    .prepare(
+      `SELECT class_id, session_date, status, lesson_content,
+              (SELECT COUNT(*) FROM attendance x
+               WHERE x.class_id = a.class_id AND (x.status = 'completed' OR x.counts_as_used = 1)) as attended
+       FROM attendance a
+       WHERE a.id = (SELECT MAX(id) FROM attendance y WHERE y.class_id = a.class_id)`
+    )
+    .all() as {
+    class_id: number;
+    session_date: string;
+    status: AttendanceStatus;
+    lesson_content: string | null;
+    attended: number;
+  }[]) {
+    lastByClass.set(a.class_id, {
+      date: a.session_date,
+      status: a.status,
+      lessonContent: a.lesson_content,
+    });
+    attendedByClass.set(a.class_id, a.attended);
+  }
+
+  const groups = new Map<string, ClassWithTeacher[]>();
+  for (const cls of classes) {
+    const key = cls.student_user_id
+      ? `u${cls.student_user_id}`
+      : `n${cls.student_name.trim().toLowerCase()}`;
+    const list = groups.get(key) ?? [];
+    list.push(cls);
+    groups.set(key, list);
+  }
+
+  const out: StudentProfile[] = [];
+  for (const [key, list] of groups) {
+    const seenPackages = new Set<number>();
+    let total = 0;
+    let used = 0;
+    let remaining = 0;
+    let paid = 0;
+    let outstanding = 0;
+    for (const cls of list) {
+      if (cls.package_id && !seenPackages.has(cls.package_id)) {
+        seenPackages.add(cls.package_id);
+        const p = progressByPackage.get(cls.package_id);
+        if (p) {
+          total += p.total;
+          used += p.used;
+          remaining += p.remaining;
+        }
+        const t = tuition.get(cls.id);
+        if (t) {
+          paid += t.paid;
+          outstanding += t.outstanding;
+        }
+      } else if (!cls.package_id) {
+        const t = tuition.get(cls.id);
+        if (t) paid += t.paid;
+      }
+    }
+
+    // Buổi gần nhất trong tất cả các lớp của người này.
+    let last: StudentProfile["lastSession"] = null;
+    let attended = 0;
+    for (const cls of list) {
+      attended += attendedByClass.get(cls.id) ?? 0;
+      const l = lastByClass.get(cls.id);
+      if (l && (!last || l.date > last.date)) last = l;
+    }
+
+    const withInfo = list.find((c) => c.student_phone || c.facebook_url || c.guardian_name);
+    out.push({
+      key,
+      studentName: list[0].student_name,
+      guardianName: withInfo?.guardian_name ?? null,
+      phone: withInfo?.student_phone ?? null,
+      facebookUrl: withInfo?.facebook_url ?? null,
+      classes: list.sort((a, b) => a.day_of_week - b.day_of_week),
+      subjects: [...new Set(list.map((c) => c.subject))],
+      teachers: [...new Set(list.map((c) => c.teacher_name).filter((n): n is string => !!n))],
+      totalSessions: total,
+      usedSessions: used,
+      remainingSessions: remaining,
+      paid,
+      outstanding,
+      lastSession: last,
+      attendedCount: attended,
+      createdAt: list.reduce((min, c) => (c.created_at < min ? c.created_at : min), list[0].created_at),
+    });
+  }
+
+  return out.sort((a, b) => a.studentName.localeCompare(b.studentName, "vi"));
+}
+
+export interface CustomerProfile {
+  key: string;
+  /** Tên người đóng tiền: tên khách hàng nếu có, không thì chính học viên. */
+  customerName: string;
+  phones: string[];
+  facebookUrl: string | null;
+  /** Các học viên của khách này — phụ huynh hay đăng ký cho nhiều con. */
+  students: StudentProfile[];
+  classCount: number;
+  totalSessions: number;
+  usedSessions: number;
+  remainingSessions: number;
+  paid: number;
+  outstanding: number;
+  lastSession: StudentProfile["lastSession"];
+}
+
+/**
+ * Gom học viên theo khách hàng. Một phụ huynh thường đăng ký nhiều lớp — cho
+ * một bé học hai bộ môn, hoặc cho hai ba anh em cùng học — nên khi chăm sóc
+ * phải nhìn cả nhà một lượt: còn bao nhiêu tiết, thiếu bao nhiêu học phí, gọi
+ * số nào.
+ *
+ * Gom theo cột "TÊN KHÁCH HÀNG" vì đó chính là cách trung tâm nhận diện một
+ * khách trong bảng của họ.
+ */
+export function listCustomerProfiles(): CustomerProfile[] {
+  const groups = new Map<string, StudentProfile[]>();
+  for (const p of listStudentProfiles()) {
+    // Khoá là tên khách hàng viết thường: dòng nào không ghi khách hàng thì
+    // học viên tự là khách. Nhờ vậy mẹ đăng ký lớp cho chính mình và lớp cho
+    // con vẫn nằm chung một hồ sơ (bảng ghi tên mẹ ở cột khách hàng của con).
+    const key = (p.guardianName ?? p.studentName).trim().toLowerCase();
+    const list = groups.get(key) ?? [];
+    list.push(p);
+    groups.set(key, list);
+  }
+
+  const out: CustomerProfile[] = [];
+  for (const [key, students] of groups) {
+    let last: StudentProfile["lastSession"] = null;
+    for (const s of students) {
+      if (s.lastSession && (!last || s.lastSession.date > last.date)) last = s.lastSession;
+    }
+    const sum = (pick: (s: StudentProfile) => number) => students.reduce((n, s) => n + pick(s), 0);
+    out.push({
+      key,
+      customerName: students[0].guardianName ?? students[0].studentName,
+      phones: [...new Set(students.map((s) => s.phone).filter((v): v is string => !!v))],
+      facebookUrl: students.find((s) => s.facebookUrl)?.facebookUrl ?? null,
+      students,
+      classCount: sum((s) => s.classes.length),
+      totalSessions: sum((s) => s.totalSessions),
+      usedSessions: sum((s) => s.usedSessions),
+      remainingSessions: sum((s) => s.remainingSessions),
+      paid: sum((s) => s.paid),
+      outstanding: sum((s) => s.outstanding),
+      lastSession: last,
+    });
+  }
+
+  return out.sort((a, b) => a.customerName.localeCompare(b.customerName, "vi"));
+}

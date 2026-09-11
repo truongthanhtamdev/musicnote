@@ -1,4 +1,5 @@
 import { excelSerialToISO } from "./xlsx";
+import { foldVietnamese } from "./format";
 import { CLASS_STAGES, DAY_LABELS, type ClassStage } from "./types";
 
 /**
@@ -32,10 +33,7 @@ const COURSE_COLUMNS = [9, 10, 11, 12, 13, 14, 15, 16];
 
 /** Bỏ dấu, bỏ tiền tố "GV"/"NBGV", gom khoảng trắng — để so tên giáo viên. */
 export function normalizeName(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/gi, "d")
+  return foldVietnamese(value)
     .toUpperCase()
     .replace(/\b(NBGV|GV)\b/g, "")
     .replace(/[^A-Z0-9]+/g, " ")
@@ -213,4 +211,53 @@ export function parseCenterSheet(rows: string[][]): ParseResult {
   });
 
   return { rows: out, skipped };
+}
+
+export interface SlotClash {
+  teacherName: string;
+  dayLabel: string;
+  a: string;
+  b: string;
+}
+
+/**
+ * Hai lớp của cùng một giáo viên đè giờ lên nhau. Bảng gõ tay nên chuyện này
+ * có thật — có thể là lớp nhóm hai người, cũng có thể là gõ nhầm giờ. Không
+ * chặn nhập (bảng là dữ liệu đang chạy thật), chỉ liệt kê ra để soát.
+ */
+export function findSlotClashes(rows: ParsedStudentRow[], durationMinutes = 60): SlotClash[] {
+  const byTeacherDay = new Map<string, { name: string; start: number; end: number }[]>();
+  for (const row of rows) {
+    if (!row.teacherName) continue;
+    for (const slot of row.slots) {
+      const [h, m] = slot.startTime.split(":").map(Number);
+      const start = h * 60 + m;
+      const key = `${row.teacherName}|${slot.dayOfWeek}`;
+      const list = byTeacherDay.get(key) ?? [];
+      list.push({
+        name: `${row.studentName} ${slot.startTime}`,
+        start,
+        end: start + durationMinutes,
+      });
+      byTeacherDay.set(key, list);
+    }
+  }
+
+  const out: SlotClash[] = [];
+  for (const [key, list] of byTeacherDay) {
+    const [teacherName, day] = key.split("|");
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        if (list[i].start < list[j].end && list[i].end > list[j].start) {
+          out.push({
+            teacherName,
+            dayLabel: DAY_LABELS[Number(day)],
+            a: list[i].name,
+            b: list[j].name,
+          });
+        }
+      }
+    }
+  }
+  return out;
 }
