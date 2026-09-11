@@ -56,6 +56,11 @@ export default function CenterSheetImportForm() {
         </button>
       </div>
 
+      <p className="text-xs text-ink-400">
+        Nhập lại cùng một file không tạo lớp trùng: hệ thống khớp theo cột MÃ, lớp đã có thì cập
+        nhật trạng thái, giáo viên và gói học.
+      </p>
+
       {state.error && <p className="text-sm text-coral-600">{state.error}</p>}
       {state.summary && (
         <p className={`text-sm font-medium ${previewed ? "text-ink-700" : "text-mint-700"}`}>
@@ -67,8 +72,8 @@ export default function CenterSheetImportForm() {
         <div className="space-y-3 text-sm">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
-              ["Lớp", report.classes],
-              ["Buổi cố định", report.slots],
+              ["Lớp mới", report.created],
+              ["Lớp cập nhật", report.updated],
               ["Gói học", report.packages],
               ["GV khớp / tạo mới", `${report.teachersMatched.length} / ${report.teachersCreated.length}`],
             ].map(([label, value]) => (

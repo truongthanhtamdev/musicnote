@@ -52,6 +52,11 @@ export interface ClassRow {
   notes: string | null;
   /** 1 while the class is still waiting on its first session, which counts as the trial ("buổi 0"). */
   trial_pending: number;
+  /**
+   * Mã lớp trong bảng Excel của trung tâm (VD "G2403022"). Là khoá để nhập lại
+   * file mà không tạo lớp trùng; lớp thêm tay trong hệ thống thì để trống.
+   */
+  code: string | null;
   /** Trạng thái nghiệp vụ chi tiết (xem CLASS_STAGES); `status` được suy ra từ đây. */
   stage: ClassStage;
   /** Ngày dự kiến học lại, chỉ có nghĩa khi stage đang là một trạng thái Tạm OFF. */

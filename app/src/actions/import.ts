@@ -197,6 +197,9 @@ export interface CenterImportState extends ImportState {
   report?: {
     dryRun: boolean;
     classes: number;
+    created: number;
+    updated: number;
+    slotsAdded: number;
     slots: number;
     packages: number;
     teachersMatched: { sheetName: string; userName: string }[];
@@ -298,7 +301,35 @@ export async function importCenterSheetAction(
     teacherIdByRow.set(row.rowNumber, resolved.get(row.teacherName) ?? null);
   }
 
+  // Khớp theo mã lớp trong bảng ("G2403022"): nhập lại cùng một file thì cập
+  // nhật lớp đã có chứ không tạo bản sao. Mã là duy nhất trong bảng nên đủ làm
+  // khoá; lớp thêm tay trong hệ thống không có mã nên không bao giờ bị đụng.
+  const existingByCode = new Map<string, { id: number; package_id: number | null }[]>();
+  for (const row of db
+    .prepare("SELECT id, code, package_id, day_of_week, start_time FROM classes WHERE code IS NOT NULL")
+    .all() as {
+    id: number;
+    code: string;
+    package_id: number | null;
+    day_of_week: number;
+    start_time: string;
+  }[]) {
+    const list = existingByCode.get(row.code) ?? [];
+    list.push(row);
+    existingByCode.set(row.code, list);
+  }
+  const existingSlotKeys = new Set(
+    (
+      db
+        .prepare("SELECT code, day_of_week, start_time FROM classes WHERE code IS NOT NULL")
+        .all() as { code: string; day_of_week: number; start_time: string }[]
+    ).map((r) => `${r.code}|${r.day_of_week}|${r.start_time}`)
+  );
+
   let classCount = 0;
+  let createdCount = 0;
+  let updatedCount = 0;
+  let slotsAdded = 0;
   let slotCount = 0;
   let packageCount = 0;
   const stageCounts = new Map<string, number>();
@@ -308,27 +339,96 @@ export async function importCenterSheetAction(
       "INSERT INTO packages (total_sessions, bonus_sessions, course_count, started_at, used_override, used_override_set_at) VALUES (?, 0, ?, ?, ?, datetime('now'))"
     );
     const insertClass = db.prepare(
-      `INSERT INTO classes (student_name, guardian_name, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, status, stage, trial_pending)
+      `INSERT INTO classes (student_name, guardian_name, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, code, status, stage, trial_pending)
        VALUES (?, ?, ?, 'vi', 'center', ?, ?, ?, ?, 60, ?, ?, ?, ?, 0)`
+    );
+
+    const updateClass = db.prepare(
+      `UPDATE classes SET student_name = ?, guardian_name = ?, subject = ?, teacher_id = ?,
+                          status = ?, stage = ?
+       WHERE id = ?`
+    );
+    const updatePackage = db.prepare(
+      `UPDATE packages SET total_sessions = ?, course_count = ?, used_override = ?,
+                           used_override_set_at = datetime('now')
+       WHERE id = ?`
     );
 
     for (const row of parsed.rows) {
       const info = classStage(row.stage);
       stageCounts.set(info.label, (stageCounts.get(info.label) ?? 0) + 1);
+      const teacherId = teacherIdByRow.get(row.rowNumber) ?? null;
+      const existing = row.code ? (existingByCode.get(row.code) ?? []) : [];
 
-      let packageId: number | null = null;
+      // Gói học: lớp đã có thì cập nhật đúng gói đang dùng, không tạo gói mới —
+      // nếu không mỗi lần nhập lại là một gói mồ côi và tiến độ tiết reset.
+      let packageId: number | null = existing.find((c) => c.package_id)?.package_id ?? null;
       if (row.registeredSessions) {
         packageCount++;
         if (!dryRun) {
-          packageId = Number(
-            insertPackage.run(
+          if (packageId) {
+            updatePackage.run(
               row.registeredSessions,
               row.courseCount,
-              row.startedAt ?? todayISO(),
-              row.usedSessions
-            ).lastInsertRowid
+              row.usedSessions,
+              packageId
+            );
+          } else {
+            packageId = Number(
+              insertPackage.run(
+                row.registeredSessions,
+                row.courseCount,
+                row.startedAt ?? todayISO(),
+                row.usedSessions
+              ).lastInsertRowid
+            );
+          }
+        }
+      }
+
+      if (existing.length > 0) {
+        // Đã nhập lần trước: cập nhật thông tin, và chỉ thêm buổi nào chưa có.
+        updatedCount += existing.length;
+        classCount += existing.length;
+        if (!dryRun) {
+          for (const c of existing) {
+            updateClass.run(
+              row.studentName,
+              row.guardianName,
+              row.subject,
+              teacherId,
+              info.status,
+              info.value,
+              c.id
+            );
+            if (packageId && !c.package_id) {
+              db.prepare("UPDATE classes SET package_id = ? WHERE id = ?").run(packageId, c.id);
+            }
+          }
+        }
+        for (const slot of row.slots) {
+          slotCount++;
+          const key = `${row.code}|${slot.dayOfWeek}|${slot.startTime}`;
+          if (existingSlotKeys.has(key)) continue;
+          existingSlotKeys.add(key);
+          slotsAdded++;
+          classCount++;
+          if (dryRun) continue;
+          insertClass.run(
+            row.studentName,
+            row.guardianName,
+            row.subject,
+            packageId,
+            "fixed",
+            slot.dayOfWeek,
+            slot.startTime,
+            teacherId,
+            row.code,
+            info.status,
+            info.value
           );
         }
+        continue;
       }
 
       // Lớp chưa có lịch cố định (đa số lớp Tạm OFF) vào hệ thống dạng linh
@@ -336,7 +436,11 @@ export async function importCenterSheetAction(
       const slots = row.slots.length > 0 ? row.slots : [null];
       for (const slot of slots) {
         classCount++;
-        if (slot) slotCount++;
+        createdCount++;
+        if (slot) {
+          slotCount++;
+          existingSlotKeys.add(`${row.code}|${slot.dayOfWeek}|${slot.startTime}`);
+        }
         if (dryRun) continue;
         insertClass.run(
           row.studentName,
@@ -346,8 +450,8 @@ export async function importCenterSheetAction(
           slot ? "fixed" : "flexible",
           slot ? slot.dayOfWeek : -1,
           slot ? slot.startTime : "",
-          teacherIdByRow.get(row.rowNumber) ?? null,
-          row.code ? `Mã ${row.code}` : null,
+          teacherId,
+          row.code || null,
           info.status,
           info.value
         );
@@ -363,13 +467,22 @@ export async function importCenterSheetAction(
     revalidatePath("/admin/packages");
   }
 
+  const changes =
+    updatedCount > 0
+      ? `${createdCount} lớp mới, ${updatedCount} lớp cập nhật` +
+        (slotsAdded > 0 ? `, ${slotsAdded} buổi thêm mới` : "")
+      : `${createdCount} lớp mới`;
+
   return {
     summary: dryRun
-      ? `Xem trước: ${classCount} lớp từ ${parsed.rows.length} học viên. Chưa ghi gì vào hệ thống.`
-      : `Đã nhập ${classCount} lớp cho ${parsed.rows.length} học viên.`,
+      ? `Xem trước ${parsed.rows.length} học viên: ${changes}. Chưa ghi gì vào hệ thống.`
+      : `Đã nhập ${parsed.rows.length} học viên: ${changes}.`,
     report: {
       dryRun,
       classes: classCount,
+      created: createdCount,
+      updated: updatedCount,
+      slotsAdded,
       slots: slotCount,
       packages: packageCount,
       teachersMatched: matched,

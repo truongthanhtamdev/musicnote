@@ -247,6 +247,11 @@ function migrate() {
   ensureColumn("attendance", "late_checkin", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("classes", "stage", "TEXT NOT NULL DEFAULT 'studying'");
   ensureColumn("classes", "paused_until", "TEXT");
+  ensureColumn("classes", "code", "TEXT");
+  // Index phải tạo SAU ensureColumn: `code` là cột thêm sau, database mới toanh
+  // chưa có nó lúc chạy khối CREATE TABLE ở trên.
+  db.exec("CREATE INDEX IF NOT EXISTS idx_classes_code ON classes(code)");
+  backfillClassCodes();
   ensureColumn("packages", "bonus_sessions", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("packages", "course_count", "INTEGER NOT NULL DEFAULT 1");
   backfillClassStages();
@@ -276,6 +281,17 @@ function backfillClassStages() {
   runOnce("backfill_class_stages", () => {
     db.prepare("UPDATE classes SET stage = 'paused' WHERE status = 'paused' AND stage = 'studying'").run();
     db.prepare("UPDATE classes SET stage = 'done' WHERE status = 'ended' AND stage = 'studying'").run();
+  });
+}
+
+// Bản nhập Excel đầu tiên nhét mã lớp vào ghi chú ("Mã G2403022") trước khi có
+// cột riêng. Tách ra một lần để lần nhập sau còn khớp được mà không tạo trùng.
+function backfillClassCodes() {
+  runOnce("backfill_class_codes", () => {
+    db.prepare(
+      `UPDATE classes SET code = substr(notes, 4)
+       WHERE code IS NULL AND notes LIKE 'Mã %' AND instr(substr(notes, 4), ' ') = 0`
+    ).run();
   });
 }
 
