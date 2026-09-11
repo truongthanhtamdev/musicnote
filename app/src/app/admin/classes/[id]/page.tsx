@@ -98,6 +98,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
           classId={cls.id}
           stage={cls.stage}
           pausedUntil={cls.paused_until}
+          hasSchedule={cls.schedule_type === "fixed" && !!cls.start_time}
           teacherId={cls.teacher_id}
           teachers={teachers}
           canDelete={isAdmin}

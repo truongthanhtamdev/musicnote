@@ -15,6 +15,7 @@ export default function ClassActions({
   classId,
   stage,
   pausedUntil,
+  hasSchedule,
   teacherId,
   teachers,
   canDelete,
@@ -22,6 +23,7 @@ export default function ClassActions({
   classId: number;
   stage: string;
   pausedUntil: string | null;
+  hasSchedule: boolean;
   teacherId: number | null;
   teachers: TeacherOption[];
   canDelete: boolean;
@@ -49,7 +51,12 @@ export default function ClassActions({
         ))}
       </select>
 
-      <ClassStagePicker classId={classId} stage={stage} pausedUntil={pausedUntil} />
+      <ClassStagePicker
+        classId={classId}
+        stage={stage}
+        pausedUntil={pausedUntil}
+        hasSchedule={hasSchedule}
+      />
       {canDelete && (
         <button
           type="button"

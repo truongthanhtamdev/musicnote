@@ -521,7 +521,9 @@ export async function assignTeacherAction(classId: number, teacherId: number | n
 export async function setClassStageAction(
   classId: number,
   stage: string,
-  pausedUntil?: string | null
+  pausedUntil?: string | null,
+  /** Lịch học xếp luôn lúc cho lớp học lại; bỏ trống thì giữ nguyên lịch cũ. */
+  schedule?: { dayOfWeek: number; startTime: string } | null
 ) {
   await assertRole(["admin", "coordinator"]);
   const info = classStage(stage);
@@ -531,6 +533,14 @@ export async function setClassStageAction(
     info.paused ? pausedUntil || null : null,
     classId
   );
+  // Lớp Tạm OFF nhập từ Excel không có ngày/giờ. Chỉ bật lại trạng thái thôi
+  // thì lớp "đang học" mà không nằm trong lịch tuần nào — giáo viên không thấy,
+  // không ai điểm danh, lớp thành vô hình. Nên lúc cho học lại thì xếp lịch luôn.
+  if (schedule && schedule.startTime && !Number.isNaN(schedule.dayOfWeek)) {
+    db.prepare(
+      "UPDATE classes SET schedule_type = 'fixed', day_of_week = ?, start_time = ? WHERE id = ?"
+    ).run(schedule.dayOfWeek, schedule.startTime, classId);
+  }
   revalidatePath("/admin/classes");
   revalidatePath(`/admin/classes/${classId}`);
   revalidatePath("/admin");
