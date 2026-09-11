@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import TeachersImportForm from "./teachers-import-form";
 import ClassesImportForm from "./classes-import-form";
+import CenterSheetImportForm from "./center-sheet-form";
 
 export default async function ImportPage() {
   const session = await getSession();
@@ -15,6 +16,20 @@ export default async function ImportPage() {
           thay vì thêm tay từng dòng.
         </p>
       </div>
+
+      {isAdmin && (
+        <div className="bg-white rounded-2xl border-2 border-wood-300 p-4 max-w-3xl">
+          <h2 className="font-semibold text-ink-900">
+            Nhập bảng Excel của trung tâm (QUANLY_HV_GIAOVIEN)
+          </h2>
+          <p className="text-sm text-ink-500 mt-1 mb-3">
+            Nhận thẳng file .xlsx đang dùng tay: tự khớp giáo viên theo tên và giao lớp cho họ,
+            đọc 3 cột lịch trong tuần, trạng thái lớp, gói học và số tiết đã học. Luôn bấm
+            &ldquo;Xem trước&rdquo; để soát trước khi ghi.
+          </p>
+          <CenterSheetImportForm />
+        </div>
+      )}
 
       {isAdmin && (
         <div className="bg-white rounded-2xl border border-navy-100 p-4 max-w-2xl">
