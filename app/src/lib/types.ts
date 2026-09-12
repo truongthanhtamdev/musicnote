@@ -400,14 +400,18 @@ export const MAKEUP_WINDOW_DAYS = 21;
 export const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
+/** Giờ sớm nhất trung tâm nhận lớp. */
+export const DAY_START_HOUR = 5;
+
 /**
- * Nhãn giờ theo bước 30 phút từ 07:00 đến 23:30, dùng chung cho mọi lưới
- * ngày×giờ và ô chọn giờ. Kéo tới 23:30 vì trung tâm có lớp học tối muộn —
- * lớp 23:00 dài 60 phút kết thúc đúng 24:00.
+ * Nhãn giờ theo bước 30 phút từ 05:00 đến 23:30, dùng chung cho mọi lưới
+ * ngày×giờ và ô chọn giờ. Mở từ 5 giờ sáng vì trung tâm có nhận lớp sớm, và
+ * kéo tới 23:30 vì cũng có lớp tối muộn — lớp 23:00 dài 60 phút kết thúc
+ * đúng 24:00.
  */
 export const TIME_SLOTS: string[] = (() => {
   const slots: string[] = [];
-  for (let h = 7; h < 24; h++) {
+  for (let h = DAY_START_HOUR; h < 24; h++) {
     slots.push(`${String(h).padStart(2, "0")}:00`);
     slots.push(`${String(h).padStart(2, "0")}:30`);
   }

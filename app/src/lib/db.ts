@@ -366,6 +366,32 @@ function invertAvailabilityToBusyOnce() {
       }
     }
   });
+
+  // Lưới giờ mở xuống 05:00 sau khi trung tâm nhận lớp sớm. Giáo viên đã tô
+  // lịch trước đó chưa hề nói là rảnh lúc 5 giờ sáng, nên đánh bận sẵn các
+  // khung mới cho họ — ai muốn dạy sớm thì tự bỏ tô. Người chưa từng tô lịch
+  // vẫn để trống, đúng như mọi khung giờ khác của họ.
+  runOnce("busy_early_slots", () => {
+    const early = TIME_SLOTS.filter((t) => t < "07:00");
+    const teachers = db
+      .prepare("SELECT DISTINCT teacher_id FROM availability")
+      .all() as { teacher_id: number }[];
+    const insert = db.prepare(
+      `INSERT INTO availability (teacher_id, day_of_week, start_time, end_time)
+       SELECT ?, ?, ?, ?
+       WHERE NOT EXISTS (
+         SELECT 1 FROM availability
+         WHERE teacher_id = ? AND day_of_week = ? AND start_time = ?
+       )`
+    );
+    for (const { teacher_id } of teachers) {
+      for (const day of DAY_ORDER) {
+        for (const time of early) {
+          insert.run(teacher_id, day, time, addMinutesToTime(time, 30), teacher_id, day, time);
+        }
+      }
+    }
+  });
 }
 
 function ensureColumn(table: string, column: string, definition: string) {
