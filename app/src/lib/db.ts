@@ -146,6 +146,24 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    /*
+     * Tiền cộng thêm hoặc trừ bớt ngoài công dạy: thưởng, tip khách gửi, phụ
+     * cấp, hay trừ vì lý do riêng. Ghi số âm là trừ. Không nhét vào bảng
+     * expenses vì khoản này thuộc về một giáo viên cụ thể và phải hiện đúng
+     * trên dòng lương của người đó.
+     */
+    CREATE TABLE IF NOT EXISTS payroll_adjustments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount INTEGER NOT NULL,
+      reason TEXT,
+      adjustment_date TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_payroll_adjustments_date
+      ON payroll_adjustments(adjustment_date);
+
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

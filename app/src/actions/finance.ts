@@ -105,3 +105,41 @@ export async function deleteExpenseAction(id: number) {
   db.prepare("DELETE FROM expenses WHERE id = ?").run(id);
   revalidatePath("/admin/finance");
 }
+
+/**
+ * Cộng thêm (hoặc trừ bớt) tiền cho một giáo viên trong kỳ lương: thưởng, tip
+ * khách gửi, phụ cấp xăng xe... Ghi số âm là trừ.
+ *
+ * Tách riêng khỏi đơn giá/buổi vì đây là khoản một lần, không được phép làm
+ * thay đổi cách tính công của những kỳ khác.
+ */
+export async function addPayrollAdjustmentAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  await assertRole(["admin"]);
+
+  const teacherId = Number(formData.get("teacher_id"));
+  const amount = Math.round(Number(formData.get("amount") || 0));
+  const reason = String(formData.get("reason") || "").trim();
+  const date = String(formData.get("adjustment_date") || "");
+
+  if (!teacherId || !Number.isFinite(amount) || amount === 0 || !date) {
+    return { error: "Nhập số tiền khác 0 và chọn ngày" };
+  }
+
+  db.prepare(
+    "INSERT INTO payroll_adjustments (teacher_id, amount, reason, adjustment_date) VALUES (?, ?, ?, ?)"
+  ).run(teacherId, amount, reason || null, date);
+
+  revalidatePath("/admin/payroll");
+  revalidatePath("/admin/finance");
+  return { success: true };
+}
+
+export async function deletePayrollAdjustmentAction(id: number) {
+  await assertRole(["admin"]);
+  db.prepare("DELETE FROM payroll_adjustments WHERE id = ?").run(id);
+  revalidatePath("/admin/payroll");
+  revalidatePath("/admin/finance");
+}

@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const rows = computePayroll(from, to);
 
   const header =
-    "Giao vien,So buoi da day,Buoi thu,Diem danh bu,Buoi khong tinh cong,Tien bi tru,Don gia/buoi,Thanh tien\n";
+    "Giao vien,So buoi da day,Buoi thu,Diem danh bu,Buoi khong tinh cong,Tien bi tru,Don gia/buoi,Thuong/tip,Thanh tien\n";
   const body = rows
     .map((r) =>
       [
@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
         r.unpaid_late_sessions,
         r.late_deduction,
         r.pay_per_session || 0,
+        r.adjustment_total,
         r.total_pay,
       ].join(",")
     )

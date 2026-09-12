@@ -77,6 +77,15 @@ export default async function TeacherEarningsPage({
         <MetricCard
           label="Tổng thu nhập"
           value={formatVND(mine?.total_pay ?? 0)}
+          // Nói rõ vì sao con số lệch so với số buổi × đơn giá, chứ giáo viên
+          // thấy chênh mà không biết lý do thì lại phải đi hỏi.
+          hint={
+            mine && mine.adjustment_total !== 0
+              ? `${mine.adjustment_total > 0 ? "Đã cộng thêm" : "Đã trừ"} ${formatVND(
+                  Math.abs(mine.adjustment_total)
+                )} thưởng / phụ cấp`
+              : undefined
+          }
           tone="amber"
           icon={<IconWallet className="w-5 h-5" />}
         />

@@ -682,7 +682,30 @@ export interface PayrollRow {
   unpaid_late_sessions: number;
   /** Tiền bị trừ vì các buổi không tính công ở trên. */
   late_deduction: number;
+  /** Thưởng, tip, phụ cấp cộng thêm (hoặc trừ bớt, khi âm) trong kỳ. */
+  adjustment_total: number;
+  adjustments: PayrollAdjustmentRow[];
   total_pay: number;
+}
+
+export interface PayrollAdjustmentRow {
+  id: number;
+  teacher_id: number;
+  amount: number;
+  reason: string | null;
+  adjustment_date: string;
+}
+
+/** Thưởng/phụ cấp trong kỳ, gom theo giáo viên. */
+export function listPayrollAdjustments(from: string, to: string): PayrollAdjustmentRow[] {
+  return db
+    .prepare(
+      `SELECT id, teacher_id, amount, reason, adjustment_date
+       FROM payroll_adjustments
+       WHERE adjustment_date >= ? AND adjustment_date <= ?
+       ORDER BY adjustment_date, id`
+    )
+    .all(from, to) as PayrollAdjustmentRow[];
 }
 
 /**
@@ -711,18 +734,33 @@ export function computePayroll(from: string, to: string, quota?: number): Payrol
     )
     .all(from, to) as Omit<
     PayrollRow,
-    "total_pay" | "unpaid_late_sessions" | "late_deduction"
+    "total_pay" | "unpaid_late_sessions" | "late_deduction" | "adjustment_total" | "adjustments"
   >[];
+
+  const adjustmentsByTeacher = new Map<number, PayrollAdjustmentRow[]>();
+  for (const a of listPayrollAdjustments(from, to)) {
+    const list = adjustmentsByTeacher.get(a.teacher_id) ?? [];
+    list.push(a);
+    adjustmentsByTeacher.set(a.teacher_id, list);
+  }
 
   return rows.map((r) => {
     const unpaid = Math.max(0, r.late_sessions - freeQuota);
     const rate = r.pay_per_session || 0;
     const deduction = rate * unpaid;
+    const adjustments = adjustmentsByTeacher.get(r.teacher_id) ?? [];
+    const adjustmentTotal = adjustments.reduce((sum, a) => sum + a.amount, 0);
     return {
       ...r,
       unpaid_late_sessions: unpaid,
       late_deduction: deduction,
-      total_pay: rate * r.completed_sessions + TRIAL_SESSION_RATE * r.trial_sessions - deduction,
+      adjustment_total: adjustmentTotal,
+      adjustments,
+      total_pay:
+        rate * r.completed_sessions +
+        TRIAL_SESSION_RATE * r.trial_sessions -
+        deduction +
+        adjustmentTotal,
     };
   });
 }
