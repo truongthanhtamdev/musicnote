@@ -1,8 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { assignTeacherAction, deleteClassAction } from "@/actions/classes";
+import { assignTeacherAction } from "@/actions/classes";
+import DeleteClassButton from "../delete-class-button";
 import ClassStagePicker from "./stage-picker";
 
 interface TeacherOption {
@@ -29,7 +29,6 @@ export default function ClassActions({
   canDelete: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
 
   return (
     <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -57,23 +56,7 @@ export default function ClassActions({
         pausedUntil={pausedUntil}
         hasSchedule={hasSchedule}
       />
-      {canDelete && (
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => {
-            if (confirm("Xoá vĩnh viễn lớp học này? Toàn bộ lịch sử điểm danh sẽ mất.")) {
-              startTransition(async () => {
-                await deleteClassAction(classId);
-                router.push("/admin/classes");
-              });
-            }
-          }}
-          className="text-sm border border-coral-100 text-coral-600 hover:bg-coral-50 rounded-lg px-3 py-1.5"
-        >
-          Xoá
-        </button>
-      )}
+      {canDelete && <DeleteClassButton classId={classId} redirectTo="/admin/classes" />}
     </div>
   );
 }

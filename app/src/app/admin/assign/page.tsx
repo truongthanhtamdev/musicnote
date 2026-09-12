@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getSession } from "@/lib/auth";
 import {
   listClasses,
   listTeachers,
@@ -17,8 +18,10 @@ import {
   btn,
 } from "@/components/ui";
 import AssignRow from "./assign-row";
+import DeleteClassButton from "../classes/delete-class-button";
 
 export default async function AssignPage() {
+  const session = await getSession();
   const unassigned = listClasses({ unassignedOnly: true, status: "active" });
   const teachers = listTeachers(false);
 
@@ -66,7 +69,7 @@ export default async function AssignPage() {
               <Card key={c.id}>
                 <div className="flex items-start gap-3 mb-4">
                   <Avatar name={c.student_name} className="w-10 h-10 text-xs" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold text-ink-900">{c.student_name}</p>
                     <p className="text-sm text-ink-500 flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-0.5">
                       <SubjectIcon subject={c.subject} className="w-4 h-4 text-wood-500" />
@@ -78,6 +81,18 @@ export default async function AssignPage() {
                         <StatusChip tone="navy">Dạy bằng {LANGUAGE_LABELS.en}</StatusChip>
                       )}
                     </p>
+                  </div>
+                  {/* Sửa/xoá ngay tại đây: lớp chưa có giáo viên thường là lớp
+                      vừa nhập, sai giờ hoặc trùng thì phải chỉnh được liền chứ
+                      không phải mò sang trang khác. */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/admin/classes/${c.id}`}
+                      className="text-sm font-semibold text-wood-600 hover:text-wood-700 border border-navy-200 rounded-lg px-3 py-1.5"
+                    >
+                      Sửa lớp
+                    </Link>
+                    {session?.role === "admin" && <DeleteClassButton classId={c.id} />}
                   </div>
                 </div>
                 <AssignRow
