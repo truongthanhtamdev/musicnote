@@ -318,7 +318,7 @@ export const label = "block text-sm font-medium text-ink-700 mb-1.5";
 
 export function TableShell({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto scroll-thin">
+    <div className="overflow-x-auto scroll-thin scroll-shadow-x">
       <table className="w-full text-sm border-collapse">{children}</table>
     </div>
   );
@@ -417,7 +417,7 @@ export function DetailLink({ href, children = "Chi tiết" }: { href: string; ch
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-0.5 text-wood-600 hover:text-wood-700 font-semibold text-sm"
+      className="inline-flex items-center gap-0.5 text-wood-600 hover:text-wood-700 font-semibold text-sm whitespace-nowrap"
     >
       {children}
       <IconChevronRight className="w-3.5 h-3.5" />

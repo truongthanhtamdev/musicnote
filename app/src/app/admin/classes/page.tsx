@@ -181,8 +181,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
             <thead>
               <tr>
                 <Th>Học viên</Th>
-                <Th>Bộ môn</Th>
-                <Th>Lịch học</Th>
+                <Th>Lớp học</Th>
                 <Th>Buổi tiếp theo</Th>
                 <Th>Gói học</Th>
                 <Th>Giáo viên</Th>
@@ -206,10 +205,12 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                     }
                   >
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={c.student_name} className="w-8 h-8 text-[11px]" />
+                      {/* Chặn bề ngang: tên học viên dài (kèm "- USA") kéo cả
+                          bảng rộng hơn thẻ, phần trạng thái bị đẩy khuất viền. */}
+                      <div className="flex items-center gap-2.5 max-w-[230px]">
+                        <Avatar name={c.student_name} className="w-8 h-8 text-[11px] shrink-0" />
                         <div className="min-w-0">
-                          <p className="font-medium text-ink-900 truncate">
+                          <p className="font-medium text-ink-900">
                             {c.student_name}
                             {c.language === "en" && (
                               <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-navy-50 text-navy-700 align-middle">
@@ -235,15 +236,17 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                         </div>
                       </div>
                     </td>
+                    {/* Bộ môn và lịch học gộp một cột: tách hai cột thì bảng
+                        rộng hơn thẻ, cột trạng thái bị đẩy khuất ra ngoài viền. */}
                     <td className="px-4 py-3 text-ink-700">
                       <span className="flex items-center gap-1.5 whitespace-nowrap">
-                        <SubjectIcon subject={c.subject} className="w-4 h-4 text-wood-500" />
+                        <SubjectIcon subject={c.subject} className="w-4 h-4 shrink-0 text-wood-500" />
                         {c.subject}
+                        {c.level && <span className="text-xs text-ink-400">· {c.level}</span>}
                       </span>
-                      {c.level && <span className="block text-xs text-ink-400">{c.level}</span>}
-                    </td>
-                    <td className="px-4 py-3 text-ink-700 tabular whitespace-nowrap">
-                      {formatClassSchedule(c)}
+                      <span className="block text-xs text-ink-500 tabular whitespace-nowrap">
+                        {formatClassSchedule(c)}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-ink-700 tabular">
@@ -281,11 +284,11 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-ink-700 whitespace-nowrap">
+                    <td className="px-4 py-3 text-ink-700 max-w-[150px]">
                       {c.teacher_name || <StatusChip tone="amber">Chưa xếp GV</StatusChip>}
                     </td>
-                    <td className="px-4 py-3">
-                      <ClassStatusBadge stage={c.stage} />
+                    <td className="px-4 py-3 max-w-[120px]">
+                      <ClassStatusBadge stage={c.stage} wrap />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <DetailLink href={`/admin/classes/${c.id}`} />
