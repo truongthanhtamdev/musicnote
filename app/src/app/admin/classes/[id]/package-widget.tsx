@@ -11,6 +11,7 @@ import type { FormState } from "@/actions/teachers";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
 import { PACKAGE_OPTIONS, getSuggestedPackagePrice } from "@/lib/types";
 import { todayISO, formatVND } from "@/lib/format";
+import { MoneyInput } from "@/components/money-input";
 import type { PackageProgress, TuitionStatus } from "@/lib/queries";
 
 const initialState: FormState = {};
@@ -220,13 +221,11 @@ export default function PackageWidget({
                 <label className="block text-xs text-ink-500 mb-1" htmlFor="pk-amount">
                   Học phí đã đóng
                 </label>
-                <input
+                <MoneyInput
                   id="pk-amount"
                   name="amount"
-                  type="number"
-                  min={0}
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onValueChange={setAmount}
                   placeholder="Bỏ trống nếu chưa đóng"
                   className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm tabular"
                 />

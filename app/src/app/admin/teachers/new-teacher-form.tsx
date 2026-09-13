@@ -3,6 +3,7 @@
 import { useActionState, useRef, useEffect } from "react";
 import { createTeacherAction, type FormState } from "@/actions/teachers";
 import { SUBJECT_SUGGESTIONS } from "@/lib/types";
+import { MoneyInput } from "@/components/money-input";
 
 const initialState: FormState = {};
 
@@ -35,12 +36,10 @@ export default function NewTeacherForm() {
           placeholder="Số điện thoại"
           className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
         />
-        <input
+        <MoneyInput
           name="pay_per_session"
-          type="number"
-          min={0}
           placeholder="Lương/buổi (VNĐ)"
-          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm tabular"
         />
         <input
           name="password"

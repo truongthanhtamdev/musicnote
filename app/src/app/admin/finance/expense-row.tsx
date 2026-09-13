@@ -5,6 +5,7 @@ import { inlineAction } from "@/components/ui";
 import { updateExpenseAction } from "@/actions/finance";
 import type { FormState } from "@/actions/teachers";
 import { formatVND } from "@/lib/format";
+import { MoneyInput } from "@/components/money-input";
 import type { ExpenseRow as ExpenseRowType } from "@/lib/types";
 import DeleteExpenseButton from "./delete-expense-button";
 
@@ -33,14 +34,12 @@ export default function ExpenseRow({ expense }: { expense: ExpenseRowType }) {
           className="w-full rounded-lg border border-navy-200 px-2 py-1.5 text-sm"
         />
         <div className="grid grid-cols-2 gap-2">
-          <input
+          <MoneyInput
             name="amount"
-            type="number"
-            min="1"
             required
             defaultValue={expense.amount}
             aria-label="Số tiền"
-            className="rounded-lg border border-navy-200 px-2 py-1.5 text-sm tabular"
+            className="w-full rounded-lg border border-navy-200 px-2 py-1.5 text-sm tabular"
           />
           <input
             name="expense_date"

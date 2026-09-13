@@ -8,6 +8,7 @@ import {
 import type { FormState } from "@/actions/teachers";
 import type { PayrollAdjustmentRow } from "@/lib/queries";
 import { formatVND } from "@/lib/format";
+import { MoneyInput } from "@/components/money-input";
 import { btn, field, inlineAction } from "@/components/ui";
 
 const initialState: FormState = {};
@@ -83,13 +84,12 @@ export default function BonusCell({
         <form action={formAction} className="mt-1.5 flex flex-wrap justify-end gap-1.5">
           <input type="hidden" name="teacher_id" value={teacherId} />
           <input type="hidden" name="adjustment_date" value={defaultDate} />
-          <input
-            type="number"
+          <MoneyInput
             name="amount"
-            step="1000"
+            allowNegative
             required
             autoFocus
-            placeholder="200000"
+            placeholder="200.000"
             aria-label={`Số tiền thưởng cho ${teacherName}`}
             className={`${field} w-28 py-1 text-right tabular`}
           />

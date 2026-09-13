@@ -5,6 +5,7 @@ import { addExpenseAction } from "@/actions/finance";
 import type { FormState } from "@/actions/teachers";
 import { EXPENSE_CATEGORY_SUGGESTIONS } from "@/lib/types";
 import { todayISO } from "@/lib/format";
+import { MoneyInput } from "@/components/money-input";
 
 const initialState: FormState = {};
 
@@ -32,13 +33,11 @@ export default function NewExpenseForm() {
         ))}
       </datalist>
       <div className="grid grid-cols-2 gap-3">
-        <input
+        <MoneyInput
           name="amount"
-          type="number"
-          min="1"
           required
           placeholder="Số tiền (VNĐ)"
-          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm tabular"
         />
         <input
           name="expense_date"

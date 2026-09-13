@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { updateTeacherAction, type FormState } from "@/actions/teachers";
 import { parseLanguages, parseSubjects, SUBJECT_SUGGESTIONS, type UserRow } from "@/lib/types";
+import { MoneyInput } from "@/components/money-input";
 
 const initialState: FormState = {};
 
@@ -34,12 +35,10 @@ export default function EditTeacherForm({ teacher }: { teacher: UserRow }) {
       </div>
       <div>
         <label className="block text-xs text-ink-500 mb-1">Lương/buổi (VNĐ)</label>
-        <input
+        <MoneyInput
           name="pay_per_session"
-          type="number"
-          min={0}
           defaultValue={teacher.pay_per_session || ""}
-          className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm tabular"
         />
       </div>
       <div>

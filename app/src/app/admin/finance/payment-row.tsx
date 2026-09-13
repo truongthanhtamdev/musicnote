@@ -5,6 +5,7 @@ import { inlineAction } from "@/components/ui";
 import { updatePaymentAction } from "@/actions/finance";
 import type { FormState } from "@/actions/teachers";
 import { formatVND } from "@/lib/format";
+import { MoneyInput } from "@/components/money-input";
 import DeletePaymentButton from "./delete-payment-button";
 
 const initialState: FormState = {};
@@ -55,14 +56,12 @@ export default function PaymentRow({
           ))}
         </select>
         <div className="grid grid-cols-2 gap-2">
-          <input
+          <MoneyInput
             name="amount"
-            type="number"
-            min="1"
             required
             defaultValue={payment.amount}
             aria-label="Số tiền"
-            className="rounded-lg border border-navy-200 px-2 py-1.5 text-sm tabular"
+            className="w-full rounded-lg border border-navy-200 px-2 py-1.5 text-sm tabular"
           />
           <input
             name="paid_at"

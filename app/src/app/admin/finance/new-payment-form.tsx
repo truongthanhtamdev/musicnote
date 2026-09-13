@@ -5,6 +5,7 @@ import { recordPaymentAction } from "@/actions/finance";
 import type { FormState } from "@/actions/teachers";
 import { getSuggestedPackagePrice } from "@/lib/types";
 import { todayISO } from "@/lib/format";
+import { MoneyInput } from "@/components/money-input";
 
 const initialState: FormState = {};
 
@@ -53,15 +54,13 @@ export default function NewPaymentForm({
         ))}
       </select>
       <div className="grid grid-cols-2 gap-3">
-        <input
+        <MoneyInput
           name="amount"
-          type="number"
-          min="1"
           required
           placeholder="Số tiền (VNĐ)"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
+          onValueChange={setAmount}
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm tabular w-full"
         />
         <input
           name="paid_at"
