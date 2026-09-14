@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/modal";
 import { IconAlert, IconCheckCircle, SubjectIcon } from "@/components/icons";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
+import { JoinClassLink } from "@/components/join-class-link";
 import { Avatar, CustomerName, ProgressBar, StatusChip, btn, packageTone } from "@/components/ui";
 import { formatTimeRange } from "@/lib/format";
 import type { PackageProgress } from "@/lib/queries";
@@ -20,6 +21,7 @@ export interface TodayClass {
   start_time: string;
   duration_minutes: number;
   trial_pending: number;
+  meeting_url: string | null;
 }
 
 export default function TodayClassCard({
@@ -158,13 +160,16 @@ export default function TodayClassCard({
                 Quá giờ
               </StatusChip>
             )}
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              className={`${btn.primary} ${overdue ? "" : "bg-mint-500 hover:bg-mint-600"} px-3.5 py-2 ml-auto sm:ml-0`}
-            >
-              Điểm danh
-            </button>
+            <span className="ml-auto sm:ml-0 flex items-center gap-2">
+              <JoinClassLink url={cls.meeting_url} />
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className={`${btn.primary} ${overdue ? "" : "bg-mint-500 hover:bg-mint-600"} px-3.5 py-2`}
+              >
+                Điểm danh
+              </button>
+            </span>
           </div>
         </div>
       </div>

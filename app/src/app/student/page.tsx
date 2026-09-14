@@ -20,6 +20,7 @@ import {
 import { IconClock, IconMusic, SubjectIcon } from "@/components/icons";
 import { Card, CardHeader, EmptyState, ProgressBar, StatusChip, packageTone } from "@/components/ui";
 import { ContactButtons } from "@/components/contact-buttons";
+import { JoinClassLink } from "@/components/join-class-link";
 import SessionActions from "./session-actions";
 
 function countdownLabel(daysAway: number): string {
@@ -98,6 +99,11 @@ export default async function StudentHomePage() {
                       <StatusChip tone={item.daysAway <= 1 ? "coral" : "navy"}>
                         {countdownLabel(item.daysAway)}
                       </StatusChip>
+                      {/* Buổi sắp tới trong hôm nay hoặc ngày mai mới cho vào
+                          phòng — hiện nút cho buổi hai tuần nữa chỉ gây bấm nhầm. */}
+                      {item.daysAway <= 1 && !item.recorded && (
+                        <JoinClassLink url={item.cls.meeting_url} size="sm" />
+                      )}
                       {item.recorded ? (
                         <StatusChip tone={item.recorded.countsAsUsed ? "amber" : "neutral"}>
                           {item.recorded.status === "rescheduled"

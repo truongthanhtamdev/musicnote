@@ -154,3 +154,23 @@ export function foldVietnamese(value: string): string {
     .replace(/[đĐ]/g, (c) => (c === "đ" ? "d" : "D"))
     .toLowerCase();
 }
+
+/**
+ * Link phòng học online mà giáo vụ dán vào: chấp nhận link Google Meet, Zoom,
+ * Zalo... Thiếu "https://" thì thêm giúp, vì dán từ điện thoại hay rớt.
+ * Trả về null khi ô để trống, và cũng null khi không phải link để không lưu
+ * rác vào nút "Vào lớp" của học viên.
+ */
+export function normalizeMeetingUrl(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    if (!url.hostname.includes(".")) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}

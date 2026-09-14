@@ -173,6 +173,33 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    /*
+     * Tin nhắn giữa khách (học viên / phụ huynh) và giáo viên của một lớp.
+     *
+     * Gắn theo LỚP chứ không theo cặp người: một bé có thể học hai lớp với hai
+     * giáo viên khác nhau, hỏi bài lớp nào phải nằm trong lớp đó. Giáo vụ đọc
+     * được mọi lớp — vừa để hỗ trợ, vừa để hai bên đều yên tâm là có người của
+     * trung tâm nhìn thấy.
+     */
+    CREATE TABLE IF NOT EXISTS class_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_class_messages_class
+      ON class_messages(class_id, id);
+
+    -- Mỗi người đọc tới đâu trong từng lớp, để đếm tin chưa đọc.
+    CREATE TABLE IF NOT EXISTS class_message_reads (
+      class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      last_read_message_id INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (class_id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS trial_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -266,6 +293,9 @@ function migrate() {
   ensureColumn("classes", "stage", "TEXT NOT NULL DEFAULT 'studying'");
   ensureColumn("classes", "paused_until", "TEXT");
   ensureColumn("classes", "code", "TEXT");
+  // Link phòng học online (Google Meet / Zoom / Zalo) dùng chung cho mọi buổi
+  // của lớp — trung tâm dạy 1 kèm 1 nên mỗi lớp một phòng cố định là đủ.
+  ensureColumn("classes", "meeting_url", "TEXT");
   // Index phải tạo SAU ensureColumn: `code` là cột thêm sau, database mới toanh
   // chưa có nó lúc chạy khối CREATE TABLE ở trên.
   db.exec("CREATE INDEX IF NOT EXISTS idx_classes_code ON classes(code)");

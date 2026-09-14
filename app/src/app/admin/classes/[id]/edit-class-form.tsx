@@ -129,6 +129,22 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
           <option value="60">60 phút</option>
           <option value="90">90 phút</option>
         </select>
+        <div className="col-span-2">
+          <label className="block text-xs text-ink-500 mb-1" htmlFor="cls-meeting">
+            Link phòng học online
+          </label>
+          <input
+            id="cls-meeting"
+            name="meeting_url"
+            defaultValue={cls.meeting_url || ""}
+            placeholder="VD: meet.google.com/abc-defg-hij"
+            className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-ink-400 mt-1">
+            Dán link Google Meet, Zoom hoặc Zalo. Giáo viên và học viên sẽ thấy nút “Vào lớp”
+            trong lịch của mình.
+          </p>
+        </div>
         <input
           name="notes"
           defaultValue={cls.notes || ""}

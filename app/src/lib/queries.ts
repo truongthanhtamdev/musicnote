@@ -10,6 +10,7 @@ import {
   now,
 } from "./format";
 import {
+  formatClassSchedule,
   getSuggestedPackagePrice,
   parseLanguages,
   parseSubjects,
@@ -23,8 +24,10 @@ import {
   type AttendanceRow,
   type AttendanceStatus,
   type BusySlotRow,
+  type ClassMessageRow,
   type ClassRow,
   type ExpenseRow,
+  type Role,
   type NotificationRow,
   type PackageRow,
   type PaymentRow,
@@ -1435,4 +1438,118 @@ export function listCustomerProfiles(): CustomerProfile[] {
   }
 
   return out.sort((a, b) => a.customerName.localeCompare(b.customerName, "vi"));
+}
+
+/* ------------------------ Tin nhắn khách ↔ giáo viên ----------------------- */
+
+export interface ClassMessage extends ClassMessageRow {
+  sender_name: string;
+  sender_role: Role;
+}
+
+/** Ai được đọc và nhắn trong lớp này: học viên của lớp, giáo viên của lớp, giáo vụ. */
+export function canUseClassChat(cls: ClassRow, userId: number, role: Role): boolean {
+  if (role === "admin" || role === "coordinator") return true;
+  if (role === "teacher") return cls.teacher_id === userId;
+  return cls.student_user_id === userId;
+}
+
+export function listClassMessages(classId: number): ClassMessage[] {
+  return db
+    .prepare(
+      `SELECT m.*, u.name as sender_name, u.role as sender_role
+       FROM class_messages m
+       JOIN users u ON u.id = m.sender_id
+       WHERE m.class_id = ?
+       ORDER BY m.id`
+    )
+    .all(classId) as ClassMessage[];
+}
+
+export interface MessageThread {
+  classId: number;
+  /** Người bên kia: giáo viên nhìn thấy tên học viên và ngược lại. */
+  title: string;
+  subtitle: string;
+  lastBody: string | null;
+  lastAt: string | null;
+  unread: number;
+}
+
+/**
+ * Danh sách hội thoại của một người, kèm số tin chưa đọc.
+ *
+ * Giáo viên thấy các lớp mình dạy, học viên thấy các lớp mình học. Lớp chưa ai
+ * nhắn gì vẫn hiện, để bên nào cũng mở lời được trước.
+ */
+export function listMessageThreads(userId: number, role: Role): MessageThread[] {
+  const mine =
+    role === "teacher"
+      ? (db
+          .prepare(
+            `SELECT c.*, u.name as teacher_name FROM classes c
+             LEFT JOIN users u ON u.id = c.teacher_id
+             WHERE c.teacher_id = ? AND c.status <> 'ended'
+             ORDER BY c.day_of_week, c.start_time`
+          )
+          .all(userId) as ClassWithTeacher[])
+      : (db
+          .prepare(
+            `SELECT c.*, u.name as teacher_name FROM classes c
+             LEFT JOIN users u ON u.id = c.teacher_id
+             WHERE c.student_user_id = ? AND c.status <> 'ended'
+             ORDER BY c.day_of_week, c.start_time`
+          )
+          .all(userId) as ClassWithTeacher[]);
+  if (mine.length === 0) return [];
+
+  const lastRead = new Map<number, number>();
+  for (const r of db
+    .prepare("SELECT class_id, last_read_message_id FROM class_message_reads WHERE user_id = ?")
+    .all(userId) as { class_id: number; last_read_message_id: number }[]) {
+    lastRead.set(r.class_id, r.last_read_message_id);
+  }
+
+  const lastByClass = new Map<number, { id: number; body: string; created_at: string }>();
+  for (const m of db
+    .prepare(
+      `SELECT class_id, id, body, created_at FROM class_messages m
+       WHERE m.id = (SELECT MAX(id) FROM class_messages x WHERE x.class_id = m.class_id)`
+    )
+    .all() as { class_id: number; id: number; body: string; created_at: string }[]) {
+    lastByClass.set(m.class_id, m);
+  }
+
+  const unreadCount = db.prepare(
+    "SELECT COUNT(*) as c FROM class_messages WHERE class_id = ? AND id > ? AND sender_id <> ?"
+  );
+
+  const threads = mine.map((cls) => {
+    const last = lastByClass.get(cls.id);
+    const seen = lastRead.get(cls.id) ?? 0;
+    const { c } = unreadCount.get(cls.id, seen, userId) as { c: number };
+    return {
+      classId: cls.id,
+      title: role === "teacher" ? cls.student_name : cls.teacher_name || "Chưa xếp giáo viên",
+      subtitle: `${cls.subject} · ${formatClassSchedule(cls)}`,
+      lastBody: last?.body ?? null,
+      lastAt: last?.created_at ?? null,
+      unread: c,
+    };
+  });
+
+  // Hội thoại có tin mới nhất lên đầu, như mọi ứng dụng nhắn tin; lớp chưa ai
+  // nhắn gì xếp sau theo lịch tuần. Giáo viên dạy vài chục lớp mà tin mới nằm
+  // lẫn giữa danh sách thì coi như không thấy.
+  return threads.sort((a, b) => {
+    if (a.lastAt && b.lastAt) return a.lastAt < b.lastAt ? 1 : -1;
+    if (a.lastAt) return -1;
+    if (b.lastAt) return 1;
+    return 0;
+  });
+}
+
+/** Tổng tin chưa đọc của một người, dùng cho chấm đỏ trên thanh menu. */
+export function countUnreadMessages(userId: number, role: Role): number {
+  return listMessageThreads(userId, role).reduce((sum, t) => sum + t.unread, 0);
 }

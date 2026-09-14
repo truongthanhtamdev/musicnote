@@ -61,6 +61,16 @@ export interface ClassRow {
   stage: ClassStage;
   /** Ngày dự kiến học lại, chỉ có nghĩa khi stage đang là một trạng thái Tạm OFF. */
   paused_until: string | null;
+  /** Link phòng học online cố định của lớp (Google Meet / Zoom / Zalo). */
+  meeting_url: string | null;
+  created_at: string;
+}
+
+export interface ClassMessageRow {
+  id: number;
+  class_id: number;
+  sender_id: number;
+  body: string;
   created_at: string;
 }
 
@@ -568,3 +578,6 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
 export function hasRescheduleInfo(status: AttendanceStatus): boolean {
   return status !== "completed";
 }
+
+/** Tối đa một tin nhắn, đủ dài cho một câu hỏi bài nhưng không thành bài văn. */
+export const MESSAGE_MAX_LENGTH = 2000;

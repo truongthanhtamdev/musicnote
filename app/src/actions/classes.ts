@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole, ForbiddenError } from "@/lib/guard";
-import { normalizeFacebookUrl, todayISO } from "@/lib/format";
+import { normalizeFacebookUrl, normalizeMeetingUrl, todayISO } from "@/lib/format";
 import {
   notifyUser,
   getClass,
@@ -278,6 +278,7 @@ export async function updateClassAction(
   const startTime = scheduleType === "flexible" ? "" : String(formData.get("start_time") || "");
   const durationMinutes = Number(formData.get("duration_minutes") || 60);
   const notes = String(formData.get("notes") || "").trim();
+  const meetingUrl = normalizeMeetingUrl(String(formData.get("meeting_url") || ""));
 
   if (!id || !studentName || (scheduleType === "fixed" && (Number.isNaN(dayOfWeek) || !startTime))) {
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
@@ -285,7 +286,7 @@ export async function updateClassAction(
 
   const result = db
     .prepare(
-      `UPDATE classes SET student_name=?, student_phone=?, guardian_name=?, facebook_url=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?
+      `UPDATE classes SET student_name=?, student_phone=?, guardian_name=?, facebook_url=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?, meeting_url=?
        WHERE id = ? ${session.role === "teacher" ? "AND teacher_id = ?" : ""}`
     )
     .run(
@@ -302,6 +303,7 @@ export async function updateClassAction(
         startTime,
         durationMinutes || 60,
         notes || null,
+        meetingUrl,
         id,
         ...(session.role === "teacher" ? [session.userId] : []),
       ] as (string | number | null)[])

@@ -6,10 +6,12 @@ import {
   getAttendance,
   listUnreadNotifications,
   countPendingRescheduleRequests,
+  countUnreadMessages,
 } from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
 import {
   IconCalendarCheck,
+  IconChat,
   IconClasses,
   IconClock,
   IconHome,
@@ -20,6 +22,7 @@ const ICON = "w-5 h-5";
 
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole(["teacher"]);
+  const unreadMessages = countUnreadMessages(session.userId, "teacher");
 
   const links: NavItem[] = [
     { href: "/teacher", label: "Hôm nay", icon: <IconHome className={ICON} /> },
@@ -31,6 +34,12 @@ export default async function TeacherLayout({ children }: { children: React.Reac
     },
     { href: "/teacher/availability", label: "Lịch tuần", icon: <IconClock className={ICON} /> },
     { href: "/teacher/earnings", label: "Thu nhập", icon: <IconWallet className={ICON} /> },
+    {
+      href: "/teacher/messages",
+      label: "Tin nhắn",
+      icon: <IconChat className={ICON} />,
+      badge: unreadMessages || undefined,
+    },
   ];
 
   // Badge chuông: lớp hôm nay chưa điểm danh + thông báo chưa đọc + đơn xin dời lịch chờ duyệt.
