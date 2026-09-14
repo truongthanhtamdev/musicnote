@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { DAY_ORDER, TIME_SLOTS } from "./types";
 import { addMinutesToTime } from "./format";
 
@@ -174,31 +175,26 @@ function migrate() {
     );
 
     /*
-     * Tin nhắn giữa khách (học viên / phụ huynh) và giáo viên của một lớp.
+     * Khách chấm 1–5 sao cho một buổi học đã diễn ra.
      *
-     * Gắn theo LỚP chứ không theo cặp người: một bé có thể học hai lớp với hai
-     * giáo viên khác nhau, hỏi bài lớp nào phải nằm trong lớp đó. Giáo vụ đọc
-     * được mọi lớp — vừa để hỗ trợ, vừa để hai bên đều yên tâm là có người của
-     * trung tâm nhìn thấy.
+     * Gắn theo BUỔI (lớp + ngày) chứ không theo giáo viên, để biết chính xác
+     * buổi nào bị chấm thấp mà xem lại; điểm của giáo viên là trung bình các
+     * buổi họ dạy. Lưu luôn teacher_id lúc chấm, vì lớp có thể đổi giáo viên
+     * sau này mà điểm cũ phải thuộc về người đã dạy buổi đó.
      */
-    CREATE TABLE IF NOT EXISTS class_messages (
+    CREATE TABLE IF NOT EXISTS session_ratings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-      sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      body TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      teacher_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      session_date TEXT NOT NULL,
+      stars INTEGER NOT NULL CHECK(stars BETWEEN 1 AND 5),
+      comment TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(class_id, session_date)
     );
 
-    CREATE INDEX IF NOT EXISTS idx_class_messages_class
-      ON class_messages(class_id, id);
-
-    -- Mỗi người đọc tới đâu trong từng lớp, để đếm tin chưa đọc.
-    CREATE TABLE IF NOT EXISTS class_message_reads (
-      class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      last_read_message_id INTEGER NOT NULL DEFAULT 0,
-      PRIMARY KEY (class_id, user_id)
-    );
+    CREATE INDEX IF NOT EXISTS idx_session_ratings_teacher
+      ON session_ratings(teacher_id, created_at);
 
     CREATE TABLE IF NOT EXISTS trial_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -288,6 +284,9 @@ function migrate() {
   ensureColumn("attendance", "rescheduled_to_date", "TEXT");
   ensureColumn("attendance", "rescheduled_to_time", "TEXT");
   ensureColumn("classes", "trial_pending", "INTEGER NOT NULL DEFAULT 0");
+  // Mã ngẫu nhiên trong link chấm sao gửi cho khách qua Zalo — khách không có
+  // tài khoản vẫn chấm được, mà người ngoài không đoán ra link của buổi khác.
+  ensureColumn("attendance", "rating_token", "TEXT");
   ensureColumn("attendance", "counts_as_used", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("attendance", "late_checkin", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("classes", "stage", "TEXT NOT NULL DEFAULT 'studying'");
@@ -419,6 +418,18 @@ function invertAvailabilityToBusyOnce() {
   // lịch trước đó chưa hề nói là rảnh lúc 5 giờ sáng, nên đánh bận sẵn các
   // khung mới cho họ — ai muốn dạy sớm thì tự bỏ tô. Người chưa từng tô lịch
   // vẫn để trống, đúng như mọi khung giờ khác của họ.
+  // Buổi đã điểm danh trước khi có tính năng chấm sao vẫn cần link, nếu không
+  // giáo vụ mở danh sách ra thấy toàn "–" mà không hiểu vì sao.
+  runOnce("backfill_rating_tokens", () => {
+    const rows = db
+      .prepare("SELECT id FROM attendance WHERE rating_token IS NULL")
+      .all() as { id: number }[];
+    const update = db.prepare("UPDATE attendance SET rating_token = ? WHERE id = ?");
+    for (const r of rows) {
+      update.run(crypto.randomBytes(9).toString("base64url"), r.id);
+    }
+  });
+
   runOnce("busy_early_slots", () => {
     const early = TIME_SLOTS.filter((t) => t < "07:00");
     const teachers = db

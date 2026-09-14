@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth";
-import { computePayroll, listAttendance } from "@/lib/queries";
+import { computePayroll, listAttendance, listRecentRatings, ratingsByTeacher } from "@/lib/queries";
 import { firstDayOfMonth, formatVND, lastDayOfMonth } from "@/lib/format";
 import { TRIAL_SESSION_RATE } from "@/lib/types";
 import { IconCheckCircle, IconFilter, IconWallet } from "@/components/icons";
@@ -16,6 +16,8 @@ export default async function TeacherEarningsPage({
   const to = sp.to || lastDayOfMonth();
 
   const mine = computePayroll(from, to).find((r) => r.teacher_id === session!.userId);
+  const rating = ratingsByTeacher(from, to).get(session!.userId);
+  const comments = listRecentRatings(10, session!.userId).filter((r) => r.comment);
   const rows = listAttendance({ teacherId: session!.userId, from, to }).filter(
     (a) => a.status === "completed"
   );
@@ -54,7 +56,7 @@ export default async function TeacherEarningsPage({
         </form>
       </Card>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <MetricCard
           label="Số tiết đã dạy"
           value={mine?.completed_sessions ?? 0}
@@ -68,6 +70,12 @@ export default async function TeacherEarningsPage({
           unit="buổi"
           hint={`${formatVND(TRIAL_SESSION_RATE)}/buổi`}
           tone="wood"
+        />
+        <MetricCard
+          label="Khách chấm"
+          value={rating ? `★ ${rating.average.toFixed(1)}` : "–"}
+          hint={rating ? `${rating.count} lượt đánh giá` : "Chưa có lượt nào"}
+          tone="amber"
         />
         <MetricCard
           label="Đơn giá mỗi tiết"
@@ -90,6 +98,33 @@ export default async function TeacherEarningsPage({
           icon={<IconWallet className="w-5 h-5" />}
         />
       </div>
+
+      {comments.length > 0 && (
+        <Card padded={false}>
+          <div className="px-5 py-3.5 border-b border-navy-100">
+            <h2 className="font-semibold text-ink-900">Khách nhận xét</h2>
+            <p className="text-sm text-ink-500 mt-0.5">
+              Khách chấm sao sau buổi học. Nhận xét nào chưa vui, bạn nhắn giáo vụ để cùng xử lý.
+            </p>
+          </div>
+          <ul className="divide-y divide-navy-100">
+            {comments.map((r) => (
+              <li key={r.id} className="px-5 py-3">
+                <p className="text-sm">
+                  <span className="text-amber-600 font-semibold">
+                    {"★".repeat(r.stars)}
+                    <span className="text-ink-200">{"★".repeat(5 - r.stars)}</span>
+                  </span>{" "}
+                  <span className="text-ink-500 tabular">
+                    {r.student_name} · {r.session_date}
+                  </span>
+                </p>
+                <p className="text-sm text-ink-700 mt-0.5">{r.comment}</p>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card padded={false}>
         <div className="px-5 py-3.5 border-b border-navy-100">

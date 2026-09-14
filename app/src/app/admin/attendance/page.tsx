@@ -168,14 +168,14 @@ export default async function AttendancePage({
           <TableShell>
             <thead>
               <tr>
-                <Th>Ngày</Th>
+                <Th>Ngày & giờ</Th>
                 <Th>Học viên</Th>
                 <Th>Giáo viên</Th>
                 <Th>Trạng thái</Th>
                 <Th>Check-in FB</Th>
-                <Th>Giờ điểm danh</Th>
-                <Th>Nội dung bài học</Th>
+                <Th>Nội dung</Th>
                 <Th>Ghi chú</Th>
+                <Th>Khách chấm</Th>
                 <Th />
               </tr>
             </thead>

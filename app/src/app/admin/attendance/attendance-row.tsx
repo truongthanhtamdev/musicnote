@@ -6,12 +6,13 @@ import type { FormState } from "@/actions/teachers";
 import {
   ATTENDANCE_STATUS_LABELS,
   hasRescheduleInfo,
-  type AttendanceRow as AttendanceRowType,
   type AttendanceStatus,
 } from "@/lib/types";
+import type { AttendanceWithContext } from "@/lib/queries";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 import { IconAlert } from "@/components/icons";
 import { Avatar, StatusChip, btn, field, inlineAction } from "@/components/ui";
+import { RatingLinkButton } from "@/components/rating-link-button";
 import { TimeSelect } from "@/components/time-select";
 
 const initialState: FormState = {};
@@ -20,7 +21,7 @@ export default function AttendanceRow({
   row,
   sessionNumber,
 }: {
-  row: AttendanceRowType & { student_name: string; teacher_name: string };
+  row: AttendanceWithContext;
   /** Buổi thứ mấy của học viên trong gói học. */
   sessionNumber?: number;
 }) {
@@ -135,14 +136,19 @@ export default function AttendanceRow({
 
   return (
     <tr className={row.status === "completed" ? "hover:bg-ivory-50" : "bg-coral-50/30"}>
-      <td className="px-4 py-3 tabular whitespace-nowrap text-ink-700">{row.session_date}</td>
+      <td className="px-4 py-3 tabular whitespace-nowrap text-ink-700">
+        {row.session_date}
+        {row.check_in_time && (
+          <span className="block text-xs text-ink-400">{row.check_in_time}</span>
+        )}
+      </td>
       <td className="px-4 py-3">
         <span className="flex items-center gap-2 font-medium text-ink-900 whitespace-nowrap">
           <Avatar name={row.student_name} className="w-7 h-7 text-[10px]" />
           {row.student_name}
         </span>
       </td>
-      <td className="px-4 py-3 text-ink-700 whitespace-nowrap">{row.teacher_name}</td>
+      <td className="px-4 py-3 text-ink-700 max-w-[130px]">{row.teacher_name}</td>
       <td className="px-4 py-3">
         <AttendanceStatusCell row={row} sessionNumber={sessionNumber} />
       </td>
@@ -155,7 +161,6 @@ export default function AttendanceRow({
           <span className="text-ink-400">–</span>
         )}
       </td>
-      <td className="px-4 py-3 tabular text-ink-500">{row.check_in_time || "–"}</td>
       <td className="px-4 py-3 text-ink-600 max-w-[220px]">
         <span className="block truncate" title={row.lesson_content || undefined}>
           {row.lesson_content || "–"}
@@ -165,6 +170,13 @@ export default function AttendanceRow({
         <span className="block truncate" title={row.note || undefined}>
           {row.note || "–"}
         </span>
+      </td>
+      <td className="px-4 py-3 whitespace-nowrap">
+        {row.status === "completed" ? (
+          <RatingLinkButton token={row.rating_token} stars={row.rating_stars} />
+        ) : (
+          <span className="text-ink-300">–</span>
+        )}
       </td>
       <td className="px-4 py-3 text-right">
         <button

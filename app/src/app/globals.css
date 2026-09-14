@@ -39,6 +39,8 @@
   --color-ink-600: #4e5c6e;
   --color-ink-500: #64748b;
   --color-ink-400: #94a3b8;
+  /* Sao chưa chọn trên ô chấm điểm — nhạt hơn hẳn chữ phụ để nhìn ra ngay. */
+  --color-ink-200: #cbd5e1;
 
   /* Wood — accent guitar, CTA phụ */
   --color-wood-50: #fbf5ec;

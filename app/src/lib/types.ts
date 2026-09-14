@@ -66,13 +66,6 @@ export interface ClassRow {
   created_at: string;
 }
 
-export interface ClassMessageRow {
-  id: number;
-  class_id: number;
-  sender_id: number;
-  body: string;
-  created_at: string;
-}
 
 export interface PackageRow {
   id: number;
@@ -338,6 +331,8 @@ export interface AttendanceRow {
    * lúc giáo viên tạo bản ghi; sửa lại sau này không làm thay đổi cờ.
    */
   late_checkin: number;
+  /** Mã trong link chấm sao gửi cho khách; chỉ buổi "Đã dạy" mới dùng tới. */
+  rating_token: string | null;
   created_at: string;
 }
 
@@ -578,6 +573,3 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
 export function hasRescheduleInfo(status: AttendanceStatus): boolean {
   return status !== "completed";
 }
-
-/** Tối đa một tin nhắn, đủ dài cho một câu hỏi bài nhưng không thành bài văn. */
-export const MESSAGE_MAX_LENGTH = 2000;

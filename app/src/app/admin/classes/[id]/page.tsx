@@ -12,11 +12,10 @@ import {
   listPackageSlots,
   sessionNumberMap,
   getTuitionStatusForClasses,
-  listClassMessages,
 } from "@/lib/queries";
 import { LANGUAGE_LABELS, SOURCE_LABELS, formatClassSchedule } from "@/lib/types";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
-import { IconCalendarCheck, IconChat, IconChevronLeft, SubjectIcon } from "@/components/icons";
+import { IconCalendarCheck, IconChevronLeft, SubjectIcon } from "@/components/icons";
 import {
   Avatar,
   Card,
@@ -32,7 +31,6 @@ import WeeklySlots from "./weekly-slots";
 import ClassActions from "./class-actions";
 import PackageWidget from "./package-widget";
 import StudentLinkWidget from "./student-link-widget";
-import ClassChat from "@/components/class-chat";
 import { JoinClassLink } from "@/components/join-class-link";
 
 export default async function ClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -55,7 +53,6 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   const students = listStudents();
   const progress = getPackageProgress(cls);
   const tuition = getTuitionStatusForClasses([cls]).get(cls.id) ?? null;
-  const messages = listClassMessages(classId);
   const weeklySlots = listPackageSlots(cls);
   const siblings = listSiblingClasses(cls)
     .filter((s) => s.package_id)
@@ -98,6 +95,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
             </p>
           </div>
         </div>
+        <JoinClassLink url={cls.meeting_url} />
         <ClassActions
           classId={cls.id}
           stage={cls.stage}
@@ -123,18 +121,6 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
               <WeeklySlots classId={cls.id} slots={weeklySlots} />
             </Card>
           )}
-          {/* Giáo vụ đọc và trả lời được khung chat giữa khách và giáo viên —
-              vừa để hỗ trợ khi giáo viên bận, vừa để hai bên yên tâm là có
-              người của trung tâm theo dõi. */}
-          <Card padded={false}>
-            <CardHeader
-              title="Tin nhắn với khách"
-              count={messages.length || undefined}
-              icon={<IconChat className="w-4.5 h-4.5 text-wood-500" />}
-              action={<JoinClassLink url={cls.meeting_url} size="sm" />}
-            />
-            <ClassChat classId={cls.id} messages={messages} meId={session!.userId} />
-          </Card>
         </div>
         <div className="space-y-5">
           <PackageWidget

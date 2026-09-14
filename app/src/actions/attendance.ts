@@ -1,5 +1,7 @@
 "use server";
 
+import crypto from "crypto";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { nowHHMM, todayISO } from "@/lib/format";
@@ -124,8 +126,8 @@ export async function markAttendanceAction(
     // này không biến nó thành buổi bù.
     const lateCheckin = sessionDate < todayISO() ? 1 : 0;
     db.prepare(
-      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note, rescheduled_to_date, rescheduled_to_time, counts_as_used, late_checkin)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO attendance (class_id, teacher_id, session_date, status, check_in_time, check_out_time, fb_checkin_confirmed, lesson_content, is_trial, note, rescheduled_to_date, rescheduled_to_time, counts_as_used, late_checkin, rating_token)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       classId,
       session.userId,
@@ -140,7 +142,10 @@ export async function markAttendanceAction(
       rescheduledToDate || null,
       rescheduledToTime || null,
       countsAsUsed,
-      lateCheckin
+      lateCheckin,
+      // Sinh sẵn mã link chấm sao ngay lúc điểm danh, để giáo vụ gửi cho khách
+      // được liền sau buổi học.
+      crypto.randomBytes(9).toString("base64url")
     );
   }
 

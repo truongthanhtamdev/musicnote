@@ -10,7 +10,6 @@ import {
   now,
 } from "./format";
 import {
-  formatClassSchedule,
   getSuggestedPackagePrice,
   parseLanguages,
   parseSubjects,
@@ -24,10 +23,8 @@ import {
   type AttendanceRow,
   type AttendanceStatus,
   type BusySlotRow,
-  type ClassMessageRow,
   type ClassRow,
   type ExpenseRow,
-  type Role,
   type NotificationRow,
   type PackageRow,
   type PaymentRow,
@@ -636,12 +633,19 @@ export function getAttendance(classId: number, sessionDate: string): AttendanceR
     .get(classId, sessionDate) as AttendanceRow | undefined;
 }
 
+export interface AttendanceWithContext extends AttendanceRow {
+  student_name: string;
+  teacher_name: string;
+  /** Số sao khách đã chấm cho buổi này, null nếu chưa chấm. */
+  rating_stars: number | null;
+}
+
 export function listAttendance(filter?: {
   teacherId?: number;
   from?: string;
   to?: string;
   classId?: number;
-}): (AttendanceRow & { student_name: string; teacher_name: string })[] {
+}): AttendanceWithContext[] {
   const clauses: string[] = [];
   const params: Record<string, unknown> = {};
   if (filter?.teacherId) {
@@ -663,14 +667,17 @@ export function listAttendance(filter?: {
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   return db
     .prepare(
-      `SELECT a.*, c.student_name as student_name, u.name as teacher_name
+      `SELECT a.*, c.student_name as student_name, u.name as teacher_name,
+              r.stars as rating_stars
        FROM attendance a
        JOIN classes c ON c.id = a.class_id
        JOIN users u ON u.id = a.teacher_id
+       LEFT JOIN session_ratings r
+         ON r.class_id = a.class_id AND r.session_date = a.session_date
        ${where}
        ORDER BY a.session_date DESC, a.check_in_time DESC`
     )
-    .all(params) as (AttendanceRow & { student_name: string; teacher_name: string })[];
+    .all(params) as AttendanceWithContext[];
 }
 
 export interface PayrollRow {
@@ -1440,116 +1447,125 @@ export function listCustomerProfiles(): CustomerProfile[] {
   return out.sort((a, b) => a.customerName.localeCompare(b.customerName, "vi"));
 }
 
-/* ------------------------ Tin nhắn khách ↔ giáo viên ----------------------- */
 
-export interface ClassMessage extends ClassMessageRow {
-  sender_name: string;
-  sender_role: Role;
+/* ---------------------- Khách chấm sao buổi học ---------------------- */
+
+export interface SessionRatingRow {
+  id: number;
+  class_id: number;
+  teacher_id: number | null;
+  session_date: string;
+  stars: number;
+  comment: string | null;
+  created_at: string;
 }
 
-/** Ai được đọc và nhắn trong lớp này: học viên của lớp, giáo viên của lớp, giáo vụ. */
-export function canUseClassChat(cls: ClassRow, userId: number, role: Role): boolean {
-  if (role === "admin" || role === "coordinator") return true;
-  if (role === "teacher") return cls.teacher_id === userId;
-  return cls.student_user_id === userId;
+export interface RatingInvite {
+  classId: number;
+  sessionDate: string;
+  teacherId: number;
+  teacherName: string;
+  studentName: string;
+  subject: string;
+  /** Điểm đã chấm, null nghĩa là khách chưa chấm. */
+  rating: SessionRatingRow | null;
 }
 
-export function listClassMessages(classId: number): ClassMessage[] {
+/** Tìm buổi học theo mã trong link chấm sao gửi cho khách. */
+export function getRatingInvite(token: string): RatingInvite | undefined {
+  const row = db
+    .prepare(
+      `SELECT a.class_id, a.session_date, a.teacher_id, u.name as teacher_name,
+              c.student_name, c.subject
+       FROM attendance a
+       JOIN classes c ON c.id = a.class_id
+       LEFT JOIN users u ON u.id = a.teacher_id
+       WHERE a.rating_token = ? AND a.status = 'completed'`
+    )
+    .get(token) as
+    | {
+        class_id: number;
+        session_date: string;
+        teacher_id: number;
+        teacher_name: string | null;
+        student_name: string;
+        subject: string;
+      }
+    | undefined;
+  if (!row) return undefined;
+
+  return {
+    classId: row.class_id,
+    sessionDate: row.session_date,
+    teacherId: row.teacher_id,
+    teacherName: row.teacher_name || "giáo viên",
+    studentName: row.student_name,
+    subject: row.subject,
+    rating: getSessionRating(row.class_id, row.session_date) ?? null,
+  };
+}
+
+export function getSessionRating(
+  classId: number,
+  sessionDate: string
+): SessionRatingRow | undefined {
+  return db
+    .prepare("SELECT * FROM session_ratings WHERE class_id = ? AND session_date = ?")
+    .get(classId, sessionDate) as SessionRatingRow | undefined;
+}
+
+export interface TeacherRating {
+  count: number;
+  average: number;
+  /** Số buổi bị chấm 1–2 sao, cần xem lại. */
+  low: number;
+}
+
+/** Điểm trung bình của từng giáo viên trong khoảng ngày. */
+export function ratingsByTeacher(from?: string, to?: string): Map<number, TeacherRating> {
+  const where = from && to ? "WHERE r.session_date >= ? AND r.session_date <= ?" : "";
+  const rows = db
+    .prepare(
+      `SELECT teacher_id, COUNT(*) as count, AVG(stars) as average,
+              SUM(CASE WHEN stars <= 2 THEN 1 ELSE 0 END) as low
+       FROM session_ratings r ${where}
+       GROUP BY teacher_id`
+    )
+    .all(...(from && to ? [from, to] : [])) as {
+    teacher_id: number | null;
+    count: number;
+    average: number;
+    low: number;
+  }[];
+
+  const out = new Map<number, TeacherRating>();
+  for (const r of rows) {
+    if (r.teacher_id === null) continue;
+    out.set(r.teacher_id, {
+      count: r.count,
+      average: Math.round(r.average * 10) / 10,
+      low: r.low,
+    });
+  }
+  return out;
+}
+
+export interface RatingWithContext extends SessionRatingRow {
+  student_name: string;
+  teacher_name: string | null;
+  subject: string;
+}
+
+/** Đánh giá gần đây, để giáo vụ đọc nhận xét của khách. */
+export function listRecentRatings(limit = 30, teacherId?: number): RatingWithContext[] {
   return db
     .prepare(
-      `SELECT m.*, u.name as sender_name, u.role as sender_role
-       FROM class_messages m
-       JOIN users u ON u.id = m.sender_id
-       WHERE m.class_id = ?
-       ORDER BY m.id`
+      `SELECT r.*, c.student_name, c.subject, u.name as teacher_name
+       FROM session_ratings r
+       JOIN classes c ON c.id = r.class_id
+       LEFT JOIN users u ON u.id = r.teacher_id
+       ${teacherId ? "WHERE r.teacher_id = ?" : ""}
+       ORDER BY r.id DESC LIMIT ?`
     )
-    .all(classId) as ClassMessage[];
-}
-
-export interface MessageThread {
-  classId: number;
-  /** Người bên kia: giáo viên nhìn thấy tên học viên và ngược lại. */
-  title: string;
-  subtitle: string;
-  lastBody: string | null;
-  lastAt: string | null;
-  unread: number;
-}
-
-/**
- * Danh sách hội thoại của một người, kèm số tin chưa đọc.
- *
- * Giáo viên thấy các lớp mình dạy, học viên thấy các lớp mình học. Lớp chưa ai
- * nhắn gì vẫn hiện, để bên nào cũng mở lời được trước.
- */
-export function listMessageThreads(userId: number, role: Role): MessageThread[] {
-  const mine =
-    role === "teacher"
-      ? (db
-          .prepare(
-            `SELECT c.*, u.name as teacher_name FROM classes c
-             LEFT JOIN users u ON u.id = c.teacher_id
-             WHERE c.teacher_id = ? AND c.status <> 'ended'
-             ORDER BY c.day_of_week, c.start_time`
-          )
-          .all(userId) as ClassWithTeacher[])
-      : (db
-          .prepare(
-            `SELECT c.*, u.name as teacher_name FROM classes c
-             LEFT JOIN users u ON u.id = c.teacher_id
-             WHERE c.student_user_id = ? AND c.status <> 'ended'
-             ORDER BY c.day_of_week, c.start_time`
-          )
-          .all(userId) as ClassWithTeacher[]);
-  if (mine.length === 0) return [];
-
-  const lastRead = new Map<number, number>();
-  for (const r of db
-    .prepare("SELECT class_id, last_read_message_id FROM class_message_reads WHERE user_id = ?")
-    .all(userId) as { class_id: number; last_read_message_id: number }[]) {
-    lastRead.set(r.class_id, r.last_read_message_id);
-  }
-
-  const lastByClass = new Map<number, { id: number; body: string; created_at: string }>();
-  for (const m of db
-    .prepare(
-      `SELECT class_id, id, body, created_at FROM class_messages m
-       WHERE m.id = (SELECT MAX(id) FROM class_messages x WHERE x.class_id = m.class_id)`
-    )
-    .all() as { class_id: number; id: number; body: string; created_at: string }[]) {
-    lastByClass.set(m.class_id, m);
-  }
-
-  const unreadCount = db.prepare(
-    "SELECT COUNT(*) as c FROM class_messages WHERE class_id = ? AND id > ? AND sender_id <> ?"
-  );
-
-  const threads = mine.map((cls) => {
-    const last = lastByClass.get(cls.id);
-    const seen = lastRead.get(cls.id) ?? 0;
-    const { c } = unreadCount.get(cls.id, seen, userId) as { c: number };
-    return {
-      classId: cls.id,
-      title: role === "teacher" ? cls.student_name : cls.teacher_name || "Chưa xếp giáo viên",
-      subtitle: `${cls.subject} · ${formatClassSchedule(cls)}`,
-      lastBody: last?.body ?? null,
-      lastAt: last?.created_at ?? null,
-      unread: c,
-    };
-  });
-
-  // Hội thoại có tin mới nhất lên đầu, như mọi ứng dụng nhắn tin; lớp chưa ai
-  // nhắn gì xếp sau theo lịch tuần. Giáo viên dạy vài chục lớp mà tin mới nằm
-  // lẫn giữa danh sách thì coi như không thấy.
-  return threads.sort((a, b) => {
-    if (a.lastAt && b.lastAt) return a.lastAt < b.lastAt ? 1 : -1;
-    if (a.lastAt) return -1;
-    if (b.lastAt) return 1;
-    return 0;
-  });
-}
-
-/** Tổng tin chưa đọc của một người, dùng cho chấm đỏ trên thanh menu. */
-export function countUnreadMessages(userId: number, role: Role): number {
-  return listMessageThreads(userId, role).reduce((sum, t) => sum + t.unread, 0);
+    .all(...(teacherId ? [teacherId, limit] : [limit])) as RatingWithContext[];
 }
