@@ -94,6 +94,46 @@ export async function toggleTeacherActiveAction(teacherId: number, active: boole
   revalidatePath("/admin/teachers");
 }
 
+/**
+ * Xoá hẳn một giáo viên khỏi hệ thống.
+ *
+ * Chặn khi người đó đã có buổi điểm danh: xoá là mất luôn lịch sử dạy và cơ
+ * sở tính lương của những tháng trước. Trường hợp đó dùng "Ngừng hoạt động" —
+ * giáo viên không nhận lớp mới nữa nhưng sổ sách cũ còn nguyên.
+ *
+ * Xoá được thì các lớp người đó đang dạy quay về "Chưa xếp giáo viên" chứ
+ * không mất lớp.
+ */
+export async function deleteTeacherAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  await assertRole(["admin"]);
+
+  const teacherId = Number(formData.get("teacher_id"));
+  const teacher = db
+    .prepare("SELECT name FROM users WHERE id = ? AND role = 'teacher'")
+    .get(teacherId) as { name: string } | undefined;
+  if (!teacher) return { error: "Không tìm thấy giáo viên này" };
+
+  const { c: attended } = db
+    .prepare("SELECT COUNT(*) as c FROM attendance WHERE teacher_id = ?")
+    .get(teacherId) as { c: number };
+  if (attended > 0) {
+    return {
+      error: `${teacher.name} đã có ${attended} buổi điểm danh — xoá là mất lịch sử dạy và bảng lương cũ. Hãy chuyển sang "Ngừng hoạt động" thay vì xoá.`,
+    };
+  }
+
+  db.prepare("DELETE FROM users WHERE id = ? AND role = 'teacher'").run(teacherId);
+
+  revalidatePath("/admin/teachers");
+  revalidatePath("/admin/assign");
+  revalidatePath("/admin/classes");
+  revalidatePath("/admin/payroll");
+  return { success: true };
+}
+
 export async function createCoordinatorAction(
   _prev: FormState,
   formData: FormData
