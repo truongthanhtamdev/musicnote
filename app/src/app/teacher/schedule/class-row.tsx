@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import Link from "next/link";
-import { updateClassAction, deleteClassAction } from "@/actions/classes";
+import { updateClassAction, deleteClassAction, endWeeklySlotAction } from "@/actions/classes";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
 import type { FormState } from "@/actions/teachers";
 import {
@@ -247,17 +247,40 @@ export default function TeacherClassRow({
           <button type="button" onClick={() => setEditing(false)} className={btn.ghost}>
             Huỷ
           </button>
+          {/* Học viên bỏ buổi này mà xoá lớp là mất luôn lịch sử điểm danh và
+              tiền công đã chấm. Nên để "Ngừng lớp" ngay cạnh, cùng cỡ chữ, và
+              nói rõ cái nào giữ sổ sách. */}
           <button
             type="button"
             disabled={isDeleting}
             onClick={() => {
-              if (confirm("Xoá lớp học này? Toàn bộ lịch sử điểm danh của lớp sẽ mất.")) {
+              if (
+                confirm(
+                  `Ngừng lớp ${cls.student_name}? Lớp biến khỏi lịch dạy từ giờ trở đi, còn lịch sử điểm danh và tiền công đã chấm vẫn giữ nguyên.`
+                )
+              ) {
+                startDeleteTransition(() => endWeeklySlotAction(cls.id, true));
+              }
+            }}
+            className={`${btn.secondary} ml-auto`}
+          >
+            Ngừng lớp (giữ lịch sử)
+          </button>
+          <button
+            type="button"
+            disabled={isDeleting}
+            onClick={() => {
+              if (
+                confirm(
+                  "Xoá hẳn lớp này? Toàn bộ lịch sử điểm danh và tiền công đã chấm của lớp sẽ mất. Nếu học viên chỉ nghỉ buổi này thì bấm Huỷ rồi chọn \"Ngừng lớp\"."
+                )
+              ) {
                 startDeleteTransition(() => deleteClassAction(cls.id));
               }
             }}
-            className={`${btn.danger} ml-auto`}
+            className={btn.danger}
           >
-            {isDeleting ? "Đang xoá..." : "Xoá lớp"}
+            {isDeleting ? "Đang xoá..." : "Xoá hẳn"}
           </button>
         </div>
       </form>

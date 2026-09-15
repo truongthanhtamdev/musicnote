@@ -241,11 +241,64 @@ export async function removeWeeklySlotAction(slotClassId: number) {
     .get(slotClassId) as { c: number };
   if (attended.c > 0) {
     throw new ForbiddenError(
-      "Buổi này đã có lịch sử điểm danh — đổi trạng thái lớp thay vì xoá để giữ lịch sử"
+      `Buổi này đã có ${attended.c} lần điểm danh. Xoá là mất lịch sử dạy và tiền công đã chấm — bấm "Ngừng buổi này" để bỏ khỏi lịch tuần mà vẫn giữ sổ sách.`
     );
   }
 
   db.prepare("DELETE FROM classes WHERE id = ?").run(slotClassId);
+  revalidateClassViews(slotClassId);
+}
+
+/**
+ * Ngừng (hoặc cho học lại) một buổi trong tuần.
+ *
+ * Học viên bỏ buổi thứ Tư nhưng vẫn học các buổi khác: xoá dòng đó là mất
+ * lịch sử điểm danh và tiền công của những buổi Tư đã dạy. Thay vào đó đánh
+ * dấu ngừng — buổi biến khỏi lịch tuần và không ai điểm danh nữa, còn sổ sách
+ * cũ nguyên vẹn.
+ */
+export async function endWeeklySlotAction(slotClassId: number, ended: boolean) {
+  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(slotClassId) as
+    | ClassRow
+    | undefined;
+  if (!cls) throw new ForbiddenError("Không tìm thấy buổi học này");
+  if (session.role === "teacher" && cls.teacher_id !== session.userId) {
+    throw new ForbiddenError();
+  }
+
+  const info = classStage(ended ? "not_studying" : "studying");
+  db.prepare("UPDATE classes SET stage = ?, status = ?, paused_until = NULL WHERE id = ?").run(
+    info.value,
+    info.status,
+    slotClassId
+  );
+  revalidateClassViews(slotClassId);
+}
+
+/** Đổi ngày/giờ của một buổi trong tuần, giữ nguyên lịch sử của buổi đó. */
+export async function moveWeeklySlotAction(
+  slotClassId: number,
+  dayOfWeek: number,
+  startTime: string,
+  durationMinutes: number
+) {
+  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(slotClassId) as
+    | ClassRow
+    | undefined;
+  if (!cls) throw new ForbiddenError("Không tìm thấy buổi học này");
+  if (session.role === "teacher" && cls.teacher_id !== session.userId) {
+    throw new ForbiddenError();
+  }
+  if (Number.isNaN(dayOfWeek) || !startTime) {
+    throw new ForbiddenError("Chọn ngày và giờ học mới");
+  }
+
+  db.prepare(
+    `UPDATE classes SET schedule_type = 'fixed', day_of_week = ?, start_time = ?, duration_minutes = ?
+     WHERE id = ?`
+  ).run(dayOfWeek, startTime, durationMinutes || cls.duration_minutes, slotClassId);
   revalidateClassViews(slotClassId);
 }
 
