@@ -425,7 +425,21 @@ export const TIME_SLOTS: string[] = (() => {
 
 export const DURATION_OPTIONS = [30, 45, 60, 90];
 
-export const SUBJECT_SUGGESTIONS = ["Guitar", "Piano", "Violin", "Saxophone", "Thanh nhạc"];
+/**
+ * Bộ môn trung tâm đang nhận dạy — vừa là gợi ý khi xếp lớp/khai hồ sơ giáo
+ * viên, vừa là danh sách môn khách chọn khi đăng ký học thử. Ngoài nhạc cụ,
+ * trung tâm còn nhận dạy Toán, Tiếng Việt và Tiếng Anh.
+ */
+export const SUBJECT_SUGGESTIONS = [
+  "Guitar",
+  "Piano",
+  "Violin",
+  "Saxophone",
+  "Thanh nhạc",
+  "Toán",
+  "Tiếng Việt",
+  "Tiếng Anh",
+];
 
 export const PACKAGE_OPTIONS = [20, 50, 100];
 

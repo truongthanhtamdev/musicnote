@@ -11,6 +11,7 @@ import {
   TableShell,
   Th,
 } from "@/components/ui";
+import ResetPasswordButton from "@/components/reset-password-button";
 import NewStudentForm from "./new-student-form";
 import ToggleStudentActiveButton from "./toggle-active-button";
 
@@ -22,7 +23,7 @@ export default async function StudentsPage() {
     <div className="space-y-5">
       <PageHeader
         title="Tài khoản học viên"
-        subtitle="Tạo tài khoản để học viên tự đăng nhập xem lịch học, tiến độ gói và nội dung bài học. Sau khi tạo, vào trang chi tiết lớp để gắn lớp với tài khoản."
+        subtitle="Tạo tài khoản để học viên tự đăng nhập xem lịch học, tiến độ gói và nội dung bài học. Sau khi tạo, vào trang chi tiết lớp để gắn lớp với tài khoản. Khách quên mật khẩu thì bấm Đặt lại mật khẩu ngay ở dòng của khách."
       />
 
       <Card padded={false}>
@@ -59,8 +60,11 @@ export default async function StudentsPage() {
                       {s.active ? "Đang hoạt động" : "Ngừng"}
                     </StatusChip>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <ToggleStudentActiveButton studentId={s.id} active={!!s.active} />
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                      <ResetPasswordButton userId={s.id} />
+                      <ToggleStudentActiveButton studentId={s.id} active={!!s.active} />
+                    </div>
                   </td>
                 </tr>
               ))}

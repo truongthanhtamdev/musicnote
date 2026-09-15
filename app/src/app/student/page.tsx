@@ -21,6 +21,7 @@ import { IconClock, IconMusic, SubjectIcon } from "@/components/icons";
 import { Card, CardHeader, EmptyState, ProgressBar, StatusChip, packageTone } from "@/components/ui";
 import { ContactButtons } from "@/components/contact-buttons";
 import { JoinClassLink } from "@/components/join-class-link";
+import ExtraTrialForm from "./extra-trial-form";
 import SessionActions from "./session-actions";
 
 function countdownLabel(daysAway: number): string {
@@ -236,6 +237,10 @@ export default async function StudentHomePage() {
           })}
         </div>
       )}
+
+      <Card>
+        <ExtraTrialForm studyingSubjects={classes.map((c) => c.subject)} />
+      </Card>
 
       <Card>
         <ContactButtons />

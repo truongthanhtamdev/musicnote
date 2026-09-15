@@ -1,25 +1,31 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { roleHomePath } from "@/lib/types";
+import { roleHomePath, SUBJECT_SUGGESTIONS } from "@/lib/types";
 import { Logo } from "@/components/logo";
-import { IconCalendarCheck, IconPackage, IconWallet } from "@/components/icons";
+import { IconCalendarCheck, IconPackage, IconVideo, SubjectIcon } from "@/components/icons";
 import LoginForm from "./login-form";
 
+/**
+ * Trang này khách hàng cũng đăng nhập chứ không riêng nhân sự trung tâm, nên
+ * phần giới thiệu nói bằng góc nhìn người học (lịch học, tiến độ gói, vào
+ * lớp), không nhắc chuyện chấm công hay lương giáo viên.
+ */
 const HIGHLIGHTS = [
   {
     icon: <IconCalendarCheck className="w-5 h-5" />,
-    title: "Điểm danh trong một chạm",
-    text: "Giáo viên mở màn hình Hôm nay là thấy ngay lớp cần điểm danh.",
+    title: "Lịch học rõ từng buổi",
+    text: "Xem buổi học sắp tới, xác nhận tham gia hoặc xin dời giờ ngay trên web.",
   },
   {
     icon: <IconPackage className="w-5 h-5" />,
     title: "Theo dõi gói học",
-    text: "Biết chính xác học viên nào sắp hết 20/50/100 tiết để nhắc gia hạn.",
+    text: "Biết còn bao nhiêu tiết trong gói 20/50/100 và nội dung đã học từng buổi.",
   },
   {
-    icon: <IconWallet className="w-5 h-5" />,
-    title: "Chấm công minh bạch",
-    text: "Lương tính tự động từ số tiết đã dạy, có cả buổi học thử.",
+    icon: <IconVideo className="w-5 h-5" />,
+    title: "Vào lớp một chạm",
+    text: "Bấm là vào phòng học online, học xong chấm sao cho buổi học.",
   },
 ];
 
@@ -45,11 +51,11 @@ export default async function LoginPage({
 
         <div className="max-w-md">
           <h2 className="text-3xl font-bold leading-tight tracking-tight">
-            Vận hành lớp nhạc online gọn gàng trong một hệ thống
+            Lịch học, tiến độ và bài học của bạn ở cùng một nơi
           </h2>
           <p className="text-navy-200 mt-3">
-            Lịch dạy, điểm danh, gói học và lương giáo viên — tất cả ở cùng một nơi, cập nhật theo
-            thời gian thực.
+            Dành cho học viên, phụ huynh và thầy cô của trung tâm — cập nhật theo thời gian thực
+            sau mỗi buổi học.
           </p>
           <ul className="mt-8 space-y-5">
             {HIGHLIGHTS.map((h) => (
@@ -64,10 +70,26 @@ export default async function LoginPage({
               </li>
             ))}
           </ul>
+
+          <p className="text-xs font-semibold uppercase tracking-wide text-navy-300 mt-8">
+            Các môn trung tâm đang dạy
+          </p>
+          <ul className="flex flex-wrap gap-2 mt-2.5">
+            {SUBJECT_SUGGESTIONS.map((s) => (
+              <li
+                key={s}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm"
+              >
+                <SubjectIcon subject={s} className="w-4 h-4 text-wood-300" />
+                {s}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <p className="text-xs text-navy-300">
-          © {new Date().getFullYear()} Piano Guitar Đệm Hát · Hệ thống quản lý nội bộ
+          © {new Date().getFullYear()} Piano Guitar Đệm Hát · Nhạc cụ · Toán · Tiếng Việt · Tiếng
+          Anh
         </p>
       </div>
 
@@ -77,7 +99,7 @@ export default async function LoginPage({
           <div className="lg:hidden text-center mb-7">
             <Logo className="h-14 mx-auto mb-2" />
             <h1 className="text-2xl font-bold text-ink-900">Piano Guitar Đệm Hát</h1>
-            <p className="text-ink-500 text-sm mt-1">Hệ thống điểm danh &amp; chấm công</p>
+            <p className="text-ink-500 text-sm mt-1">Lịch học · Tiến độ gói · Bài đã học</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(16,36,62,0.06)] border border-navy-100 p-6">
@@ -86,7 +108,22 @@ export default async function LoginPage({
               Dùng email hoặc số điện thoại đã đăng ký với trung tâm.
             </p>
             <LoginForm next={next || ""} />
+            <p className="text-center mt-4">
+              <Link
+                href="/quen-mat-khau"
+                className="text-sm font-semibold text-wood-600 hover:text-wood-700"
+              >
+                Quên mật khẩu?
+              </Link>
+            </p>
           </div>
+
+          <p className="text-center text-sm text-ink-500 mt-5">
+            Chưa có tài khoản?{" "}
+            <Link href="/#hoc-thu" className="font-semibold text-wood-600 hover:text-wood-700">
+              Đăng ký học thử miễn phí
+            </Link>
+          </p>
         </div>
       </div>
     </div>

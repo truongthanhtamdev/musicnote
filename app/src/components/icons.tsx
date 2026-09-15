@@ -3,6 +3,7 @@
  * nghiệp vụ. Mỗi icon nhận `className` để chỉnh kích thước/màu bằng Tailwind.
  */
 import type { SVGProps } from "react";
+import { foldVietnamese } from "@/lib/format";
 
 type IconProps = SVGProps<SVGSVGElement> & { className?: string };
 
@@ -276,6 +277,21 @@ export const IconMusic = (p: IconProps) => (
   </Svg>
 );
 
+export const IconCalculator = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="3" width="16" height="18" rx="2.5" />
+    <path d="M7.5 7.5h9" />
+    <path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" />
+  </Svg>
+);
+
+export const IconBook = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 6.5C10.5 5.2 8.6 4.5 6 4.5H4v14h2c2.6 0 4.5.7 6 2 1.5-1.3 3.4-2 6-2h2v-14h-2c-2.6 0-4.5.7-6 2Z" />
+    <path d="M12 6.5v14" />
+  </Svg>
+);
+
 export const IconMore = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="5" cy="12" r="1.4" fill="currentColor" />
@@ -286,10 +302,13 @@ export const IconMore = (p: IconProps) => (
 
 /** Icon theo bộ môn — dùng chung ở card lớp, bảng học viên và bước chọn môn. */
 export function SubjectIcon({ subject, className }: { subject: string; className?: string }) {
-  const s = subject.toLowerCase();
+  // Bỏ dấu trước khi so: môn hay được gõ thiếu dấu ("thanh nhac", "tieng viet").
+  const s = foldVietnamese(subject);
   if (s.includes("piano")) return <IconPiano className={className} />;
   if (s.includes("violin")) return <IconViolin className={className} />;
-  if (s.includes("thanh nhạc") || s.includes("vocal")) return <IconMic className={className} />;
+  if (s.includes("thanh nhac") || s.includes("vocal")) return <IconMic className={className} />;
   if (s.includes("guitar")) return <IconGuitar className={className} />;
+  if (s.includes("toan")) return <IconCalculator className={className} />;
+  if (s.includes("tieng ") || s.includes("english")) return <IconBook className={className} />;
   return <IconMusic className={className} />;
 }
