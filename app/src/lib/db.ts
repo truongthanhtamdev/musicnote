@@ -196,6 +196,26 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_session_ratings_teacher
       ON session_ratings(teacher_id, created_at);
 
+    /*
+     * Nhật ký thao tác: ai sửa điểm danh, ai thu tiền, ai xoá lớp.
+     *
+     * Trung tâm có nhiều người cùng dùng một hệ thống, nên khi sổ sách lệch
+     * thì cần biết ai đã đổi gì lúc nào — không có dòng này thì chỉ còn cách
+     * đoán. Chỉ ghi câu tóm tắt đã dựng sẵn bằng tiếng Việt, không ghi dữ
+     * liệu cũ/mới, đủ để lần ra mà không phình cơ sở dữ liệu.
+     */
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      user_name TEXT NOT NULL,
+      role TEXT NOT NULL,
+      area TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC, id DESC);
+
     CREATE TABLE IF NOT EXISTS trial_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,

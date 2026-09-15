@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
+import { logAudit } from "@/lib/audit";
 import { getUserByEmail } from "@/lib/auth";
 import { parseCSV, parseDayOfWeek } from "@/lib/csv";
 import { readXlsxRows } from "@/lib/xlsx";
@@ -31,7 +32,7 @@ export async function importTeachersAction(
   _prev: ImportState,
   formData: FormData
 ): Promise<ImportState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -79,6 +80,7 @@ export async function importTeachersAction(
   }
 
   revalidatePath("/admin/teachers");
+  logAudit(session, "he_thong", `Nhập file giáo viên: tạo ${created}, bỏ qua ${skipped} dòng`);
 
   let summary = `Đã tạo ${created} giáo viên, bỏ qua ${skipped} dòng (thiếu dữ liệu hoặc email đã tồn tại).`;
   if (generatedCreds.length > 0) {
@@ -98,7 +100,7 @@ export async function importClassesAction(
   _prev: ImportState,
   formData: FormData
 ): Promise<ImportState> {
-  await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(["admin", "coordinator"]);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -179,6 +181,7 @@ export async function importClassesAction(
 
   revalidatePath("/admin/classes");
   revalidatePath("/admin/assign");
+  logAudit(session, "he_thong", `Nhập file lớp học: tạo ${created} lớp, ${errors.length} dòng lỗi`);
 
   let summary = `Đã tạo ${created} lớp học.`;
   if (errors.length > 0) {
@@ -240,7 +243,7 @@ export async function importCenterSheetAction(
   _prev: CenterImportState,
   formData: FormData
 ): Promise<CenterImportState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -466,6 +469,14 @@ export async function importCenterSheetAction(
     revalidatePath("/admin/classes");
     revalidatePath("/admin/teachers");
     revalidatePath("/admin/packages");
+  }
+
+  if (!dryRun) {
+    logAudit(
+      session,
+      "he_thong",
+      `Nhập file Excel trung tâm: ${createdCount} lớp mới, ${updatedCount} lớp cập nhật`
+    );
   }
 
   const changes =

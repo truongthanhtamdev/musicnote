@@ -7,7 +7,12 @@ import { db } from "@/lib/db";
 import { nowHHMM, todayISO } from "@/lib/format";
 import { assertRole } from "@/lib/guard";
 import { getAttendance, getClass, getPackageProgress } from "@/lib/queries";
-import { hasRescheduleInfo, type AttendanceStatus } from "@/lib/types";
+import {
+  ATTENDANCE_STATUS_LABELS,
+  hasRescheduleInfo,
+  type AttendanceStatus,
+} from "@/lib/types";
+import { logAudit } from "@/lib/audit";
 import type { FormState } from "./teachers";
 
 const VALID_STATUS: AttendanceStatus[] = [
@@ -164,7 +169,7 @@ export async function correctAttendanceAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(["admin", "coordinator"]);
 
   const id = Number(formData.get("id"));
   const status = String(formData.get("status") || "") as AttendanceStatus;
@@ -209,6 +214,17 @@ export async function correctAttendanceAction(
   if (statedSessionNumber !== null) {
     applyStatedSessionNumber(existing.class_id, statedSessionNumber);
   }
+
+  // Sửa điểm danh là sửa cả tiền công giáo viên lẫn số tiết còn lại của
+  // khách, nên phải ghi lại ai sửa.
+  const cls = getClass(existing.class_id);
+  logAudit(
+    session,
+    "diem_danh",
+    `Sửa điểm danh lớp ${cls?.subject ?? ""} của ${cls?.student_name ?? `#${existing.class_id}`}` +
+      ` thành "${ATTENDANCE_STATUS_LABELS[status]}"` +
+      (statedSessionNumber !== null ? ` · buổi thứ ${statedSessionNumber}` : "")
+  );
 
   revalidatePath("/admin/attendance");
   revalidatePath("/admin/classes");

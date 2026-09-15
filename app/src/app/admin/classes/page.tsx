@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  getTrialRequest,
   listClasses,
   listTeachers,
   getPackageProgress,
@@ -25,14 +26,32 @@ import {
   field,
   packageTone,
 } from "@/components/ui";
-import NewClassForm from "./new-class-form";
+import NewClassForm, { type ClassPrefill } from "./new-class-form";
 import ClassStatusBadge from "./status-badge";
 
-type SP = { q?: string; status?: string; teacherId?: string; tuition?: string };
+type SP = {
+  q?: string;
+  status?: string;
+  teacherId?: string;
+  tuition?: string;
+  /** Mã đăng ký học thử: mở sẵn biểu mẫu thêm lớp với thông tin của khách đó. */
+  trial?: string;
+};
 
 export default async function ClassesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const teachers = listTeachers(false);
+  const trialRequest = sp.trial ? getTrialRequest(Number(sp.trial)) : undefined;
+  const prefill: ClassPrefill | undefined = trialRequest && {
+    trialRequestId: trialRequest.id,
+    studentName: trialRequest.name,
+    phone: trialRequest.phone,
+    subject: trialRequest.subject,
+    language: trialRequest.language,
+    // Ghi chú của khách và kênh liên hệ đi theo lớp luôn — giáo viên nhận lớp
+    // biết khách ở múi giờ nào, đã học tới đâu.
+    note: [trialRequest.note, trialRequest.contact].filter(Boolean).join(" · "),
+  };
   const all = annotateSchedule(listClasses());
   const tuition = getTuitionStatusForClasses(all);
 
@@ -72,7 +91,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Lớp học"
         subtitle="Toàn bộ lớp theo lịch tuần, kèm tiến độ gói học và cảnh báo chưa điểm danh."
-        action={<NewClassForm teachers={teachers} />}
+        action={<NewClassForm teachers={teachers} prefill={prefill} />}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -174,7 +193,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
             icon={<IconClasses className="w-6 h-6" />}
             title="Chưa có lớp học nào"
             description="Thêm lớp mới hoặc bỏ bớt điều kiện lọc để xem danh sách."
-            action={<NewClassForm teachers={teachers} />}
+            action={<NewClassForm teachers={teachers} prefill={prefill} />}
           />
         ) : (
           <TableShell>

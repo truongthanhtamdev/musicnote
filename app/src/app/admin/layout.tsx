@@ -14,9 +14,11 @@ import {
   IconClasses,
   IconClock,
   IconDownload,
+  IconHistory,
   IconHome,
   IconPackage,
   IconSearch,
+  IconStar,
   IconSettings,
   IconTeacher,
   IconUpload,
@@ -78,6 +80,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     },
     { href: "/admin/assign", label: "Giao lớp", icon: <IconUsers className={ICON} /> },
     { href: "/admin/teachers", label: "Giáo viên", icon: <IconTeacher className={ICON} /> },
+    { href: "/admin/ratings", label: "Khách đánh giá", icon: <IconStar className={ICON} /> },
     ...(session.role === "admin"
       ? [
           {
@@ -105,6 +108,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             href: "/admin/settings",
             label: "Cài đặt trung tâm",
             icon: <IconSettings className={ICON} />,
+          },
+          {
+            href: "/admin/audit",
+            label: "Nhật ký thay đổi",
+            icon: <IconHistory className={ICON} />,
           },
           {
             href: "/admin/backup",

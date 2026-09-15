@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
+import { logAudit } from "@/lib/audit";
+import { formatVND } from "@/lib/format";
 import type { FormState } from "./teachers";
 
 export async function recordPaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const classId = formData.get("class_id") ? Number(formData.get("class_id")) : null;
   const amount = Number(formData.get("amount") || 0);
@@ -21,13 +23,14 @@ export async function recordPaymentAction(_prev: FormState, formData: FormData):
     "INSERT INTO payments (class_id, amount, paid_at, note) VALUES (?, ?, ?, ?)"
   ).run(classId, amount, paidAt, note || null);
 
+  logAudit(session, "hoc_phi", `Thu học phí ${formatVND(amount)} ngày ${paidAt}${note ? ` (${note})` : ""}`);
   revalidatePath("/admin/finance");
   revalidatePath("/admin/classes");
   return { success: true };
 }
 
 export async function updatePaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const id = Number(formData.get("id"));
   const classId = formData.get("class_id") ? Number(formData.get("class_id")) : null;
@@ -44,20 +47,27 @@ export async function updatePaymentAction(_prev: FormState, formData: FormData):
     .run(classId, amount, paidAt, note || null, id);
   if (result.changes === 0) return { error: "Không tìm thấy khoản thu" };
 
+  logAudit(session, "hoc_phi", `Sửa khoản thu #${id} thành ${formatVND(amount)} ngày ${paidAt}`);
   revalidatePath("/admin/finance");
   revalidatePath("/admin/classes");
   return { success: true };
 }
 
 export async function deletePaymentAction(id: number) {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
+  const row = db.prepare("SELECT amount, paid_at FROM payments WHERE id = ?").get(id) as
+    | { amount: number; paid_at: string }
+    | undefined;
   db.prepare("DELETE FROM payments WHERE id = ?").run(id);
+  if (row) {
+    logAudit(session, "hoc_phi", `Xoá khoản thu ${formatVND(row.amount)} ngày ${row.paid_at}`);
+  }
   revalidatePath("/admin/finance");
   revalidatePath("/admin/classes");
 }
 
 export async function addExpenseAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const category = String(formData.get("category") || "").trim();
   const amount = Number(formData.get("amount") || 0);
@@ -72,12 +82,13 @@ export async function addExpenseAction(_prev: FormState, formData: FormData): Pr
     "INSERT INTO expenses (category, amount, expense_date, note) VALUES (?, ?, ?, ?)"
   ).run(category, amount, expenseDate, note || null);
 
+  logAudit(session, "hoc_phi", `Thêm chi phí ${category} ${formatVND(amount)} ngày ${expenseDate}`);
   revalidatePath("/admin/finance");
   return { success: true };
 }
 
 export async function updateExpenseAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const id = Number(formData.get("id"));
   const category = String(formData.get("category") || "").trim();
@@ -96,13 +107,18 @@ export async function updateExpenseAction(_prev: FormState, formData: FormData):
     .run(category, amount, expenseDate, note || null, id);
   if (result.changes === 0) return { error: "Không tìm thấy khoản chi" };
 
+  logAudit(session, "hoc_phi", `Sửa khoản chi #${id} thành ${category} ${formatVND(amount)}`);
   revalidatePath("/admin/finance");
   return { success: true };
 }
 
 export async function deleteExpenseAction(id: number) {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
+  const row = db.prepare("SELECT category, amount FROM expenses WHERE id = ?").get(id) as
+    | { category: string; amount: number }
+    | undefined;
   db.prepare("DELETE FROM expenses WHERE id = ?").run(id);
+  if (row) logAudit(session, "hoc_phi", `Xoá khoản chi ${row.category} ${formatVND(row.amount)}`);
   revalidatePath("/admin/finance");
 }
 
@@ -117,7 +133,7 @@ export async function addPayrollAdjustmentAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const teacherId = Number(formData.get("teacher_id"));
   const amount = Math.round(Number(formData.get("amount") || 0));
@@ -132,14 +148,37 @@ export async function addPayrollAdjustmentAction(
     "INSERT INTO payroll_adjustments (teacher_id, amount, reason, adjustment_date) VALUES (?, ?, ?, ?)"
   ).run(teacherId, amount, reason || null, date);
 
+  const teacher = db.prepare("SELECT name FROM users WHERE id = ?").get(teacherId) as
+    | { name: string }
+    | undefined;
+  logAudit(
+    session,
+    "luong",
+    `${amount > 0 ? "Thưởng" : "Trừ"} ${formatVND(Math.abs(amount))} cho ${
+      teacher?.name ?? `GV #${teacherId}`
+    } ngày ${date}${reason ? ` (${reason})` : ""}`
+  );
   revalidatePath("/admin/payroll");
   revalidatePath("/admin/finance");
   return { success: true };
 }
 
 export async function deletePayrollAdjustmentAction(id: number) {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
+  const row = db
+    .prepare(
+      `SELECT a.amount, u.name FROM payroll_adjustments a
+       LEFT JOIN users u ON u.id = a.teacher_id WHERE a.id = ?`
+    )
+    .get(id) as { amount: number; name: string | null } | undefined;
   db.prepare("DELETE FROM payroll_adjustments WHERE id = ?").run(id);
+  if (row) {
+    logAudit(
+      session,
+      "luong",
+      `Xoá khoản ${formatVND(Math.abs(row.amount))} của ${row.name ?? "giáo viên đã xoá"}`
+    );
+  }
   revalidatePath("/admin/payroll");
   revalidatePath("/admin/finance");
 }

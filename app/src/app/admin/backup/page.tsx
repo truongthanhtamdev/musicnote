@@ -11,6 +11,9 @@ export default async function BackupPage() {
   const backups = listBackups();
   const latest = backups[0];
   const hasToday = latest ? latest.createdAt.toISOString().slice(0, 10) === todayISO() : false;
+  // Có bản sao lưu rồi vẫn nhắc tải về: bản nằm cùng máy chủ với dữ liệu gốc
+  // thì không cứu được trường hợp mất nguyên máy chủ.
+  const offsiteWarning = backups.length > 0;
 
   return (
     <div className="space-y-5">
@@ -26,8 +29,15 @@ export default async function BackupPage() {
       ) : (
         <Banner tone="amber" icon={<IconAlert className="w-5 h-5" />} title="Chưa có bản sao lưu hôm nay">
           {latest
-            ? `Bản gần nhất là ${latest.name}. Bấm "Sao lưu ngay" bên dưới, hoặc kiểm tra lại lịch cron trên máy chủ.`
+            ? `Bản gần nhất là ${latest.name}. App tự sao lưu mỗi ngày, nếu mãi không thấy bản mới thì bấm "Sao lưu ngay" bên dưới.`
             : "Chưa có bản sao lưu nào. Bấm \"Sao lưu ngay\" để tạo bản đầu tiên."}
+        </Banner>
+      )}
+
+      {offsiteWarning && (
+        <Banner tone="amber" icon={<IconAlert className="w-5 h-5" />} title="Nên tải một bản về máy">
+          Các bản sao lưu tự động nằm ngay trên máy chủ — máy chủ hỏng hoặc bị xoá là mất cùng
+          lúc với dữ liệu gốc. Mỗi tháng tải một bản về máy hoặc Google Drive cho chắc.
         </Banner>
       )}
 
@@ -57,14 +67,14 @@ export default async function BackupPage() {
       <Card padded={false}>
         <CardHeader title="Bản sao lưu tự động trên máy chủ" count={backups.length} />
         <p className="text-xs text-ink-400 px-5 pt-3">
-          Chạy tự động mỗi đêm, giữ lại {KEEP_BACKUPS} bản gần nhất tại{" "}
+          App tự sao lưu mỗi ngày một bản, giữ lại {KEEP_BACKUPS} bản gần nhất tại{" "}
           <code className="text-ink-600 break-all">{BACKUP_DIR}</code>
         </p>
         {backups.length === 0 ? (
           <EmptyState
             icon={<IconPackage className="w-6 h-6" />}
             title="Chưa có bản sao lưu tự động nào"
-            description="Cài lịch cron theo hướng dẫn trong README, hoặc bấm Sao lưu ngay ở trên."
+            description="App sẽ tự tạo bản đầu tiên trong vòng một phút sau khi khởi động, hoặc bấm Sao lưu ngay ở trên."
           />
         ) : (
           <TableShell>

@@ -11,6 +11,7 @@ import {
   isTeacherAvailable,
 } from "@/lib/queries";
 import { classStage, formatClassSchedule, type ClassRow } from "@/lib/types";
+import { logAudit } from "@/lib/audit";
 import type { FormState } from "./teachers";
 
 function notifyTeacherOfAssignment(params: {
@@ -145,6 +146,15 @@ export async function createClassAction(
     });
   }
 
+  // Lớp tạo từ một đăng ký học thử thì đánh dấu luôn đăng ký đó là đã xếp
+  // lớp — giáo vụ khỏi phải nhớ quay lại đổi trạng thái, và danh sách chờ
+  // không còn tên người đã vào học.
+  const trialRequestId = Number(formData.get("trial_request_id") || 0);
+  if (trialRequestId) {
+    db.prepare("UPDATE trial_requests SET status = 'done' WHERE id = ?").run(trialRequestId);
+    revalidatePath("/admin/trial-requests");
+  }
+
   revalidatePath("/admin/classes");
   revalidatePath("/admin/assign");
   revalidatePath("/teacher/schedule");
@@ -246,6 +256,11 @@ export async function removeWeeklySlotAction(slotClassId: number) {
   }
 
   db.prepare("DELETE FROM classes WHERE id = ?").run(slotClassId);
+  logAudit(
+    session,
+    "lop_hoc",
+    `Xoá buổi ${formatClassSchedule(cls)} của ${cls.student_name} (chưa từng điểm danh)`
+  );
   revalidateClassViews(slotClassId);
 }
 
@@ -272,6 +287,11 @@ export async function endWeeklySlotAction(slotClassId: number, ended: boolean) {
     info.value,
     info.status,
     slotClassId
+  );
+  logAudit(
+    session,
+    "lop_hoc",
+    `${ended ? "Ngừng" : "Mở lại"} buổi ${formatClassSchedule(cls)} của ${cls.student_name}`
   );
   revalidateClassViews(slotClassId);
 }
@@ -606,6 +626,7 @@ export async function setClassStageAction(
 
 export async function deleteClassAction(classId: number) {
   const session = await assertRole(["admin", "teacher"]);
+  const doomed = getClass(classId);
   const result = db
     .prepare(
       `DELETE FROM classes WHERE id = ? ${session.role === "teacher" ? "AND teacher_id = ?" : ""}`
@@ -613,6 +634,13 @@ export async function deleteClassAction(classId: number) {
     .run(...(session.role === "teacher" ? [classId, session.userId] : [classId]));
   if (result.changes === 0 && session.role === "teacher") {
     throw new ForbiddenError("Không tìm thấy lớp học hoặc bạn không có quyền xoá");
+  }
+  if (result.changes > 0 && doomed) {
+    logAudit(
+      session,
+      "lop_hoc",
+      `Xoá hẳn lớp ${doomed.subject} của ${doomed.student_name} (${formatClassSchedule(doomed)})`
+    );
   }
   revalidatePath("/admin/classes");
   revalidatePath("/admin/assign");

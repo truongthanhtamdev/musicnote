@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { assertRole, assertSession } from "@/lib/guard";
 import { getUserById } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export interface FormState {
   error?: string;
@@ -45,7 +46,7 @@ export async function adminResetPasswordAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const userId = Number(formData.get("user_id"));
   const newPassword = String(formData.get("new_password") || "");
@@ -60,5 +61,7 @@ export async function adminResetPasswordAction(
     userId
   );
 
+  const target = getUserById(userId);
+  logAudit(session, "tai_khoan", `Đặt lại mật khẩu cho ${target?.name ?? `tài khoản #${userId}`}`);
   return { success: true };
 }

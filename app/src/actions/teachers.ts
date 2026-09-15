@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
+import { logAudit } from "@/lib/audit";
 import { getUserByEmail } from "@/lib/auth";
 
 export interface FormState {
@@ -108,7 +109,7 @@ export async function deleteTeacherAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin"]);
 
   const teacherId = Number(formData.get("teacher_id"));
   const teacher = db
@@ -126,6 +127,7 @@ export async function deleteTeacherAction(
   }
 
   db.prepare("DELETE FROM users WHERE id = ? AND role = 'teacher'").run(teacherId);
+  logAudit(session, "tai_khoan", `Xoá giáo viên ${teacher.name}`);
 
   revalidatePath("/admin/teachers");
   revalidatePath("/admin/assign");

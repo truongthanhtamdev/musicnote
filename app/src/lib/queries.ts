@@ -10,6 +10,7 @@ import {
   now,
 } from "./format";
 import {
+  classStage,
   getSuggestedPackagePrice,
   parseLanguages,
   parseSubjects,
@@ -855,6 +856,12 @@ export function listTrialRequests(status?: TrialRequestStatus): TrialRequestRow[
   return (status ? db.prepare(sql).all(status) : db.prepare(sql).all()) as TrialRequestRow[];
 }
 
+export function getTrialRequest(id: number): TrialRequestRow | undefined {
+  return db.prepare("SELECT * FROM trial_requests WHERE id = ?").get(id) as
+    | TrialRequestRow
+    | undefined;
+}
+
 /** Số đăng ký học thử chưa ai đụng tới — hiện thành badge ở menu admin. */
 export function countNewTrialRequests(): number {
   return (
@@ -1568,4 +1575,146 @@ export function listRecentRatings(limit = 30, teacherId?: number): RatingWithCon
        ORDER BY r.id DESC LIMIT ?`
     )
     .all(...(teacherId ? [teacherId, limit] : [limit])) as RatingWithContext[];
+}
+
+export interface RatingSummary {
+  count: number;
+  average: number;
+  low: number;
+  /** Số buổi đã dạy trong kỳ, để biết bao nhiêu phần trăm khách chịu chấm. */
+  sessions: number;
+}
+
+/** Tổng quan đánh giá toàn trung tâm trong một khoảng ngày. */
+export function ratingSummary(from: string, to: string): RatingSummary {
+  const r = db
+    .prepare(
+      `SELECT COUNT(*) as count, COALESCE(AVG(stars), 0) as average,
+              SUM(CASE WHEN stars <= 2 THEN 1 ELSE 0 END) as low
+         FROM session_ratings WHERE session_date >= ? AND session_date <= ?`
+    )
+    .get(from, to) as { count: number; average: number; low: number };
+  const s = db
+    .prepare(
+      `SELECT COUNT(*) as n FROM attendance
+        WHERE status = 'completed' AND session_date >= ? AND session_date <= ?`
+    )
+    .get(from, to) as { n: number };
+  return {
+    count: r.count,
+    average: Math.round(r.average * 10) / 10,
+    low: r.low ?? 0,
+    sessions: s.n,
+  };
+}
+
+/**
+ * Đánh giá của khách trong một khoảng ngày, mới nhất trước.
+ *
+ * `maxStars` để lọc riêng những buổi bị chấm thấp — đó là thứ chủ trung tâm
+ * cần đọc trước, trước khi khách bỏ học mà không nói gì.
+ */
+export function listRatings(opts: {
+  from: string;
+  to: string;
+  maxStars?: number;
+  teacherId?: number;
+  limit?: number;
+}): RatingWithContext[] {
+  const clauses = ["r.session_date >= @from", "r.session_date <= @to"];
+  if (opts.maxStars) clauses.push("r.stars <= @maxStars");
+  if (opts.teacherId) clauses.push("r.teacher_id = @teacherId");
+  return db
+    .prepare(
+      `SELECT r.*, c.student_name, c.subject, u.name as teacher_name
+         FROM session_ratings r
+         JOIN classes c ON c.id = r.class_id
+         LEFT JOIN users u ON u.id = r.teacher_id
+        WHERE ${clauses.join(" AND ")}
+        ORDER BY r.id DESC LIMIT @limit`
+    )
+    .all({
+      from: opts.from,
+      to: opts.to,
+      maxStars: opts.maxStars ?? null,
+      teacherId: opts.teacherId ?? null,
+      limit: opts.limit ?? 100,
+    }) as RatingWithContext[];
+}
+
+/* ------------------ Tạo tài khoản học viên hàng loạt ------------------ */
+
+export type AccountCandidateStatus = "ok" | "no_phone" | "phone_taken";
+
+export interface AccountCandidate {
+  /** Khoá khách hàng, chính là khoá của listCustomerProfiles. */
+  key: string;
+  customerName: string;
+  /** Số điện thoại dùng làm tên đăng nhập, đã chuẩn hoá. */
+  login: string | null;
+  studentNames: string[];
+  subjects: string[];
+  /** Lớp sẽ được gắn vào tài khoản mới. */
+  classIds: number[];
+  status: AccountCandidateStatus;
+}
+
+/**
+ * Số điện thoại làm tên đăng nhập: bỏ khoảng trắng, dấu chấm, gạch nối và
+ * ngoặc mà bảng Excel hay có, giữ lại dấu + của số nước ngoài.
+ */
+export function normalizeLoginPhone(raw: string): string {
+  const cleaned = raw.replace(/[\s.()-]/g, "");
+  return /^\+?\d{8,15}$/.test(cleaned) ? cleaned : "";
+}
+
+/**
+ * Khách đang học mà chưa có tài khoản đăng nhập.
+ *
+ * Dữ liệu cũ nhập từ Excel nên chỉ có lớp chứ không có tài khoản nào — tạo
+ * tay từng cái cho hàng trăm lớp thì không ai làm, mà không có tài khoản thì
+ * khách không xem được lịch, không chấm sao, không xin dời buổi.
+ *
+ * Gom theo khách hàng (mẹ đăng ký cho hai con vẫn là một tài khoản) và chỉ
+ * lấy người còn lớp đang học — người nghỉ lâu rồi mà tạo tài khoản chỉ làm
+ * rác danh sách.
+ */
+export function listAccountCandidates(): AccountCandidate[] {
+  const takenLogins = new Set(
+    (db.prepare("SELECT email FROM users").all() as { email: string }[]).map((r) =>
+      r.email.toLowerCase()
+    )
+  );
+
+  const out: AccountCandidate[] = [];
+  for (const customer of listCustomerProfiles()) {
+    const classes = customer.students
+      .flatMap((s) => s.classes)
+      .filter((c) => !c.student_user_id && classStage(c.stage).status !== "ended");
+    if (classes.length === 0) continue;
+
+    const login = customer.phones.map(normalizeLoginPhone).find(Boolean) ?? null;
+    const status: AccountCandidateStatus = !login
+      ? "no_phone"
+      : takenLogins.has(login.toLowerCase())
+        ? "phone_taken"
+        : "ok";
+    if (status === "ok") takenLogins.add(login!.toLowerCase());
+
+    out.push({
+      key: customer.key,
+      customerName: customer.customerName,
+      login,
+      studentNames: [...new Set(customer.students.map((s) => s.studentName))],
+      subjects: [...new Set(classes.map((c) => c.subject))],
+      classIds: classes.map((c) => c.id),
+      status,
+    });
+  }
+
+  // Tạo được thì xếp lên trước, để giáo vụ bấm một phát là xong phần làm được.
+  const rank = { ok: 0, phone_taken: 1, no_phone: 2 };
+  return out.sort(
+    (a, b) => rank[a.status] - rank[b.status] || a.customerName.localeCompare(b.customerName, "vi")
+  );
 }

@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/guard";
-import { listStudents } from "@/lib/queries";
-import { IconUser } from "@/components/icons";
+import { listAccountCandidates, listStudents } from "@/lib/queries";
+import { IconUser, IconUsers } from "@/components/icons";
 import {
   Avatar,
   Card,
@@ -12,12 +12,14 @@ import {
   Th,
 } from "@/components/ui";
 import ResetPasswordButton from "@/components/reset-password-button";
+import BulkAccounts from "./bulk-accounts";
 import NewStudentForm from "./new-student-form";
 import ToggleStudentActiveButton from "./toggle-active-button";
 
 export default async function StudentsPage() {
   await requireRole(["admin"]);
   const students = listStudents();
+  const candidates = listAccountCandidates();
 
   return (
     <div className="space-y-5">
@@ -71,6 +73,17 @@ export default async function StudentsPage() {
             </tbody>
           </TableShell>
         )}
+      </Card>
+
+      <Card padded={false}>
+        <CardHeader
+          title="Tạo tài khoản hàng loạt từ lớp đang học"
+          count={candidates.filter((c) => c.status === "ok").length || undefined}
+          icon={<IconUsers className="w-4.5 h-4.5 text-wood-500" />}
+        />
+        <div className="p-5">
+          <BulkAccounts candidates={candidates} />
+        </div>
       </Card>
 
       <Card padded={false} className="max-w-2xl">

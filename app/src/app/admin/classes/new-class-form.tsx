@@ -18,8 +18,27 @@ import {
 
 const initialState: FormState = {};
 
-export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
-  const [open, setOpen] = useState(false);
+/** Thông tin lấy sẵn từ một đăng ký học thử, để giáo vụ khỏi gõ lại. */
+export interface ClassPrefill {
+  trialRequestId: number;
+  studentName: string;
+  phone: string;
+  subject: string;
+  language: string;
+  note: string;
+}
+
+export default function NewClassForm({
+  teachers,
+  prefill,
+}: {
+  teachers: UserRow[];
+  prefill?: ClassPrefill;
+}) {
+  // Vào trang từ nút "Tạo lớp" của một đăng ký học thử thì mở sẵn biểu mẫu:
+  // giáo vụ đang muốn tạo lớp cho đúng người đó, bắt bấm thêm một nút nữa
+  // chỉ tổ mất công.
+  const [open, setOpen] = useState(Boolean(prefill));
   const [state, formAction, pending] = useActionState(createClassAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const [scheduleType, setScheduleType] = useState<ClassScheduleType>("fixed");
@@ -49,8 +68,12 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Thêm lớp học mới"
-        subtitle="Học viên học nhiều buổi/tuần thì thêm từng buổi — các buổi dùng chung một gói học."
+        title={prefill ? `Tạo lớp cho ${prefill.studentName}` : "Thêm lớp học mới"}
+        subtitle={
+          prefill
+            ? "Thông tin lấy từ đăng ký học thử — kiểm tra lại rồi xếp lịch và giáo viên. Lưu xong đăng ký đó tự chuyển sang “Đã xếp lớp”."
+            : "Học viên học nhiều buổi/tuần thì thêm từng buổi — các buổi dùng chung một gói học."
+        }
         size="lg"
         footer={
           <div className="flex items-center justify-between gap-3">
@@ -69,6 +92,9 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
         }
       >
         <form id="admin-new-class-form" ref={formRef} action={formAction} className="space-y-5">
+          {prefill && (
+            <input type="hidden" name="trial_request_id" value={prefill.trialRequestId} />
+          )}
           <section className="space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-400">
               Thông tin học viên
@@ -82,6 +108,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
                   id="a-name"
                   name="student_name"
                   required
+                  defaultValue={prefill?.studentName}
                   placeholder="VD: Nguyễn Minh Khang"
                   className={field}
                 />
@@ -90,7 +117,12 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
                 <label className={label} htmlFor="a-phone">
                   SĐT học viên / khách hàng
                 </label>
-                <input id="a-phone" name="student_phone" className={field} />
+                <input
+                  id="a-phone"
+                  name="student_phone"
+                  defaultValue={prefill?.phone}
+                  className={field}
+                />
               </div>
               <div>
                 <label className={label} htmlFor="a-guardian">
@@ -124,7 +156,12 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
                 <label className={label} htmlFor="a-language">
                   Ngôn ngữ giảng dạy
                 </label>
-                <select id="a-language" name="language" defaultValue="vi" className={field}>
+                <select
+                  id="a-language"
+                  name="language"
+                  defaultValue={prefill?.language || "vi"}
+                  className={field}
+                >
                   {Object.entries(LANGUAGE_LABELS).map(([v, text]) => (
                     <option key={v} value={v}>
                       {text}
@@ -148,7 +185,7 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
                   id="a-subject"
                   name="subject"
                   list="subject-suggestions"
-                  defaultValue="Guitar"
+                  defaultValue={prefill?.subject || "Guitar"}
                   className={field}
                 />
                 <datalist id="subject-suggestions">
@@ -232,7 +269,13 @@ export default function NewClassForm({ teachers }: { teachers: UserRow[] }) {
               <label className={label} htmlFor="a-notes">
                 Ghi chú
               </label>
-              <input id="a-notes" name="notes" placeholder="Không bắt buộc" className={field} />
+              <input
+                id="a-notes"
+                name="notes"
+                defaultValue={prefill?.note}
+                placeholder="Không bắt buộc"
+                className={field}
+              />
             </div>
           </section>
 

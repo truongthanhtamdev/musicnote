@@ -65,21 +65,19 @@ Gợi ý:
   chưa có HTTPS (chạy tạm qua `http://ip:port`), để trống biến này** — đặt
   `true` khi chưa có HTTPS sẽ khiến trình duyệt từ chối lưu cookie và liên
   tục bị đá về trang đăng nhập.
-- **Sao lưu tự động hàng đêm**: cài 1 dòng cron để chạy sẵn script trong repo
-  (dùng `VACUUM INTO` của SQLite nên an toàn kể cả khi app đang chạy) — mỗi
-  đêm tạo 1 file `DATA_DIR/backups/musicnote-YYYY-MM-DD.db`, tự xoá bản cũ
-  chỉ giữ 30 bản gần nhất:
+- **Sao lưu tự động hàng ngày**: app tự lo, không cần cài cron. Máy chủ khởi
+  động là bật sẵn lịch: mỗi giờ kiểm tra xem hôm nay đã có bản sao lưu chưa,
+  chưa thì tạo một file `DATA_DIR/backups/musicnote-YYYY-MM-DD.db` (dùng
+  `VACUUM INTO` của SQLite nên an toàn kể cả khi app đang chạy), giữ 30 bản
+  gần nhất. Muốn tắt: đặt `DISABLE_AUTO_BACKUP=true`.
 
-  ```bash
-  crontab -e
-  # thêm dòng này (2h sáng mỗi ngày), sửa lại đường dẫn cho đúng máy bạn:
-  0 2 * * * cd /root/musicnote/app && /usr/bin/node scripts/backup.mjs >> /var/log/musicnote-backup.log 2>&1
-  ```
+  Kiểm tra: vào app, mục **Sao lưu dữ liệu** — trang này hiện bản mới nhất,
+  danh sách các bản trên máy chủ, và cảnh báo nếu hôm nay chưa có bản nào.
+  Vẫn nên thỉnh thoảng bấm **"Tải dữ liệu mới nhất về máy"** để giữ 1 bản
+  ngoài máy chủ (phòng khi hỏng ổ đĩa/mất VPS) — bản tự động nằm cùng máy
+  với dữ liệu gốc nên mất máy chủ là mất cả hai.
 
-  Kiểm tra cron chạy chưa: vào app, mục **Sao lưu dữ liệu** — trang này hiện
-  bản mới nhất, danh sách các bản trên máy chủ, và cảnh báo nếu hôm nay chưa
-  có bản nào. Vẫn nên thỉnh thoảng bấm **"Tải dữ liệu mới nhất về máy"** để
-  giữ 1 bản ngoài máy chủ (phòng khi hỏng ổ đĩa/mất VPS).
+  Vẫn chạy tay được bất cứ lúc nào: `node scripts/backup.mjs`.
 - **Múi giờ**: app luôn tính ngày/giờ theo giờ Việt Nam (`Asia/Ho_Chi_Minh`)
   dù máy chủ chạy UTC, nên giờ điểm danh và "Hôm nay" luôn khớp thực tế —
   không cần chỉnh gì trên VPS. Trung tâm ở múi giờ khác thì đặt biến môi

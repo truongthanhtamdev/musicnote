@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTransition } from "react";
 import { deleteTrialRequestAction, setTrialRequestStatusAction } from "@/actions/trial";
 import {
@@ -47,6 +48,14 @@ export default function RequestRow({ request }: { request: TrialRequestRow }) {
       </td>
       <td className="px-4 py-3 text-right">
         <div className="inline-flex items-center gap-2">
+          {request.status !== "done" && (
+            <Link
+              href={`/admin/classes?trial=${request.id}`}
+              className="text-sm font-semibold text-wood-600 hover:text-wood-700 whitespace-nowrap"
+            >
+              Tạo lớp
+            </Link>
+          )}
           <select
             value={request.status}
             disabled={isPending}

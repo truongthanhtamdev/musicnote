@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { IconX } from "./icons";
 
 /**
  * Modal dùng chung: trên mobile trượt lên từ đáy (bottom sheet), trên desktop
  * là hộp thoại giữa màn hình. Đóng bằng nút X, nền mờ hoặc phím Esc.
+ *
+ * Chiều cao tính theo dvh chứ không phải vh: bàn phím điện thoại mở ra làm
+ * khung nhìn thấp đi, dùng vh thì đáy hộp thoại (có nút Lưu) chui xuống dưới
+ * bàn phím. Và chỉ đóng khi cả lúc đặt ngón lẫn lúc nhấc ngón đều ở nền mờ —
+ * bàn phím mở/đóng làm hộp thoại xê dịch, bấm hụt sang nền một cái là bao
+ * nhiêu thứ vừa gõ mất sạch.
  */
 export function Modal({
   open,
@@ -24,6 +30,9 @@ export function Modal({
   footer?: ReactNode;
   size?: "md" | "lg";
 }) {
+  // Ngón tay đặt xuống ở đâu: chỉ nền mờ mới được đóng hộp thoại.
+  const pressedBackdrop = useRef(false);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -45,7 +54,13 @@ export function Modal({
       <button
         type="button"
         aria-label="Đóng"
-        onClick={onClose}
+        onPointerDown={(e) => {
+          pressedBackdrop.current = e.currentTarget === e.target;
+        }}
+        onClick={() => {
+          if (pressedBackdrop.current) onClose();
+          pressedBackdrop.current = false;
+        }}
         className="absolute inset-0 bg-navy-950/50 backdrop-blur-[2px]"
       />
       <div
@@ -54,7 +69,7 @@ export function Modal({
         aria-label={title}
         className={`relative w-full ${
           size === "lg" ? "sm:max-w-2xl" : "sm:max-w-lg"
-        } max-h-[92vh] sm:max-h-[88vh] flex flex-col bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-navy-100`}
+        } max-h-[92dvh] sm:max-h-[88dvh] flex flex-col bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-navy-100`}
       >
         <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-navy-100">
           <div className="min-w-0">

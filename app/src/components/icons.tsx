@@ -292,6 +292,20 @@ export const IconBook = (p: IconProps) => (
   </Svg>
 );
 
+export const IconHistory = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+    <path d="M3.5 4.5V10H9" />
+    <path d="M12 7.5V12l3 1.8" />
+  </Svg>
+);
+
+export const IconStar = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m12 3.5 2.6 5.3 5.9.85-4.25 4.15 1 5.85L12 16.9l-5.25 2.75 1-5.85L3.5 9.65l5.9-.85Z" />
+  </Svg>
+);
+
 export const IconMore = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="5" cy="12" r="1.4" fill="currentColor" />

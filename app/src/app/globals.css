@@ -147,3 +147,20 @@ body {
     16px 100%;
   background-attachment: local, local, scroll, scroll;
 }
+
+/*
+ * Ô nhập trên điện thoại phải từ 16px trở lên.
+ *
+ * Safari trên iPhone tự phóng to trang khi người dùng bấm vào ô có cỡ chữ
+ * nhỏ hơn 16px, rồi không thu lại — bấm qua ô kế tiếp là trang nhảy lung
+ * tung, cảm giác như bị văng ra khỏi biểu mẫu. Đặt ở đây một lần thay vì sửa
+ * từng lớp Tailwind rải rác, và cần !important vì lớp text-sm/text-xs của
+ * Tailwind có độ ưu tiên cao hơn selector thẻ.
+ */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
