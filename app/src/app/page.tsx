@@ -3,16 +3,51 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { roleHomePath } from "@/lib/types";
 import { Logo } from "@/components/logo";
-import { IconCheck, IconChevronRight, IconClock, IconUsers } from "@/components/icons";
+import {
+  IconCheck,
+  IconChevronRight,
+  IconClock,
+  IconUsers,
+  SubjectIcon,
+} from "@/components/icons";
 import { ContactButtons } from "@/components/contact-buttons";
 import { PricingTabs } from "./pricing-tabs";
 import { TrialForm } from "./trial-form";
 
 export const metadata: Metadata = {
-  title: "Piano Guitar Đệm Hát — Học nhạc 1 kèm 1 online",
+  title: "Piano Guitar Đệm Hát — Học 1 kèm 1 online",
   description:
-    "Guitar, Piano, Violin, Thanh nhạc — học 1 kèm 1 online 60 phút/buổi, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.",
+    "Guitar, Piano, Violin, Saxophone, Thanh nhạc và Toán, Tiếng Việt, Tiếng Anh — học 1 kèm 1 online 60 phút/buổi, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.",
 };
+
+/**
+ * Bộ môn hiện lên trang chủ. Tách hai nhóm vì khách tìm lớp nhạc và khách tìm
+ * lớp kèm văn hoá là hai nhóm khác nhau — gộp một lưới 8 ô thì cả hai đều
+ * phải đọc lướt qua phần không liên quan.
+ *
+ * Mô tả cố ý ngắn và chung chung, chủ trung tâm sửa lại theo đúng chương
+ * trình thật của mình được ngay ở đây.
+ */
+const SUBJECT_GROUPS = [
+  {
+    label: "Âm nhạc",
+    items: [
+      { name: "Guitar", text: "Đệm hát, fingerstyle, solo — học được từ con số 0." },
+      { name: "Piano", text: "Đệm hát và cổ điển, cho cả người lớn lẫn các bé." },
+      { name: "Violin", text: "Tư thế, cách kéo vĩ và những bản nhạc đầu tiên." },
+      { name: "Saxophone", text: "Hơi, ngón bấm và các bài quen thuộc." },
+      { name: "Thanh nhạc", text: "Luyện hơi, luyện giọng, xử lý bài hát." },
+    ],
+  },
+  {
+    label: "Văn hoá",
+    items: [
+      { name: "Toán", text: "Kèm bài trên lớp, lấy lại gốc, luyện đề theo trình độ." },
+      { name: "Tiếng Việt", text: "Tập đọc, chính tả, tập làm văn cho bậc tiểu học." },
+      { name: "Tiếng Anh", text: "Giao tiếp, ngữ pháp và luyện thi theo mục tiêu của bạn." },
+    ],
+  },
+];
 
 const BILINGUAL_POINTS = [
   {
@@ -44,6 +79,12 @@ export default async function HomePage() {
           </Link>
           <nav className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <a
+              href="#bo-mon"
+              className="hidden sm:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+            >
+              Bộ môn
+            </a>
+            <a
               href="#hoc-phi"
               className="hidden sm:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
             >
@@ -69,14 +110,15 @@ export default async function HomePage() {
         {/* Hero */}
         <section className="max-w-6xl mx-auto px-5 sm:px-8 pt-14 pb-12 sm:pt-20 sm:pb-16">
           <p className="text-sm font-semibold text-wood-600 tracking-wide">
-            Piano · Guitar · Violin · Thanh Nhạc
+            Piano · Guitar · Violin · Saxophone · Thanh nhạc · Toán · Tiếng Việt · Tiếng Anh
           </p>
           <h1 className="text-3xl sm:text-5xl font-bold text-ink-900 tracking-tight leading-tight mt-3 max-w-3xl">
-            Học nhạc 1 kèm 1 online, giáo viên song ngữ Việt–Anh
+            Học 1 kèm 1 online, giáo viên song ngữ Việt–Anh
           </h1>
           <p className="text-ink-600 text-base sm:text-lg mt-4 max-w-2xl">
-            60 phút mỗi buổi, lịch học linh hoạt theo múi giờ của bạn. Học thử 1 buổi miễn phí
-            trước khi quyết định đăng ký gói.
+            Nhạc cụ, thanh nhạc và cả Toán, Tiếng Việt, Tiếng Anh — 60 phút mỗi buổi, lịch học
+            linh hoạt theo múi giờ của bạn. Học thử 1 buổi miễn phí trước khi quyết định đăng ký
+            gói.
           </p>
 
           <div className="flex flex-wrap gap-3 mt-8">
@@ -107,6 +149,43 @@ export default async function HomePage() {
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* Bộ môn */}
+        <section
+          id="bo-mon"
+          className="scroll-mt-20 max-w-6xl mx-auto px-5 sm:px-8 pb-4 sm:pb-8"
+        >
+          <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+            Các môn trung tâm đang dạy
+          </h2>
+          <p className="text-ink-500 mt-2">
+            Môn nào cũng học 1 kèm 1 online, 60 phút mỗi buổi, buổi đầu học thử miễn phí.
+          </p>
+
+          {SUBJECT_GROUPS.map((group) => (
+            <div key={group.label} className="mt-8">
+              <p className="text-xs font-bold uppercase tracking-wide text-wood-600">
+                {group.label}
+              </p>
+              <div className="grid grid-cols-1 [&>*]:min-w-0 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3.5">
+                {group.items.map((item) => (
+                  <div
+                    key={item.name}
+                    className="rounded-2xl border border-navy-100 bg-white p-5 flex gap-3.5"
+                  >
+                    <span className="shrink-0 rounded-xl bg-ivory-100 text-wood-600 p-2.5 h-fit">
+                      <SubjectIcon subject={item.name} className="w-5 h-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-ink-900">{item.name}</h3>
+                      <p className="text-sm text-ink-600 mt-1 leading-relaxed">{item.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </section>
 
         {/* Giáo viên song ngữ */}
@@ -145,6 +224,19 @@ export default async function HomePage() {
           <div className="mt-8">
             <PricingTabs />
           </div>
+          {/* Lớp văn hoá chưa niêm yết giá: học phí tuỳ cấp lớp và mục tiêu,
+              ghi bừa một con số lên trang chủ rồi báo giá khác là mất khách. */}
+          <p className="text-sm text-ink-600 mt-7 rounded-2xl border border-navy-100 bg-white px-4 py-3.5">
+            Lớp{" "}
+            <span className="font-semibold text-ink-900">
+              Saxophone, Toán, Tiếng Việt, Tiếng Anh
+            </span>{" "}
+            có học phí tuỳ theo cấp lớp và mục tiêu của học viên —{" "}
+            <a href="#hoc-thu" className="font-semibold text-wood-600 hover:text-wood-700">
+              để lại thông tin
+            </a>{" "}
+            để trung tâm báo giá đúng nhu cầu của bạn.
+          </p>
         </section>
 
         {/* Đăng ký học thử */}
