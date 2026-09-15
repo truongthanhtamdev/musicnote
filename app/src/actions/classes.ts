@@ -149,8 +149,10 @@ export async function createClassAction(
   // Lớp tạo từ một đăng ký học thử thì đánh dấu luôn đăng ký đó là đã xếp
   // lớp — giáo vụ khỏi phải nhớ quay lại đổi trạng thái, và danh sách chờ
   // không còn tên người đã vào học.
+  // Chỉ giáo vụ/quản trị mới được đụng vào danh sách đăng ký học thử — giáo
+  // viên tự thêm lớp của mình thì không có việc gì ở đó.
   const trialRequestId = Number(formData.get("trial_request_id") || 0);
-  if (trialRequestId) {
+  if (trialRequestId && session.role !== "teacher") {
     db.prepare("UPDATE trial_requests SET status = 'done' WHERE id = ?").run(trialRequestId);
     revalidatePath("/admin/trial-requests");
   }

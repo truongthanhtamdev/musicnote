@@ -5,6 +5,7 @@ import {
   createStudentAccountsAction,
   type BulkAccountState,
   type CreatedAccount,
+  type LinkedAccount,
 } from "@/actions/students";
 import type { AccountCandidate } from "@/lib/queries";
 import { IconAlert, IconCheckCircle, IconDownload, IconUsers } from "@/components/icons";
@@ -15,7 +16,8 @@ const initialState: BulkAccountState = {};
 const REASON: Record<AccountCandidate["status"], string> = {
   ok: "",
   no_phone: "Chưa có SĐT trong hồ sơ lớp",
-  phone_taken: "SĐT này đã có tài khoản",
+  duplicate_phone: "Trùng SĐT với khách ở trên",
+  link_existing: "",
 };
 
 /**
@@ -28,10 +30,13 @@ const REASON: Record<AccountCandidate["status"], string> = {
 export default function BulkAccounts({ candidates }: { candidates: AccountCandidate[] }) {
   const [state, formAction, pending] = useActionState(createStudentAccountsAction, initialState);
   const ready = candidates.filter((c) => c.status === "ok");
+  // Chỉ tick sẵn người tạo tài khoản mới. Người gắn vào tài khoản có sẵn để
+  // giáo vụ tự tick sau khi nhìn tên tài khoản — hai nhà xài chung một số
+  // điện thoại mà gắn nhầm là khách này thấy lớp của khách kia.
   const [chosen, setChosen] = useState<Set<string>>(() => new Set(ready.map((c) => c.key)));
 
-  if (state.created?.length) {
-    return <CreatedList created={state.created} />;
+  if (state.created?.length || state.linked?.length) {
+    return <CreatedList created={state.created ?? []} linked={state.linked ?? []} />;
   }
 
   if (candidates.length === 0) {
@@ -41,6 +46,10 @@ export default function BulkAccounts({ candidates }: { candidates: AccountCandid
       </p>
     );
   }
+
+  const chosenList = candidates.filter((c) => chosen.has(c.key));
+  const newCount = chosenList.filter((c) => c.status === "ok").length;
+  const linkCount = chosenList.filter((c) => c.status === "link_existing").length;
 
   const toggle = (key: string) =>
     setChosen((prev) => {
@@ -55,11 +64,13 @@ export default function BulkAccounts({ candidates }: { candidates: AccountCandid
         {ready.length > 0
           ? `${ready.length} khách đang học chưa có tài khoản. Tên đăng nhập là số điện thoại của khách, mật khẩu do hệ thống sinh và chỉ hiện một lần sau khi tạo.`
           : "Những khách dưới đây chưa tạo được tài khoản — xem lý do ở từng dòng."}
+        {candidates.some((c) => c.status === "link_existing") &&
+          " Dòng ghi “Gắn vào tài khoản …” là khách đã có tài khoản rồi, tick để gắn thêm lớp mới vào đúng tài khoản đó."}
       </p>
 
       <ul className="space-y-1.5 max-h-96 overflow-y-auto scroll-thin">
         {candidates.map((c) => {
-          const disabled = c.status !== "ok";
+          const disabled = c.status === "no_phone" || c.status === "duplicate_phone";
           return (
             <li key={c.key}>
               <label
@@ -86,6 +97,13 @@ export default function BulkAccounts({ candidates }: { candidates: AccountCandid
                 </span>
                 {disabled ? (
                   <StatusChip tone="amber">{REASON[c.status]}</StatusChip>
+                ) : c.existingAccount ? (
+                  <span className="text-xs text-right whitespace-nowrap mt-0.5">
+                    <span className="block text-ink-600 tabular">{c.login}</span>
+                    <span className="block text-mint-700 font-semibold">
+                      Gắn vào tài khoản {c.existingAccount.name}
+                    </span>
+                  </span>
                 ) : (
                   <span className="text-xs text-ink-600 tabular whitespace-nowrap mt-0.5">
                     {c.login}
@@ -110,13 +128,21 @@ export default function BulkAccounts({ candidates }: { candidates: AccountCandid
         className={`${btn.primary} py-2.5 disabled:opacity-50`}
       >
         <IconUsers className="w-4 h-4" />
-        {pending ? "Đang tạo..." : `Tạo ${chosen.size} tài khoản`}
+        {pending ? "Đang xử lý..." : `${newCount > 0 ? `Tạo ${newCount} tài khoản` : "Gắn lớp"}${
+          linkCount > 0 && newCount > 0 ? ` + gắn ${linkCount} lớp cũ` : linkCount > 0 ? ` cho ${linkCount} khách` : ""
+        }`}
       </button>
     </form>
   );
 }
 
-function CreatedList({ created }: { created: CreatedAccount[] }) {
+function CreatedList({
+  created,
+  linked,
+}: {
+  created: CreatedAccount[];
+  linked: LinkedAccount[];
+}) {
   const [copied, setCopied] = useState(false);
   const lines = created.map((a) => `${a.customerName} — đăng nhập: ${a.login} — mật khẩu: ${a.password}`);
 
@@ -139,14 +165,23 @@ function CreatedList({ created }: { created: CreatedAccount[] }) {
       <p className="text-sm text-mint-700 bg-mint-50 border border-mint-100 rounded-xl px-3.5 py-3 flex items-start gap-2">
         <IconCheckCircle className="w-5 h-5 shrink-0" />
         <span>
-          Đã tạo {created.length} tài khoản và gắn sẵn lớp của từng khách.{" "}
-          <span className="font-semibold">
-            Lưu lại danh sách này trước khi rời trang — mật khẩu không xem lại được.
-          </span>{" "}
-          Quên thì vào dòng của khách bấm &quot;Đặt lại mật khẩu&quot;.
+          {created.length > 0 && `Đã tạo ${created.length} tài khoản và gắn sẵn lớp của từng khách. `}
+          {linked.length > 0 &&
+            `Đã gắn lớp mới vào ${linked.length} tài khoản có sẵn (${linked
+              .map((a) => a.accountName)
+              .join(", ")}) — mật khẩu của họ giữ nguyên. `}
+          {created.length > 0 && (
+            <>
+              <span className="font-semibold">
+                Lưu lại danh sách này trước khi rời trang — mật khẩu không xem lại được.
+              </span>{" "}
+              Quên thì vào dòng của khách bấm &quot;Đặt lại mật khẩu&quot;.
+            </>
+          )}
         </span>
       </p>
 
+      {created.length > 0 && (
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={download} className={`${btn.primary} py-2.5`}>
           <IconDownload className="w-4 h-4" />
@@ -168,6 +203,7 @@ function CreatedList({ created }: { created: CreatedAccount[] }) {
           {copied ? "Đã chép ✓" : "Chép toàn bộ"}
         </button>
       </div>
+      )}
 
       <ul className="space-y-1 max-h-80 overflow-y-auto scroll-thin text-sm">
         {created.map((a) => (

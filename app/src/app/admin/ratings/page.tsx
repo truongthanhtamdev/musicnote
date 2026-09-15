@@ -51,7 +51,10 @@ export default async function RatingsPage({
 
   const summary = ratingSummary(from, to);
   const byTeacher = ratingsByTeacher(from, to);
-  const teachers = listTeachers(false)
+  // Lấy cả giáo viên đã ngừng hoạt động: người vừa nghỉ việc chính là người
+  // hay cần xem lại điểm nhất, mà bỏ họ ra thì tổng số lượt chấm ở trên lại
+  // không khớp với bảng bên dưới.
+  const teachers = listTeachers(true)
     .map((t) => ({ teacher: t, rating: byTeacher.get(t.id) }))
     .filter((r) => r.rating)
     .sort((a, b) => (b.rating?.average ?? 0) - (a.rating?.average ?? 0));
@@ -126,7 +129,13 @@ export default async function RatingsPage({
         />
         <MetricCard
           label="Tỉ lệ khách chấm"
-          value={summary.sessions ? `${Math.round((summary.count / summary.sessions) * 100)}%` : "–"}
+          // Chặn trên 100%: buổi bị xoá sau khi khách đã chấm thì số lượt chấm
+          // có thể nhiều hơn số buổi còn lại, hiện "120%" nhìn như lỗi.
+          value={
+            summary.sessions
+              ? `${Math.min(100, Math.round((summary.count / summary.sessions) * 100))}%`
+              : "–"
+          }
           hint="Gửi link chấm sao sau buổi học để tăng tỉ lệ"
           tone="navy"
         />
@@ -158,7 +167,12 @@ export default async function RatingsPage({
             <tbody className="divide-y divide-navy-100">
               {teachers.map(({ teacher, rating }) => (
                 <tr key={teacher.id} className="hover:bg-ivory-50">
-                  <td className="px-4 py-3 font-medium text-ink-900">{teacher.name}</td>
+                  <td className="px-4 py-3">
+                    <span className="font-medium text-ink-900">{teacher.name}</span>
+                    {!teacher.active && (
+                      <span className="block text-xs text-ink-400">Đã ngừng hoạt động</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <TeacherStars rating={rating} />
                   </td>

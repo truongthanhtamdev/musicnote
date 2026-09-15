@@ -55,9 +55,17 @@ export interface CreatedAccount {
   classCount: number;
 }
 
+export interface LinkedAccount {
+  customerName: string;
+  login: string;
+  accountName: string;
+  classCount: number;
+}
+
 export interface BulkAccountState extends FormState {
   created?: CreatedAccount[];
-  skipped?: number;
+  /** Khách đã có tài khoản sẵn, chỉ gắn thêm lớp — không có mật khẩu mới. */
+  linked?: LinkedAccount[];
 }
 
 /**
@@ -89,10 +97,10 @@ export async function createStudentAccountsAction(
   if (chosen.size === 0) return { error: "Bạn chọn ít nhất một khách hàng nhé" };
 
   const candidates = listAccountCandidates().filter(
-    (c) => c.status === "ok" && chosen.has(c.key)
+    (c) => chosen.has(c.key) && (c.status === "ok" || c.status === "link_existing")
   );
   if (candidates.length === 0) {
-    return { error: "Những khách đã chọn đều chưa tạo được (thiếu SĐT hoặc SĐT đã có tài khoản)" };
+    return { error: "Những khách đã chọn đều chưa tạo được (thiếu số điện thoại trong hồ sơ lớp)" };
   }
 
   const insertUser = db.prepare(
@@ -102,8 +110,19 @@ export async function createStudentAccountsAction(
   const linkClass = db.prepare("UPDATE classes SET student_user_id = ? WHERE id = ?");
 
   const created: CreatedAccount[] = [];
+  const linked: LinkedAccount[] = [];
   const run = db.transaction(() => {
     for (const c of candidates) {
+      if (c.status === "link_existing" && c.existingAccount) {
+        for (const classId of c.classIds) linkClass.run(c.existingAccount.id, classId);
+        linked.push({
+          customerName: c.customerName,
+          login: c.login!,
+          accountName: c.existingAccount.name,
+          classCount: c.classIds.length,
+        });
+        continue;
+      }
       const password = tempPassword();
       const info = insertUser.run(
         c.customerName,
@@ -120,16 +139,38 @@ export async function createStudentAccountsAction(
       });
     }
   });
-  run();
+
+  try {
+    run();
+  } catch (e) {
+    // Hay gặp nhất: người khác vừa tạo tài khoản cùng số điện thoại trong lúc
+    // trang này đang mở. Cả lượt bị huỷ chứ không tạo nửa vời, nên chỉ cần
+    // bảo giáo vụ tải lại trang.
+    console.error("[tai-khoan-hang-loat]", e);
+    return {
+      error: "Không tạo được — có thể ai đó vừa tạo tài khoản cùng số điện thoại. Bạn tải lại trang rồi thử lại nhé.",
+    };
+  }
 
   logAudit(
     session,
     "tai_khoan",
-    `Tạo hàng loạt ${created.length} tài khoản học viên: ${created
-      .map((a) => a.customerName)
-      .join(", ")}`
+    [
+      created.length
+        ? `Tạo hàng loạt ${created.length} tài khoản học viên: ${created
+            .map((a) => a.customerName)
+            .join(", ")}`
+        : "",
+      linked.length
+        ? `Gắn lớp vào ${linked.length} tài khoản có sẵn: ${linked
+            .map((a) => a.customerName)
+            .join(", ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" · ")
   );
   revalidatePath("/admin/students");
   revalidatePath("/admin/classes");
-  return { success: true, created, skipped: chosen.size - created.length };
+  return { success: true, created, linked };
 }

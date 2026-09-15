@@ -1644,7 +1644,7 @@ export function listRatings(opts: {
 
 /* ------------------ Tạo tài khoản học viên hàng loạt ------------------ */
 
-export type AccountCandidateStatus = "ok" | "no_phone" | "phone_taken";
+export type AccountCandidateStatus = "ok" | "no_phone" | "link_existing" | "duplicate_phone";
 
 export interface AccountCandidate {
   /** Khoá khách hàng, chính là khoá của listCustomerProfiles. */
@@ -1654,9 +1654,11 @@ export interface AccountCandidate {
   login: string | null;
   studentNames: string[];
   subjects: string[];
-  /** Lớp sẽ được gắn vào tài khoản mới. */
+  /** Lớp sẽ được gắn vào tài khoản. */
   classIds: number[];
   status: AccountCandidateStatus;
+  /** Tài khoản học viên đã dùng số này — gắn lớp vào đây thay vì tạo mới. */
+  existingAccount?: { id: number; name: string };
 }
 
 /**
@@ -1680,11 +1682,19 @@ export function normalizeLoginPhone(raw: string): string {
  * rác danh sách.
  */
 export function listAccountCandidates(): AccountCandidate[] {
-  const takenLogins = new Set(
-    (db.prepare("SELECT email FROM users").all() as { email: string }[]).map((r) =>
-      r.email.toLowerCase()
-    )
-  );
+  const accountsByLogin = new Map<string, { id: number; name: string; role: string }>();
+  // Hai khách khác nhau khai cùng một số điện thoại (chép nhầm trong Excel,
+  // hoặc hai nhà chung số): chỉ người đầu được tạo, người sau phải để giáo vụ
+  // sửa số trước — gộp bừa là hai nhà nhìn thấy lớp của nhau.
+  const claimedInThisBatch = new Set<string>();
+  for (const u of db.prepare("SELECT id, name, email, role FROM users").all() as {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  }[]) {
+    accountsByLogin.set(u.email.toLowerCase(), { id: u.id, name: u.name, role: u.role });
+  }
 
   const out: AccountCandidate[] = [];
   for (const customer of listCustomerProfiles()) {
@@ -1694,12 +1704,24 @@ export function listAccountCandidates(): AccountCandidate[] {
     if (classes.length === 0) continue;
 
     const login = customer.phones.map(normalizeLoginPhone).find(Boolean) ?? null;
-    const status: AccountCandidateStatus = !login
-      ? "no_phone"
-      : takenLogins.has(login.toLowerCase())
-        ? "phone_taken"
-        : "ok";
-    if (status === "ok") takenLogins.add(login!.toLowerCase());
+    const existing = login ? accountsByLogin.get(login.toLowerCase()) : undefined;
+
+    let status: AccountCandidateStatus;
+    if (!login) {
+      status = "no_phone";
+    } else if (claimedInThisBatch.has(login.toLowerCase())) {
+      status = "duplicate_phone";
+    } else if (existing) {
+      // Số này đã có tài khoản rồi — khách đăng ký thêm lớp chẳng hạn. Tạo
+      // tài khoản thứ hai cùng số là không đăng nhập được, nên gắn lớp vào
+      // tài khoản cũ. Chỉ gắn vào tài khoản học viên, và để giáo vụ tự tick
+      // sau khi nhìn tên: hai gia đình dùng chung một số thì gắn nhầm là lộ
+      // lớp của nhà người ta.
+      status = existing.role === "student" ? "link_existing" : "no_phone";
+    } else {
+      status = "ok";
+      claimedInThisBatch.add(login.toLowerCase());
+    }
 
     out.push({
       key: customer.key,
@@ -1709,11 +1731,13 @@ export function listAccountCandidates(): AccountCandidate[] {
       subjects: [...new Set(classes.map((c) => c.subject))],
       classIds: classes.map((c) => c.id),
       status,
+      existingAccount:
+        status === "link_existing" && existing ? { id: existing.id, name: existing.name } : undefined,
     });
   }
 
   // Tạo được thì xếp lên trước, để giáo vụ bấm một phát là xong phần làm được.
-  const rank = { ok: 0, phone_taken: 1, no_phone: 2 };
+  const rank = { ok: 0, link_existing: 1, duplicate_phone: 2, no_phone: 3 };
   return out.sort(
     (a, b) => rank[a.status] - rank[b.status] || a.customerName.localeCompare(b.customerName, "vi")
   );
