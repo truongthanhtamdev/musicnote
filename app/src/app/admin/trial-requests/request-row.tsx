@@ -33,9 +33,7 @@ export default function RequestRow({ request }: { request: TrialRequestRow }) {
         >
           {request.phone}
         </a>
-        {request.contact && (
-          <p className="text-xs text-ink-500 truncate max-w-[220px]">{request.contact}</p>
-        )}
+        {request.contact && <ContactLines value={request.contact} />}
       </td>
       <td className="px-4 py-3 text-ink-700 whitespace-nowrap">
         {request.subject}
@@ -81,5 +79,43 @@ export default function RequestRow({ request }: { request: TrialRequestRow }) {
         </div>
       </td>
     </tr>
+  );
+}
+
+const EMAIL = /[\w.+-]+@[\w-]+\.[\w.-]+/;
+
+/**
+ * Khách gõ mọi thứ vào một ô "Facebook / Zalo / Email", nên tách theo dấu "/"
+ * rồi xuống dòng từng cái. Trước đây cắt bằng "..." nên email dài bị mất
+ * đuôi — mà email là thứ giáo vụ cần nhất để liên hệ khách nước ngoài.
+ */
+function ContactLines({ value }: { value: string }) {
+  const parts = value
+    // Chỉ tách ở dấu "/" có khoảng trắng hai bên — bổ ở mọi dấu "/" thì
+    // "fb.com/trangnt" bị cắt làm đôi.
+    .split(/\s+\/\s+|\s*[;|]\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  return (
+    <ul className="mt-0.5 space-y-0.5 max-w-[240px]">
+      {parts.map((part, i) => {
+        const email = part.match(EMAIL)?.[0];
+        return (
+          <li key={i} className="text-xs text-ink-500 break-words">
+            {email ? (
+              <>
+                {part.slice(0, part.indexOf(email))}
+                <a href={`mailto:${email}`} className="text-navy-600 hover:underline break-all">
+                  {email}
+                </a>
+              </>
+            ) : (
+              part
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
