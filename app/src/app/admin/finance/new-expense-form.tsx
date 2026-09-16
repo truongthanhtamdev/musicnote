@@ -36,10 +36,10 @@ export default function NewExpenseForm({
         ))}
       </datalist>
       <select name="service_id" defaultValue="" className="input">
-        <option value="">Chi chung, không thuộc mảng nào</option>
+        <option value="">Chi chung, không thuộc fanpage nào</option>
         {services.map((s) => (
           <option key={s.id} value={s.id}>
-            Mảng: {s.name}
+            Fanpage: {s.name}
           </option>
         ))}
       </select>

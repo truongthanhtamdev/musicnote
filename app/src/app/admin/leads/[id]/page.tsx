@@ -42,7 +42,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const notes = listLeadNotes(lead.id);
   const appointments = listAppointments({ leadId: lead.id });
   const staff = listStaff().map((s) => ({ id: s.id, name: s.name }));
-  const services = listServices().map((s) => s.name);
+  const services = listServices({ kind: "subject" }).map((s) => s.name);
+  const fanpages = listServices({ kind: "fanpage" }).map((s) => ({ id: s.id, name: s.name }));
   const payments = listPaymentsForLead(lead.id, lead.class_id);
   const isAdmin = session.role === "admin";
   const isClosed = lead.status === "won" || lead.status === "lost" || lead.status === "cold";
@@ -129,7 +130,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             {lead.subject} · {LEARNING_MODE_LABELS[lead.learning_mode]}
             {lead.need && <span className="block text-[12px] text-muted">{lead.need}</span>}
           </Field>
-          <Field label="Nguồn">{lead.source}</Field>
+          <Field label="Fanpage / nguồn">
+            {lead.project_name || "Chưa gắn fanpage"}
+            <span className="block text-[12px] text-muted">{lead.source}</span>
+          </Field>
           <Field label="Phụ trách">{lead.owner_name || "Chưa giao"}</Field>
         </div>
 
@@ -183,7 +187,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
           <div className="panel p-[18px]">
             <h2 className="panel-title mb-4">Thông tin khách hàng</h2>
-            <EditLeadForm lead={lead} staff={staff} services={services} />
+            <EditLeadForm lead={lead} staff={staff} services={services} fanpages={fanpages} />
           </div>
         </div>
 

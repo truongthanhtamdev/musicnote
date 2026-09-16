@@ -16,6 +16,7 @@ import {
   type LeadRow,
   type PackageRow,
   type PaymentRow,
+  type ServiceKind,
   type ServiceRow,
   type UserRow,
 } from "./types";
@@ -383,6 +384,8 @@ export function getRevenueSummary(from: string, to: string): RevenueSummary {
 
 export interface LeadWithMeta extends LeadRow {
   owner_name: string | null;
+  /** Tên fanpage/dự án mang khách về. */
+  project_name: string | null;
   /** Tên học viên trên lớp đã tạo từ lead này (nếu đã chốt). */
   class_student_name: string | null;
   /** Doanh thu thực thu: tổng các khoản thanh toán gắn với lớp của lead này. */
@@ -392,16 +395,19 @@ export interface LeadWithMeta extends LeadRow {
 
 const LEAD_SELECT = `
   SELECT l.*, u.name as owner_name, c.student_name as class_student_name,
+         pj.name as project_name,
          (SELECT COALESCE(SUM(p.amount), 0) FROM payments p
            WHERE p.lead_id = l.id
               OR (l.class_id IS NOT NULL AND p.class_id = l.class_id)) as revenue,
          (SELECT COUNT(*) FROM lead_notes n WHERE n.lead_id = l.id) as note_count
   FROM leads l
   LEFT JOIN users u ON u.id = l.owner_id
-  LEFT JOIN classes c ON c.id = l.class_id`;
+  LEFT JOIN classes c ON c.id = l.class_id
+  LEFT JOIN services pj ON pj.id = l.project_id`;
 
 export interface LeadFilter {
   status?: string;
+  projectId?: number;
   source?: string;
   area?: string;
   subject?: string;
@@ -438,6 +444,10 @@ export function listLeads(filter: LeadFilter = {}): LeadWithMeta[] {
   if (filter.subject) {
     clauses.push("l.subject = @subject");
     params.subject = filter.subject;
+  }
+  if (filter.projectId) {
+    clauses.push("l.project_id = @projectId");
+    params.projectId = filter.projectId;
   }
   if (filter.learningMode) {
     clauses.push("l.learning_mode = @learningMode");
@@ -640,13 +650,18 @@ export interface LeadBreakdownRow {
 
 /** Bảng lead + doanh thu tách theo nguồn / khu vực / hình thức học / môn. */
 export function getLeadBreakdown(
-  by: "source" | "area" | "learning_mode" | "subject",
+  by: "source" | "area" | "learning_mode" | "subject" | "project",
   from: string,
   to: string
 ): LeadBreakdownRow[] {
+  // Fanpage nằm ở bảng khác nên lấy tên qua truy vấn con thay vì tên cột.
+  const keyExpr =
+    by === "project"
+      ? "COALESCE((SELECT name FROM services WHERE id = l.project_id), 'Chưa gắn fanpage')"
+      : `COALESCE(NULLIF(l.${by}, ''), 'Không rõ')`;
   const rows = db
     .prepare(
-      `SELECT COALESCE(NULLIF(l.${by}, ''), 'Không rõ') as key,
+      `SELECT ${keyExpr} as key,
               COUNT(*) as total,
               SUM(CASE WHEN l.status = 'won' THEN 1 ELSE 0 END) as won,
               COALESCE(SUM(
@@ -830,21 +845,39 @@ export interface ServiceWithOwner extends ServiceRow {
   lead_count: number;
 }
 
-export function listServices(includeInactive = false): ServiceWithOwner[] {
+export function listServices(
+  opts: { kind?: ServiceKind; includeInactive?: boolean } = {}
+): ServiceWithOwner[] {
+  const where: string[] = [];
+  const params: Record<string, unknown> = {};
+  if (opts.kind) {
+    where.push("s.kind = @kind");
+    params.kind = opts.kind;
+  }
+  if (!opts.includeInactive) where.push("s.active = 1");
+
   return db
     .prepare(
       `SELECT s.*, u.name as owner_name,
-              (SELECT COUNT(*) FROM leads l WHERE l.subject = s.name) as lead_count
+              (SELECT COUNT(*) FROM leads l
+                WHERE (s.kind = 'subject' AND l.subject = s.name)
+                   OR (s.kind = 'fanpage' AND l.project_id = s.id)) as lead_count
        FROM services s
        LEFT JOIN users u ON u.id = s.default_owner_id
-       ${includeInactive ? "" : "WHERE s.active = 1"}
+       ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
        ORDER BY s.sort_order, s.name`
     )
-    .all() as ServiceWithOwner[];
+    .all(params) as ServiceWithOwner[];
 }
 
-export function getServiceByName(name: string): ServiceRow | undefined {
-  return db.prepare("SELECT * FROM services WHERE name = ?").get(name) as ServiceRow | undefined;
+export function getService(id: number): ServiceRow | undefined {
+  return db.prepare("SELECT * FROM services WHERE id = ?").get(id) as ServiceRow | undefined;
+}
+
+export function getServiceByName(name: string, kind: ServiceKind = "subject"): ServiceRow | undefined {
+  return db.prepare("SELECT * FROM services WHERE name = ? AND kind = ?").get(name, kind) as
+    | ServiceRow
+    | undefined;
 }
 
 /** Các khoản đã thu của một khách, gồm cả khoản ghi qua lớp học cũ. */

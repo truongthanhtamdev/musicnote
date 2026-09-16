@@ -17,9 +17,11 @@ const inputClass = "input";
 export default function NewLeadForm({
   staff,
   services,
+  fanpages,
 }: {
   staff: { id: number; name: string }[];
   services: string[];
+  fanpages: { id: number; name: string }[];
 }) {
   const [state, formAction, pending] = useActionState(createLeadAction, initialState);
   const [formKey, setFormKey] = useState(0);
@@ -63,9 +65,20 @@ export default function NewLeadForm({
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-3">
+      <div className="grid md:grid-cols-4 gap-3">
         <div>
-          <label className="label">Mảng / môn học</label>
+          <label className="label">Fanpage / dự án</label>
+          <select name="project_id" defaultValue="" className={inputClass}>
+            <option value="">Chưa rõ fanpage</option>
+            {fanpages.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">Môn học</label>
           <select name="subject" defaultValue={services[0] || "Guitar"} className={inputClass}>
             {services.map((s) => (
               <option key={s} value={s}>

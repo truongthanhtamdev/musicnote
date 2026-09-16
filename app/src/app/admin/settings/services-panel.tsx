@@ -20,12 +20,15 @@ interface ServiceItem {
 }
 
 export default function ServicesPanel({
+  kind,
   services,
   staff,
 }: {
+  kind: "subject" | "fanpage";
   services: ServiceItem[];
   staff: { id: number; name: string }[];
 }) {
+  const isFanpage = kind === "fanpage";
   const [state, formAction, pending] = useActionState(saveServiceAction, initialState);
   const [busy, start] = useTransition();
   const [editing, setEditing] = useState<ServiceItem | null>(null);
@@ -77,7 +80,7 @@ export default function ServicesPanel({
                   type="button"
                   disabled={busy}
                   onClick={() => {
-                    if (confirm(`Xoá mảng "${s.name}"?`)) start(() => deleteServiceAction(s.id));
+                    if (confirm(`Xoá "${s.name}"?`)) start(() => deleteServiceAction(s.id));
                   }}
                   className="px-2 py-1 text-[12px] text-muted hover:text-rose-600"
                 >
@@ -94,17 +97,22 @@ export default function ServicesPanel({
 
       <form key={formKey} action={formAction} className="space-y-3 border-t border-line-soft pt-4">
         {editing && <input type="hidden" name="id" value={editing.id} />}
+        <input type="hidden" name="kind" value={kind} />
         <p className="text-[13px] font-semibold text-ink">
-          {editing ? `Sửa mảng "${editing.name}"` : "Thêm mảng mới"}
+          {editing
+            ? `Sửa "${editing.name}"`
+            : isFanpage
+              ? "Thêm fanpage / dự án"
+              : "Thêm môn học"}
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <label className="label">Tên mảng</label>
+            <label className="label">{isFanpage ? "Tên fanpage / dự án" : "Tên môn học"}</label>
             <input
               name="name"
               required
               defaultValue={editing?.name || ""}
-              placeholder="VD: Học quảng cáo"
+              placeholder={isFanpage ? "VD: Guitar online 1:1" : "VD: Quay dựng"}
               className="input"
             />
           </div>
@@ -127,7 +135,7 @@ export default function ServicesPanel({
         {state.error && <p className="text-[13px] text-rose-600">{state.error}</p>}
         <div className="flex items-center gap-2">
           <button type="submit" disabled={pending} className="btn btn-primary">
-            {editing ? "Lưu thay đổi" : "Thêm mảng"}
+            {editing ? "Lưu thay đổi" : isFanpage ? "Thêm fanpage" : "Thêm môn"}
           </button>
           {editing && (
             <button

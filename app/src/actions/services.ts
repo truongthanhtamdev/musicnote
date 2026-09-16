@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
+import type { ServiceKind } from "@/lib/types";
 import type { FormState } from "./teachers";
 
 function revalidateServices() {
@@ -18,17 +19,19 @@ export async function saveServiceAction(
   await assertRole(["admin"]);
 
   const id = formData.get("id") ? Number(formData.get("id")) : null;
+  const kindRaw = String(formData.get("kind") || "subject");
+  const kind: ServiceKind = kindRaw === "fanpage" ? "fanpage" : "subject";
   const name = String(formData.get("name") || "").trim();
   const ownerRaw = String(formData.get("default_owner_id") || "");
   const ownerId = ownerRaw ? Number(ownerRaw) : null;
 
-  if (!name) return { error: "Vui lòng nhập tên mảng dịch vụ" };
+  if (!name) return { error: "Vui lòng nhập tên" };
 
-  const existing = db.prepare("SELECT id FROM services WHERE name = ?").get(name) as
-    | { id: number }
-    | undefined;
+  const existing = db
+    .prepare("SELECT id FROM services WHERE name = ? AND kind = ?")
+    .get(name, kind) as { id: number } | undefined;
   if (existing && existing.id !== id) {
-    return { error: `Đã có mảng tên "${name}"` };
+    return { error: `Đã có mục tên "${name}"` };
   }
 
   if (id) {
@@ -39,11 +42,13 @@ export async function saveServiceAction(
     );
   } else {
     const max = (
-      db.prepare("SELECT COALESCE(MAX(sort_order), 0) as m FROM services").get() as { m: number }
+      db
+        .prepare("SELECT COALESCE(MAX(sort_order), 0) as m FROM services WHERE kind = ?")
+        .get(kind) as { m: number }
     ).m;
     db.prepare(
-      "INSERT INTO services (name, default_owner_id, sort_order) VALUES (?, ?, ?)"
-    ).run(name, ownerId, max + 1);
+      "INSERT INTO services (kind, name, default_owner_id, sort_order) VALUES (?, ?, ?, ?)"
+    ).run(kind, name, ownerId, max + 1);
   }
 
   revalidateServices();

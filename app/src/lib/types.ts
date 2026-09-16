@@ -249,6 +249,8 @@ export const LEAD_LOST_REASON_SUGGESTIONS = [
 export interface LeadRow {
   id: number;
   name: string;
+  /** Fanpage/dự án mang khách này về. */
+  project_id?: number | null;
   phone: string | null;
   /** SĐT đã chuẩn hoá về dạng 0xxxxxxxxx — chỉ dùng để dò trùng. */
   phone_normalized: string | null;
@@ -379,8 +381,16 @@ export const SETTING_KEYS = {
 
 /* ── Mảng dịch vụ ────────────────────────────────────────────────────── */
 
+export type ServiceKind = "subject" | "fanpage";
+
+export const SERVICE_KIND_LABELS: Record<ServiceKind, string> = {
+  subject: "Môn học",
+  fanpage: "Fanpage / dự án",
+};
+
 export interface ServiceRow {
   id: number;
+  kind: ServiceKind;
   name: string;
   /** Người mặc định nhận khách của mảng này. */
   default_owner_id: number | null;

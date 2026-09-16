@@ -21,10 +21,12 @@ export default function EditLeadForm({
   lead,
   staff,
   services,
+  fanpages,
 }: {
   lead: LeadRow;
   staff: { id: number; name: string }[];
   services: string[];
+  fanpages: { id: number; name: string }[];
 }) {
   const [state, formAction, pending] = useActionState(updateLeadAction, initialState);
 
@@ -54,7 +56,22 @@ export default function EditLeadForm({
           <input name="area" defaultValue={lead.area || ""} className={inputClass} />
         </div>
         <div>
-          <label className="label">Mảng / môn học</label>
+          <label className="label">Fanpage / dự án</label>
+          <select
+            name="project_id"
+            defaultValue={lead.project_id ? String(lead.project_id) : ""}
+            className={inputClass}
+          >
+            <option value="">Chưa rõ fanpage</option>
+            {fanpages.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">Môn học</label>
           <select name="subject" defaultValue={lead.subject} className={inputClass}>
             {[...new Set([...services, lead.subject])].map((s) => (
               <option key={s} value={s}>

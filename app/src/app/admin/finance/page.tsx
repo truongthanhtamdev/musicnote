@@ -26,7 +26,7 @@ export default async function FinancePage({
   const payments = listPayments(from, to);
   const expenses = listExpenses(from, to);
   const summary = getRevenueSummary(from, to);
-  const services = listServices().map((s) => ({ id: s.id, name: s.name }));
+  const services = listServices({ kind: "fanpage" }).map((s) => ({ id: s.id, name: s.name }));
   const classes = listClasses().map((c) => ({
     id: c.id,
     label: `${c.student_name} (${c.teacher_name || "Chưa xếp GV"})`,

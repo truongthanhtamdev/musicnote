@@ -26,6 +26,8 @@ const STAGE_COLORS: Record<LeadStatus, string> = {
 };
 
 const BREAKDOWN_TABS = [
+  { key: "project", label: "Fanpage", header: "Fanpage / dự án" },
+  { key: "subject", label: "Môn học", header: "Môn học" },
   { key: "source", label: "Nguồn khách", header: "Nguồn khách" },
   { key: "area", label: "Khu vực", header: "Khu vực" },
   { key: "learning_mode", label: "Hình thức học", header: "Hình thức học" },
@@ -73,7 +75,7 @@ export default async function LeadReportPage({
   const to = sp.to || lastDayOfMonth();
   const by: BreakdownKey = BREAKDOWN_TABS.some((t) => t.key === sp.by)
     ? (sp.by as BreakdownKey)
-    : "source";
+    : "project";
 
   const stats = getLeadStats(from, to);
   const rows = getLeadBreakdown(by, from, to);

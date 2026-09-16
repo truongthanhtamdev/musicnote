@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { todayISO } from "@/lib/format";
-import { addLeadNote, findLeadsByPhone, getServiceByName } from "@/lib/queries";
+import { addLeadNote, findLeadsByPhone, getService, getServiceByName } from "@/lib/queries";
 import {
   LEAD_STATUS_LABELS,
   normalizePhone,
@@ -40,6 +40,7 @@ function readLeadForm(formData: FormData) {
     fbUrl: String(formData.get("fb_url") || "").trim(),
     area: String(formData.get("area") || "").trim(),
     subject: String(formData.get("subject") || "").trim() || "Guitar",
+    projectId: formData.get("project_id") ? Number(formData.get("project_id")) : null,
     learningMode: parseLearningMode(String(formData.get("learning_mode") || "")),
     need: String(formData.get("need") || "").trim(),
     source: String(formData.get("source") || "").trim() || "Facebook Ads",
@@ -95,9 +96,9 @@ export async function createLeadAction(
   const info = db
     .prepare(
       `INSERT INTO leads (name, phone, phone_normalized, fb_name, fb_url, area, subject,
-        learning_mode, need, source, received_at, status, temperature, owner_id,
+        project_id, learning_mode, need, source, received_at, status, temperature, owner_id,
         next_follow_up, expected_value, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       f.name,
@@ -107,15 +108,19 @@ export async function createLeadAction(
       f.fbUrl || null,
       f.area || null,
       f.subject,
+      f.projectId,
       f.learningMode,
       f.need || null,
       f.source,
       f.receivedAt,
       f.status,
       f.temperature,
-      // Chưa chọn người phụ trách thì lấy người mặc định của mảng dịch vụ —
-      // khách guitar về tay người lo guitar, môn khác về tay người lo môn đó.
-      f.ownerId ?? getServiceByName(f.subject)?.default_owner_id ?? session.userId,
+      // Chưa chọn người phụ trách thì lấy người của fanpage đã mang khách về;
+      // không có fanpage thì lấy theo môn học; cuối cùng mới là người đang nhập.
+      f.ownerId ??
+        (f.projectId ? getService(f.projectId)?.default_owner_id : null) ??
+        getServiceByName(f.subject)?.default_owner_id ??
+        session.userId,
       f.nextFollowUp || null,
       f.expectedValue || null,
       f.notes || null
@@ -144,8 +149,8 @@ export async function updateLeadAction(
 
   db.prepare(
     `UPDATE leads SET name=?, phone=?, phone_normalized=?, fb_name=?, fb_url=?, area=?,
-       subject=?, learning_mode=?, need=?, source=?, received_at=?, status=?, temperature=?,
-       owner_id=?, next_follow_up=?, expected_value=?, lost_reason=?, notes=?
+       subject=?, project_id=?, learning_mode=?, need=?, source=?, received_at=?, status=?,
+       temperature=?, owner_id=?, next_follow_up=?, expected_value=?, lost_reason=?, notes=?
      WHERE id = ?`
   ).run(
     f.name,
@@ -155,6 +160,7 @@ export async function updateLeadAction(
     f.fbUrl || null,
     f.area || null,
     f.subject,
+    f.projectId,
     f.learningMode,
     f.need || null,
     f.source,

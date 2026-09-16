@@ -8,7 +8,8 @@ import ServicesPanel from "./services-panel";
 
 export default async function SettingsPage() {
   await requireRole(["admin"]);
-  const services = listServices(true);
+  const subjects = listServices({ kind: "subject", includeInactive: true });
+  const fanpages = listServices({ kind: "fanpage", includeInactive: true });
   const staff = listStaff().map((u) => ({ id: u.id, name: u.name }));
 
   return (
@@ -60,13 +61,24 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <div className="panel mt-5 p-[18px]">
-        <h2 className="panel-title mb-1">Mảng dịch vụ &amp; người phụ trách</h2>
-        <p className="mb-4 text-[12.5px] text-muted">
-          Khách mới thuộc mảng nào sẽ tự về tay người phụ trách mảng đó, khỏi phải gán tay từng
-          khách. Ẩn một mảng thì nó biến khỏi các ô chọn nhưng khách cũ vẫn giữ nguyên.
-        </p>
-        <ServicesPanel services={services} staff={staff} />
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
+        <div className="panel p-[18px]">
+          <h2 className="panel-title mb-1">Fanpage / dự án &amp; người phụ trách</h2>
+          <p className="mb-4 text-[12.5px] text-muted">
+            Tiền quảng cáo chạy theo fanpage, nên khách từ fanpage nào sẽ tự về tay người phụ
+            trách fanpage đó — khỏi gán tay từng khách.
+          </p>
+          <ServicesPanel kind="fanpage" services={fanpages} staff={staff} />
+        </div>
+
+        <div className="panel p-[18px]">
+          <h2 className="panel-title mb-1">Môn học</h2>
+          <p className="mb-4 text-[12.5px] text-muted">
+            Khách muốn học gì. Ẩn một môn thì nó biến khỏi các ô chọn nhưng khách cũ vẫn giữ
+            nguyên.
+          </p>
+          <ServicesPanel kind="subject" services={subjects} staff={staff} />
+        </div>
       </div>
     </>
   );

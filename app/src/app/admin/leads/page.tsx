@@ -96,6 +96,7 @@ export default async function LeadsPage({
     area?: string;
     mode?: string;
     subject?: string;
+    project?: string;
     due?: string;
   }>;
 }) {
@@ -110,6 +111,7 @@ export default async function LeadsPage({
     area: sp.area || undefined,
     learningMode: sp.mode || undefined,
     subject: sp.subject || undefined,
+    projectId: sp.project ? Number(sp.project) : undefined,
     dueOnly,
     order: dueOnly ? "follow_up" : "recent",
   });
@@ -130,7 +132,8 @@ export default async function LeadsPage({
   const exportHref = `/admin/leads/export${exportQuery ? `?${exportQuery}` : ""}`;
 
   const staff = listStaff().map((s) => ({ id: s.id, name: s.name }));
-  const services = listServices().map((s) => s.name);
+  const services = listServices({ kind: "subject" }).map((s) => s.name);
+  const fanpages = listServices({ kind: "fanpage" }).map((s) => ({ id: s.id, name: s.name }));
   const areas = listLeadFieldValues("area");
   const sources = listLeadFieldValues("source");
 
@@ -256,7 +259,18 @@ export default async function LeadsPage({
           </select>
         </div>
         <div>
-          <label className="label">Mảng</label>
+          <label className="label">Fanpage</label>
+          <select name="project" defaultValue={sp.project || ""} className="input">
+            <option value="">Tất cả</option>
+            {fanpages.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">Môn</label>
           <select name="subject" defaultValue={sp.subject || ""} className="input">
             <option value="">Tất cả</option>
             {services.map((s) => (
@@ -286,7 +300,7 @@ export default async function LeadsPage({
             <thead>
               <tr>
                 <th>Khách hàng</th>
-                <th>Khu vực</th>
+                <th>Fanpage</th>
                 <th>Nhu cầu</th>
                 <th>Nguồn</th>
                 <th>Trạng thái</th>
@@ -304,7 +318,10 @@ export default async function LeadsPage({
                     <td>
                       <ContactCell lead={l} />
                     </td>
-                    <td className="text-ink-soft">{l.area || "—"}</td>
+                    <td className="text-ink-soft">
+                      {l.project_name || "—"}
+                      {l.area && <span className="block text-[12px] text-muted">{l.area}</span>}
+                    </td>
                     <td>
                       <span className="block text-ink-soft">
                         {l.subject} · {LEARNING_MODE_LABELS[l.learning_mode]}
@@ -342,7 +359,7 @@ export default async function LeadsPage({
 
       <div id="them-khach" className="panel mt-5 scroll-mt-20 p-[18px]">
         <h2 className="panel-title mb-4">Thêm khách hàng tiềm năng</h2>
-        <NewLeadForm staff={staff} services={services} />
+        <NewLeadForm staff={staff} services={services} fanpages={fanpages} />
       </div>
     </>
   );

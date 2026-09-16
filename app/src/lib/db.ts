@@ -182,16 +182,19 @@ function migrate() {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    -- Mảng dịch vụ đang chạy (Guitar đệm hát, Tiếng Việt, OT Musics, chạy ads...).
-    -- Mỗi mảng có người phụ trách mặc định, nên khách mới vào là tự về đúng
-    -- tay người sắp lịch, không phải gán thủ công từng khách.
+    -- Hai danh mục dùng chung một bảng, phân biệt bằng cột kind:
+    --   'subject' = môn học khách muốn học (Guitar, Piano, Quảng cáo...)
+    --   'fanpage' = fanpage/dự án mang khách về, mỗi cái có người phụ trách
+    --               riêng vì tiền quảng cáo chạy theo fanpage.
     CREATE TABLE IF NOT EXISTS services (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
+      kind TEXT NOT NULL DEFAULT 'subject' CHECK(kind IN ('subject','fanpage')),
+      name TEXT NOT NULL,
       default_owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
       sort_order INTEGER NOT NULL DEFAULT 0,
       active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(kind, name)
     );
 
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
@@ -231,11 +234,17 @@ function migrate() {
   ensureColumn("payments", "lead_id", "INTEGER REFERENCES leads(id) ON DELETE SET NULL");
   ensureColumn("expenses", "service_id", "INTEGER REFERENCES services(id) ON DELETE SET NULL");
   ensureColumn("users", "telegram_chat_id", "TEXT");
+  ensureColumn("services", "kind", "TEXT NOT NULL DEFAULT 'subject'");
+  ensureServicesUniqueByKind();
+  // Fanpage nào mang khách này về — tiền quảng cáo và người phụ trách đều
+  // bám theo fanpage, nên đây là cột quan trọng nhất của báo cáo hiệu quả.
+  ensureColumn("leads", "project_id", "INTEGER REFERENCES services(id) ON DELETE SET NULL");
 
   // Index phải tạo SAU khi cột tồn tại. Để chung với khối CREATE TABLE ở trên
   // thì câu lệnh nổ ngay lần chạy đầu và mọi bước migration phía sau bị bỏ qua.
   db.exec("CREATE INDEX IF NOT EXISTS idx_payments_lead ON payments(lead_id);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_expenses_service ON expenses(service_id);");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_leads_project ON leads(project_id);");
 
   seedServices();
   ensureColumn("attendance", "is_trial", "INTEGER NOT NULL DEFAULT 0");
@@ -270,20 +279,80 @@ function migratePackagesToTable() {
  * Danh sách mảng dịch vụ ban đầu — chỉ chèn khi bảng còn trống, để lần chạy
  * sau không đụng vào những gì người dùng đã sửa hoặc xoá.
  */
+/**
+ * Bảng services đời đầu ràng buộc tên là duy nhất trên toàn bảng, nên không
+ * thể có "Tiếng Việt" vừa là môn học vừa là tên fanpage. Dựng lại bảng với
+ * ràng buộc theo cặp (loại, tên), giữ nguyên toàn bộ dữ liệu đang có.
+ */
+function ensureServicesUniqueByKind() {
+  const row = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='services'")
+    .get() as { sql: string } | undefined;
+  if (!row || row.sql.includes("UNIQUE(kind, name)")) return;
+
+  // Tắt kiểm tra khoá ngoại trong lúc đổi bảng, nếu không SQLite sẽ trỏ các
+  // tham chiếu sang bảng tạm khi đổi tên.
+  db.pragma("foreign_keys = OFF");
+  db.transaction(() => {
+    db.exec(`
+      ALTER TABLE services RENAME TO services_old;
+      CREATE TABLE services (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        kind TEXT NOT NULL DEFAULT 'subject' CHECK(kind IN ('subject','fanpage')),
+        name TEXT NOT NULL,
+        default_owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(kind, name)
+      );
+      INSERT INTO services (id, kind, name, default_owner_id, sort_order, active, created_at)
+        SELECT id, COALESCE(kind, 'subject'), name, default_owner_id, sort_order, active, created_at
+        FROM services_old;
+      DROP TABLE services_old;
+    `);
+  })();
+  db.pragma("foreign_keys = ON");
+}
+
 function seedServices() {
-  const count = (db.prepare("SELECT COUNT(*) as c FROM services").get() as { c: number }).c;
-  if (count > 0) return;
-  const insert = db.prepare("INSERT INTO services (name, sort_order) VALUES (?, ?)");
-  [
+  // Chỉ thêm những mục còn thiếu, không đụng vào thứ người dùng đã sửa/xoá.
+  const insert = db.prepare(
+    "INSERT OR IGNORE INTO services (kind, name, sort_order) VALUES (?, ?, ?)"
+  );
+  const SUBJECTS = [
     "Guitar",
     "Piano",
-    "Guitar đệm hát",
     "Thanh nhạc",
-    "Violin",
+    "Tiếng Việt",
+    "Toán",
+    "Quảng cáo",
+    "Quay dựng",
+  ];
+  const FANPAGES = [
+    "Guitar Piano đệm hát",
+    "Guitar online 1:1",
+    "Guitar tại quán cà phê",
     "Tiếng Việt",
     "OT Musics",
-    "Học quảng cáo",
-  ].forEach((name, i) => insert.run(name, i));
+  ];
+
+  const seeded = getSetting("seeded_catalog_v2");
+  if (seeded) return;
+
+  SUBJECTS.forEach((name, i) => insert.run("subject", name, i));
+  FANPAGES.forEach((name, i) => insert.run("fanpage", name, i));
+  db.prepare(
+    "INSERT INTO settings (key, value) VALUES ('seeded_catalog_v2', 'done') ON CONFLICT(key) DO NOTHING"
+  ).run();
+}
+
+/** Đọc một dòng cấu hình ngay trong lớp database, không đi vòng qua lib/settings. */
+function getSetting(key: string): string | null {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key) as
+    | { value: string }
+    | undefined;
+  return row?.value ?? null;
 }
 
 function ensureColumn(table: string, column: string, definition: string) {
