@@ -133,6 +133,22 @@ COOKIE_SECURE="false"
 sed -i "/^COOKIE_SECURE=/d" "$ENV_FILE"
 echo "COOKIE_SECURE=$COOKIE_SECURE" >> "$ENV_FILE"
 
+# Múi giờ Việt Nam cho mọi việc tính ngày (lịch hẹn, nhắc việc, báo cáo) —
+# máy chủ để UTC thì sau 17h chiều hệ thống đã coi như sang ngày mới.
+sed -i "/^TZ=/d" "$ENV_FILE"
+echo "TZ=Asia/Ho_Chi_Minh" >> "$ENV_FILE"
+
+# Địa chỉ web để tin nhắn nhắc lịch kèm link mở thẳng hồ sơ khách. Cài đặt
+# trong giao diện vẫn đè lên giá trị này.
+if [ -n "$DOMAIN" ]; then
+  BASE_URL="https://$DOMAIN"
+else
+  SERVER_IP="$(curl -s --max-time 5 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
+  BASE_URL="http://$SERVER_IP:$PORT"
+fi
+sed -i "/^APP_BASE_URL=/d" "$ENV_FILE"
+echo "APP_BASE_URL=$BASE_URL" >> "$ENV_FILE"
+
 log "Cài thư viện và build (mất vài phút)"
 cd "$APP_DIR/app"
 as_app npm ci --no-audit --no-fund
@@ -239,6 +255,8 @@ fi
 echo " Đăng nhập:    admin@musicnote.local / admin123  (đổi ngay!)"
 echo " Dữ liệu:      $DATA_DIR/musicnote.db"
 echo " Sao lưu:      $BACKUP_DIR (tự chạy 3h15 sáng mỗi ngày)"
+echo
+echo " Nhắc việc:    bật ở trang \"Nhắc việc & cài đặt\" (cần bot Telegram)"
 echo
 echo " Cập nhật sau này:  sudo bash $APP_DIR/deploy/update.sh"
 echo " Xem log:           journalctl -u $SERVICE -f"

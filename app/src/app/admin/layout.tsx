@@ -1,9 +1,12 @@
 import { requireRole } from "@/lib/guard";
 import { countLeadsDue } from "@/lib/queries";
+import { countTodayWork } from "@/lib/reminders";
 import { AppShell } from "@/components/app-shell";
 import type { NavGroup } from "@/components/shell-nav";
 import {
   IconBanknote,
+  IconBell,
+  IconClock,
   IconBook,
   IconCalendar,
   IconChart,
@@ -20,12 +23,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await requireRole(["admin", "coordinator"]);
   const isAdmin = session.role === "admin";
   const leadsDue = countLeadsDue();
+  const todayWork = countTodayWork();
 
   const groups: NavGroup[] = [
     {
       label: "Không gian làm việc",
       items: [
         { href: "/admin", label: "Tổng quan", icon: <IconDashboard /> },
+        { href: "/admin/today", label: "Hôm nay", icon: <IconClock />, badge: todayWork },
         {
           href: "/admin/leads",
           label: "Khách tiềm năng",
@@ -58,6 +63,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             ]
           : []),
         { href: "/admin/import", label: "Nhập dữ liệu", icon: <IconUpload /> },
+        ...(isAdmin
+          ? [{ href: "/admin/settings", label: "Nhắc việc & cài đặt", icon: <IconBell /> }]
+          : []),
       ],
     },
   ];

@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/guard";
 import {
   getClass,
   getLead,
+  listAppointments,
   getPackage,
   getPackageProgress,
   listLeadNotes,
@@ -15,6 +16,10 @@ import { formatTimeRange, formatVND, todayISO } from "@/lib/format";
 import { DAY_LABELS, LEAD_NOTE_KIND_LABELS, LEARNING_MODE_LABELS, zaloLink } from "@/lib/types";
 import { PageHeader } from "@/components/app-shell";
 import { IconArrowRight, IconClock, IconPhone } from "@/components/icons";
+import AppointmentForm from "@/components/appointment-form";
+import AppointmentActions from "@/components/appointment-actions";
+import { APPOINTMENT_KIND_LABELS, APPOINTMENT_STATUS_LABELS } from "@/lib/types";
+import { shortDate, stampTime, vnToday, relativeToNow } from "@/lib/time";
 import { LeadStatusBadge, LeadTemperatureBadge } from "../lead-badges";
 import EditLeadForm from "./edit-lead-form";
 import LeadNoteForm from "./lead-note-form";
@@ -38,6 +43,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (!lead) notFound();
 
   const notes = listLeadNotes(lead.id);
+  const appointments = listAppointments({ leadId: lead.id });
   const staff = listStaff().map((s) => ({ id: s.id, name: s.name }));
   const teachers = listTeachers(false).map((t) => ({ id: t.id, name: t.name }));
   const cls = lead.class_id ? getClass(lead.class_id) : undefined;
@@ -210,6 +216,55 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="flex flex-col gap-5">
+          <div className="panel p-[18px]">
+            <h2 className="panel-title mb-1">Đặt lịch hẹn</h2>
+            <p className="mb-4 text-[12.5px] text-muted">
+              Hệ thống sẽ nhắn Telegram nhắc bạn trước giờ hẹn.
+            </p>
+            <AppointmentForm leadId={lead.id} defaultDate={vnToday()} compact />
+          </div>
+
+          {appointments.length > 0 && (
+            <div className="panel">
+              <div className="panel-head">
+                <div className="flex items-center gap-2.5">
+                  <h2 className="panel-title">Lịch hẹn</h2>
+                  <span className="chip">{appointments.length}</span>
+                </div>
+              </div>
+              <div>
+                {appointments.map((a) => (
+                  <div key={a.id} className="border-b border-line-soft px-[18px] py-3 last:border-b-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[13.5px] font-semibold text-ink tabular">
+                        {shortDate(a.starts_at.slice(0, 10))} {stampTime(a.starts_at)}
+                      </span>
+                      <span className="badge bg-brand-50 text-brand-700">
+                        {APPOINTMENT_KIND_LABELS[a.kind]}
+                      </span>
+                      {a.status !== "scheduled" && (
+                        <span className="badge bg-slate-100 text-slate-600">
+                          {APPOINTMENT_STATUS_LABELS[a.status]}
+                        </span>
+                      )}
+                      {a.status === "scheduled" && (
+                        <span className="text-[12px] text-muted">{relativeToNow(a.starts_at)}</span>
+                      )}
+                    </div>
+                    {(a.location || a.note) && (
+                      <p className="mt-1 text-[12.5px] text-muted">
+                        {[a.location, a.note].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                    <div className="mt-2">
+                      <AppointmentActions id={a.id} status={a.status} startsAt={a.starts_at} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="panel p-[18px]">
             <h2 className="panel-title mb-4">Thêm trao đổi</h2>
             <LeadNoteForm leadId={lead.id} />

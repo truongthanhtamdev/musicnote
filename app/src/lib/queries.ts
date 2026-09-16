@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { nextOccurrence, mostRecentOccurrence, toISODate, todayISO } from "./format";
+import { addMinutesToStamp, vnToday } from "./time";
 import {
   parseLanguages,
   LEAD_OPEN_STATUSES,
@@ -7,6 +8,8 @@ import {
   type AttendanceRow,
   type AvailabilityRow,
   type ClassRow,
+  APPOINTMENT_KIND_LABELS,
+  type AppointmentRow,
   type ExpenseRow,
   type LeadNoteKind,
   type LeadNoteRow,
@@ -672,4 +675,143 @@ export function listPaymentsForClass(classId: number): PaymentRow[] {
   return db
     .prepare("SELECT * FROM payments WHERE class_id = ? ORDER BY paid_at DESC, id DESC")
     .all(classId) as PaymentRow[];
+}
+
+/* ── Lịch hẹn ────────────────────────────────────────────────────────── */
+
+export interface AppointmentWithLead extends AppointmentRow {
+  lead_name: string | null;
+  lead_phone: string | null;
+  lead_fb_url: string | null;
+  owner_name: string | null;
+}
+
+const APPT_SELECT = `
+  SELECT a.*, l.name as lead_name, l.phone as lead_phone, l.fb_url as lead_fb_url,
+         u.name as owner_name
+  FROM appointments a
+  LEFT JOIN leads l ON l.id = a.lead_id
+  LEFT JOIN users u ON u.id = a.owner_id`;
+
+export function listAppointments(filter: {
+  fromDate?: string;
+  toDate?: string;
+  status?: string;
+  leadId?: number;
+  /** Chỉ các hẹn chưa xử lý, kể cả đã quá giờ mà chưa đánh dấu xong. */
+  pendingOnly?: boolean;
+} = {}): AppointmentWithLead[] {
+  const clauses: string[] = [];
+  const params: Record<string, unknown> = {};
+
+  if (filter.fromDate) {
+    clauses.push("a.starts_at >= @from");
+    params.from = `${filter.fromDate} 00:00`;
+  }
+  if (filter.toDate) {
+    clauses.push("a.starts_at <= @to");
+    params.to = `${filter.toDate} 23:59`;
+  }
+  if (filter.status) {
+    clauses.push("a.status = @status");
+    params.status = filter.status;
+  }
+  if (filter.pendingOnly) {
+    clauses.push("a.status = 'scheduled'");
+  }
+  if (filter.leadId) {
+    clauses.push("a.lead_id = @leadId");
+    params.leadId = filter.leadId;
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  return db
+    .prepare(`${APPT_SELECT} ${where} ORDER BY a.starts_at`)
+    .all(params) as AppointmentWithLead[];
+}
+
+export function getAppointment(id: number): AppointmentWithLead | undefined {
+  return db.prepare(`${APPT_SELECT} WHERE a.id = ?`).get(id) as AppointmentWithLead | undefined;
+}
+
+/**
+ * Hẹn khác chồng lên khoảng giờ đang định đặt. Đặt trùng giờ là cách nhanh
+ * nhất để lỡ hẹn, nên form đặt lịch cảnh báo trước khi lưu.
+ */
+export function findAppointmentConflicts(
+  startsAt: string,
+  durationMinutes: number,
+  excludeId?: number
+): AppointmentWithLead[] {
+  const endsAt = addMinutesToStamp(startsAt, durationMinutes);
+  return (
+    db
+      .prepare(
+        `${APPT_SELECT}
+         WHERE a.status = 'scheduled' AND a.id != @excludeId
+           AND a.starts_at < @endsAt
+           AND datetime(a.starts_at) > datetime(@startsAt, '-' || a.duration_minutes || ' minutes')
+         ORDER BY a.starts_at`
+      )
+      .all({ startsAt, endsAt, excludeId: excludeId ?? 0 }) as AppointmentWithLead[]
+  );
+}
+
+/** Việc chưa xong tính tới cuối hôm nay: hẹn trong ngày + hẹn quá giờ còn treo. */
+export function countPendingToday(today: string = vnToday()): number {
+  return (
+    db
+      .prepare(
+        `SELECT COUNT(*) as c FROM appointments
+         WHERE status = 'scheduled' AND starts_at <= @end`
+      )
+      .get({ end: `${today} 23:59` }) as { c: number }
+  ).c;
+}
+
+export interface AgendaItem {
+  /** "HH:MM" theo giờ VN. */
+  time: string;
+  durationMinutes: number;
+  kind: "appointment" | "class";
+  title: string;
+  subtitle: string | null;
+  href: string | null;
+  appointment?: AppointmentWithLead;
+  status?: string;
+}
+
+/**
+ * Lịch của một ngày: gộp lịch hẹn với khách và lớp học cố định trong ngày,
+ * xếp theo giờ — để chỉ cần nhìn một màn hình là biết cả ngày phải làm gì.
+ */
+export function getAgenda(dateISO: string): AgendaItem[] {
+  const appts = listAppointments({ fromDate: dateISO, toDate: dateISO });
+
+  const items: AgendaItem[] = appts.map((a) => ({
+    time: a.starts_at.split(" ")[1]?.slice(0, 5) ?? "00:00",
+    durationMinutes: a.duration_minutes,
+    kind: "appointment",
+    // Hẹn không gắn khách thì lấy loại hẹn làm tiêu đề, đỡ hiện chữ "Khách" trống rỗng.
+    title: a.title || a.lead_name || APPOINTMENT_KIND_LABELS[a.kind],
+    subtitle: a.lead_phone,
+    href: a.lead_id ? `/admin/leads/${a.lead_id}` : null,
+    appointment: a,
+    status: a.status,
+  }));
+
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  for (const c of listClassesByDay(dow)) {
+    items.push({
+      time: c.start_time,
+      durationMinutes: c.duration_minutes,
+      kind: "class",
+      title: `Lớp ${c.student_name}`,
+      subtitle: c.teacher_name ? `GV ${c.teacher_name}` : "Chưa xếp giáo viên",
+      href: `/admin/classes/${c.id}`,
+    });
+  }
+
+  return items.sort((a, b) => a.time.localeCompare(b.time));
 }

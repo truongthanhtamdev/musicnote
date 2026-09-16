@@ -158,6 +158,34 @@ Gợi ý:
   **Doanh thu, Lương giáo viên, Chi phí khác, Lợi nhuận** (= doanh thu − lương
   − chi phí), xuất file CSV hàng tháng để gửi báo cáo.
 
+## Lịch hẹn và nhắc việc qua Telegram
+
+Trang **Hôm nay** gộp mọi thứ phải làm trong ngày vào một màn hình: lịch hẹn với
+khách (gọi điện, tư vấn, buổi học thử), lớp học trong ngày, và danh sách khách
+tới hạn liên hệ lại — xếp theo giờ, đánh dấu "đang diễn ra" và tô vàng những
+việc quá giờ mà chưa đánh dấu xong. Hẹn của các ngày trước còn treo luôn hiện ở
+đầu trang, vì đó chính là những cái hay bị quên.
+
+Mỗi lịch hẹn có **ngày + giờ** thật (trước đây chỉ có ngày), thời lượng, địa
+điểm và mốc nhắc trước (15 phút / 30 phút / 1 tiếng / 1 ngày). Đặt trùng giờ với
+một hẹn khác thì hệ thống cảnh báo trước khi lưu. Đặt lịch "buổi học thử" cho một
+khách sẽ tự đẩy khách sang bước *Hẹn học thử* trong phễu và ghi vào nhật ký chăm
+sóc.
+
+Hệ thống tự nhắn **Telegram**:
+
+- **Trước mỗi lịch hẹn** đúng mốc đã chọn, kèm tên khách, SĐT, địa điểm, ghi chú
+  và link mở thẳng hồ sơ khách.
+- **Một bản tóm tắt mỗi sáng** (mặc định 07:30): cả ngày có lịch gì, hẹn cũ nào
+  còn treo, ai đang chờ gọi lại.
+
+Bật ở trang **Nhắc việc & cài đặt** (chỉ Admin): dán bot token + chat ID, bấm
+*Gửi tin thử*. Hướng dẫn lấy hai dãy đó nằm ngay trong trang. Vòng lặp nhắc việc
+chạy sẵn trong tiến trình web (`src/instrumentation.ts`), không cần cài cron.
+
+Mọi việc tính ngày giờ đều theo **giờ Việt Nam** (`src/lib/time.ts`), kể cả khi
+máy chủ đặt múi giờ UTC.
+
 ## Ngăn xếp công nghệ
 
 Next.js 16 (App Router, Server Actions) · TypeScript · Tailwind CSS ·

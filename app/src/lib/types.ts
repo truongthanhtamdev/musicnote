@@ -309,3 +309,70 @@ export function normalizePhone(raw: string): string {
 export function zaloLink(phone: string): string {
   return `https://zalo.me/${normalizePhone(phone)}`;
 }
+
+/* ── Lịch hẹn với khách ──────────────────────────────────────────────── */
+
+export type AppointmentKind = "call" | "consult" | "trial" | "other";
+
+export const APPOINTMENT_KIND_LABELS: Record<AppointmentKind, string> = {
+  call: "Gọi điện",
+  consult: "Tư vấn trực tiếp",
+  trial: "Buổi học thử",
+  other: "Việc khác",
+};
+
+export type AppointmentStatus = "scheduled" | "done" | "no_show" | "canceled";
+
+export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  scheduled: "Sắp tới",
+  done: "Đã xong",
+  no_show: "Khách không đến",
+  canceled: "Đã huỷ",
+};
+
+export interface AppointmentRow {
+  id: number;
+  lead_id: number | null;
+  kind: AppointmentKind;
+  title: string | null;
+  /** "YYYY-MM-DD HH:MM" theo giờ Việt Nam. */
+  starts_at: string;
+  duration_minutes: number;
+  location: string | null;
+  owner_id: number | null;
+  status: AppointmentStatus;
+  remind_minutes: number;
+  reminded_at: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+/** Nhắc trước bao lâu — các mốc hay dùng khi đang bận nhắn tin với khách. */
+export const REMIND_OPTIONS = [
+  { value: 0, label: "Đúng giờ hẹn" },
+  { value: 15, label: "Trước 15 phút" },
+  { value: 30, label: "Trước 30 phút" },
+  { value: 60, label: "Trước 1 tiếng" },
+  { value: 180, label: "Trước 3 tiếng" },
+  { value: 1440, label: "Trước 1 ngày" },
+];
+
+export const APPOINTMENT_KIND_DEFAULT_DURATION: Record<AppointmentKind, number> = {
+  call: 15,
+  consult: 45,
+  trial: 60,
+  other: 30,
+};
+
+/* ── Cấu hình sửa được trong giao diện ───────────────────────────────── */
+
+export const SETTING_KEYS = {
+  telegramToken: "telegram_bot_token",
+  telegramChatId: "telegram_chat_id",
+  remindersEnabled: "reminders_enabled",
+  dailyDigestTime: "daily_digest_time",
+  /** Địa chỉ web, để tin nhắn Telegram kèm link mở thẳng hồ sơ khách. */
+  appBaseUrl: "app_base_url",
+  /** Ngày đã gửi bản tóm tắt gần nhất — chặn gửi trùng trong cùng một ngày. */
+  lastDigestDate: "last_digest_date",
+} as const;

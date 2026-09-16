@@ -154,6 +154,34 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS appointments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lead_id INTEGER REFERENCES leads(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL DEFAULT 'call'
+        CHECK(kind IN ('call','consult','trial','other')),
+      title TEXT,
+      -- Ngày GIỜ hẹn, dạng "YYYY-MM-DD HH:MM" theo giờ Việt Nam.
+      starts_at TEXT NOT NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 30,
+      location TEXT,
+      owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      status TEXT NOT NULL DEFAULT 'scheduled'
+        CHECK(status IN ('scheduled','done','no_show','canceled')),
+      remind_minutes INTEGER NOT NULL DEFAULT 30,
+      -- Đánh dấu đã bắn nhắc để không nhắc lại mỗi phút.
+      reminded_at TEXT,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Cấu hình chạy được sửa trong giao diện (token Telegram, giờ gửi bản
+    -- tóm tắt sáng...) thay vì phải sửa file trên máy chủ.
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_attendance_teacher_date ON attendance(teacher_id, session_date);
@@ -166,6 +194,9 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone_normalized);
     CREATE INDEX IF NOT EXISTS idx_leads_class ON leads(class_id);
     CREATE INDEX IF NOT EXISTS idx_lead_notes_lead ON lead_notes(lead_id);
+    CREATE INDEX IF NOT EXISTS idx_appt_starts ON appointments(starts_at);
+    CREATE INDEX IF NOT EXISTS idx_appt_lead ON appointments(lead_id);
+    CREATE INDEX IF NOT EXISTS idx_appt_pending ON appointments(status, starts_at);
   `);
 
   // CREATE TABLE IF NOT EXISTS above only helps on a brand-new database file;
