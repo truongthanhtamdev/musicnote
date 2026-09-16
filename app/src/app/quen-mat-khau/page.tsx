@@ -38,14 +38,14 @@ export default function ForgotPasswordPage() {
             Quên mật khẩu thì nhắn cho trung tâm nhé
           </h2>
           <p className="text-sm text-ink-600 mt-2 leading-relaxed">
-            Nhắn cho giáo vụ tên học viên và email (hoặc số điện thoại) đang dùng để đăng nhập.
+            Nhắn cho giáo vụ tên học viên và số điện thoại (hoặc mã lớp) đang dùng để đăng nhập.
             Giáo vụ đặt lại mật khẩu mới và gửi lại cho bạn ngay trong giờ làm việc.
           </p>
 
           <ol className="mt-4 space-y-2.5 text-sm text-ink-700">
             {[
               "Nhắn Zalo hoặc Facebook cho trung tâm.",
-              "Cho biết tên học viên và email/SĐT đăng nhập.",
+              "Cho biết tên học viên và số điện thoại (hoặc mã lớp) đang dùng để đăng nhập.",
               "Nhận mật khẩu mới, đăng nhập rồi đổi lại mật khẩu của riêng bạn.",
             ].map((step, i) => (
               <li key={step} className="flex gap-2.5">

@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/guard";
-import { listAccountCandidates, listStudents } from "@/lib/queries";
+import { listAccountCandidates, listClassCodesByStudent, listStudents } from "@/lib/queries";
 import { IconUser, IconUsers } from "@/components/icons";
 import {
   Avatar,
@@ -20,6 +20,7 @@ export default async function StudentsPage() {
   await requireRole(["admin"]);
   const students = listStudents();
   const candidates = listAccountCandidates();
+  const codesByStudent = listClassCodesByStudent();
 
   return (
     <div className="space-y-5">
@@ -40,7 +41,7 @@ export default async function StudentsPage() {
             <thead>
               <tr>
                 <Th>Học viên</Th>
-                <Th>Email / SĐT đăng nhập</Th>
+                <Th>Đăng nhập bằng</Th>
                 <Th>SĐT liên hệ</Th>
                 <Th>Trạng thái</Th>
                 <Th />
@@ -55,7 +56,14 @@ export default async function StudentsPage() {
                       {s.name}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-ink-600">{s.email}</td>
+                  <td className="px-4 py-3 text-ink-600">
+                    <span className="tabular">{s.email}</span>
+                    {codesByStudent.get(s.id)?.length ? (
+                      <span className="block text-xs text-ink-400 mt-0.5">
+                        Mã lớp: {codesByStudent.get(s.id)!.join(", ")}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-3 text-ink-600 tabular">{s.phone || "–"}</td>
                   <td className="px-4 py-3">
                     <StatusChip tone={s.active ? "mint" : "neutral"}>

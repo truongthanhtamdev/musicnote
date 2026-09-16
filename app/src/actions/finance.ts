@@ -10,7 +10,7 @@ import type { FormState } from "./teachers";
 
 export interface PaymentState extends FormState {
   /** Tài khoản vừa tạo kèm lúc thu tiền — mật khẩu chỉ trả về đúng lần này. */
-  account?: { name: string; login: string; password: string; classCount: number };
+  account?: { name: string; login: string; password: string; classCount: number; codes: string[] };
   /** Khách đã có tài khoản sẵn, chỉ gắn thêm lớp. */
   linkedTo?: { name: string; login: string; classCount: number };
 }
@@ -76,6 +76,7 @@ export async function recordPaymentAction(
           login: account.login,
           password: account.password,
           classCount: account.classCount,
+          codes: target.codes,
         };
         logAudit(session, "tai_khoan", `Tạo tài khoản cho ${target.name} lúc thu học phí`);
       } catch (e) {

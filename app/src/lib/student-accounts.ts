@@ -48,6 +48,8 @@ export function createStudentAccount(opts: {
 }
 
 export interface ClassAccountTarget {
+  /** Mã lớp của khách — khách đăng nhập bằng mã này cũng được. */
+  codes: string[];
   /** Tên hiển thị của tài khoản: người đóng học phí, không thì chính học viên. */
   name: string;
   login: string;
@@ -89,17 +91,17 @@ export function accountTargetForClass(classId: number): ClassAccountTarget | nul
 
   const siblings = db
     .prepare(
-      `SELECT id, student_phone FROM classes
+      `SELECT id, student_phone, code FROM classes
         WHERE student_user_id IS NULL AND student_phone IS NOT NULL`
     )
-    .all() as { id: number; student_phone: string }[];
+    .all() as { id: number; student_phone: string; code: string | null }[];
 
+  const mine = siblings.filter((s) => normalizeLoginPhone(s.student_phone) === login);
   return {
     name: (cls.guardian_name || cls.student_name).trim(),
     login,
-    classIds: siblings
-      .filter((s) => normalizeLoginPhone(s.student_phone) === login)
-      .map((s) => s.id),
+    codes: [...new Set(mine.map((s) => s.code).filter((c): c is string => !!c))],
+    classIds: mine.map((s) => s.id),
     existing,
   };
 }

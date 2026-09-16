@@ -2,7 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
-import { clearSessionCookie, getUserByEmail, setSessionCookie } from "@/lib/auth";
+import { clearSessionCookie, findLoginUser, setSessionCookie } from "@/lib/auth";
 import { roleHomePath } from "@/lib/types";
 
 export interface LoginState {
@@ -18,10 +18,10 @@ export async function loginAction(
   const next = String(formData.get("next") || "");
 
   if (!email || !password) {
-    return { error: "Vui lòng nhập email và mật khẩu" };
+    return { error: "Vui lòng nhập tên đăng nhập và mật khẩu" };
   }
 
-  const user = getUserByEmail(email);
+  const user = findLoginUser(email);
   if (!user || !user.active) {
     return { error: "Email hoặc mật khẩu không đúng" };
   }

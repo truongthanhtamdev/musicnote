@@ -1670,6 +1670,29 @@ export function normalizeLoginPhone(raw: string): string {
   return /^\+?\d{8,15}$/.test(cleaned) ? cleaned : "";
 }
 
+/**
+ * Mã lớp của từng tài khoản học viên.
+ *
+ * Khách đăng nhập được bằng mã lớp, nên giáo vụ cần nhìn thấy mã ngay ở dòng
+ * của khách để đọc cho họ, khỏi phải mở từng lớp ra tra.
+ */
+export function listClassCodesByStudent(): Map<number, string[]> {
+  const rows = db
+    .prepare(
+      `SELECT student_user_id AS userId, code FROM classes
+        WHERE student_user_id IS NOT NULL AND code IS NOT NULL AND code != ''
+        ORDER BY code`
+    )
+    .all() as { userId: number; code: string }[];
+  const out = new Map<number, string[]>();
+  for (const r of rows) {
+    const list = out.get(r.userId) ?? [];
+    if (!list.includes(r.code)) list.push(r.code);
+    out.set(r.userId, list);
+  }
+  return out;
+}
+
 /** Tài khoản học viên theo tên đăng nhập (số điện thoại) → tên chủ tài khoản. */
 export function listStudentAccountsByLogin(): Map<string, string> {
   const rows = db

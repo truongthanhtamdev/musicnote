@@ -174,12 +174,14 @@ export default function NewPaymentForm({ classes }: { classes: PayableClass[] })
 function NewAccountBox({
   account,
 }: {
-  account: { name: string; login: string; password: string; classCount: number };
+  account: { name: string; login: string; password: string; classCount: number; codes: string[] };
 }) {
   const [copied, setCopied] = useState(false);
   const message =
     `Trung tâm Piano Guitar Đệm Hát gửi anh/chị tài khoản xem lịch học:\n` +
-    `Đăng nhập: ${account.login}\nMật khẩu: ${account.password}\n` +
+    `Đăng nhập: ${account.login}${
+      account.codes.length ? ` (hoặc mã lớp ${account.codes.join(", ")})` : ""
+    }\nMật khẩu: ${account.password}\n` +
     `Đăng nhập tại: pianoguitardemhat.com/login`;
 
   return (
@@ -197,6 +199,12 @@ function NewAccountBox({
           <dt className="text-ink-500 w-24 shrink-0">Mật khẩu</dt>
           <dd className="font-mono font-semibold text-wood-700">{account.password}</dd>
         </div>
+        {account.codes.length > 0 && (
+          <div className="flex gap-2">
+            <dt className="text-ink-500 w-24 shrink-0">Hoặc mã lớp</dt>
+            <dd className="font-medium">{account.codes.join(", ")}</dd>
+          </div>
+        )}
         <div className="flex gap-2">
           <dt className="text-ink-500 w-24 shrink-0">Đã gắn</dt>
           <dd>{account.classCount} lớp</dd>

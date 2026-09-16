@@ -105,7 +105,7 @@ export default async function LoginPage({
           <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(16,36,62,0.06)] border border-navy-100 p-6">
             <h2 className="text-2xl font-bold text-ink-900 tracking-tight">Đăng nhập</h2>
             <p className="text-sm text-ink-500 mt-1 mb-5">
-              Dùng email hoặc số điện thoại đã đăng ký với trung tâm.
+              Học viên đăng nhập bằng số điện thoại hoặc mã lớp trung tâm đã cấp.
             </p>
             <LoginForm next={next || ""} />
             <p className="text-center mt-4">

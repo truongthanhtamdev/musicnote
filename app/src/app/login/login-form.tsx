@@ -15,7 +15,7 @@ export default function LoginForm({ next }: { next: string }) {
       <input type="hidden" name="next" value={next} />
       <div>
         <label className={label} htmlFor="login-email">
-          Email hoặc số điện thoại
+          Email, số điện thoại hoặc mã lớp
         </label>
         <input
           id="login-email"
@@ -24,7 +24,7 @@ export default function LoginForm({ next }: { next: string }) {
           required
           autoFocus
           className={field}
-          placeholder="ban@musicnote.local"
+          placeholder="VD: 0912345678 hoặc G2403022"
         />
       </div>
       <div>
