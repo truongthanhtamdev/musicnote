@@ -2,18 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/guard";
 import {
-  getClass,
   getLead,
   listAppointments,
-  getPackage,
-  getPackageProgress,
   listLeadNotes,
-  listPaymentsForClass,
+  listPaymentsForLead,
+  listServices,
   listStaff,
-  listTeachers,
 } from "@/lib/queries";
-import { formatTimeRange, formatVND, todayISO } from "@/lib/format";
-import { DAY_LABELS, LEAD_NOTE_KIND_LABELS, LEARNING_MODE_LABELS, zaloLink } from "@/lib/types";
+import { formatVND, todayISO } from "@/lib/format";
+import { LEAD_NOTE_KIND_LABELS, LEARNING_MODE_LABELS, zaloLink } from "@/lib/types";
 import { PageHeader } from "@/components/app-shell";
 import { IconArrowRight, IconClock, IconPhone } from "@/components/icons";
 import AppointmentForm from "@/components/appointment-form";
@@ -24,7 +21,7 @@ import { LeadStatusBadge, LeadTemperatureBadge } from "../lead-badges";
 import EditLeadForm from "./edit-lead-form";
 import LeadNoteForm from "./lead-note-form";
 import LeadStatusActions from "./status-actions";
-import ConvertLeadForm from "./convert-form";
+import CloseWonForm from "./close-won-form";
 import LeadPaymentForm from "./lead-payment-form";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -45,11 +42,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const notes = listLeadNotes(lead.id);
   const appointments = listAppointments({ leadId: lead.id });
   const staff = listStaff().map((s) => ({ id: s.id, name: s.name }));
-  const teachers = listTeachers(false).map((t) => ({ id: t.id, name: t.name }));
-  const cls = lead.class_id ? getClass(lead.class_id) : undefined;
-  const progress = cls ? getPackageProgress(cls) : null;
-  const packageTotal = cls?.package_id ? (getPackage(cls.package_id)?.total_sessions ?? null) : null;
-  const payments = cls ? listPaymentsForClass(cls.id) : [];
+  const services = listServices().map((s) => s.name);
+  const payments = listPaymentsForLead(lead.id, lead.class_id);
   const isAdmin = session.role === "admin";
   const isClosed = lead.status === "won" || lead.status === "lost" || lead.status === "cold";
   const overdue = !!lead.next_follow_up && lead.next_follow_up <= todayISO() && !isClosed;
@@ -146,72 +140,50 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-5">
-          {cls ? (
-            <div className="panel p-[18px]">
-              <div className="flex items-center justify-between">
-                <h2 className="panel-title">Lớp đã tạo từ khách này</h2>
-                <Link
-                  href={`/admin/classes/${cls.id}`}
-                  className="text-[12.5px] font-medium text-brand-600 hover:underline"
-                >
-                  Mở lớp
-                </Link>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <Field label="Học viên">{cls.student_name}</Field>
-                <Field label="Lịch học">
-                  {DAY_LABELS[cls.day_of_week]}{" "}
-                  {formatTimeRange(cls.start_time, cls.duration_minutes)}
-                </Field>
-                <Field label="Giáo viên">{cls.teacher_name || "Chưa xếp"}</Field>
-                <Field label="Gói học">
-                  {progress ? `${progress.used}/${progress.total} tiết` : "Chưa mua gói"}
-                </Field>
-              </div>
+          <div className="panel p-[18px]">
+            <div className="flex items-center justify-between">
+              <h2 className="panel-title">Tiền của khách này</h2>
+              <span className="text-[13px] font-bold text-brand-700 tabular">
+                {formatVND(lead.revenue)}
+              </span>
+            </div>
 
-              {isAdmin && (
-                <div className="mt-4 border-t border-line-soft pt-4">
-                  <h3 className="mb-3 text-[13px] font-semibold text-ink">Ghi nhận tiền học</h3>
-                  <LeadPaymentForm
-                    leadId={lead.id}
-                    classId={cls.id}
-                    subject={cls.subject}
-                    packageTotal={packageTotal}
-                  />
-                  <div className="mt-3">
-                    {payments.map((p) => (
-                      <div
-                        key={p.id}
-                        className="flex justify-between border-b border-line-soft py-2 text-[13px] last:border-b-0"
-                      >
-                        <span className="text-muted">
-                          {p.paid_at}
-                          {p.note ? ` · ${p.note}` : ""}
-                        </span>
-                        <span className="font-semibold text-ink tabular">{formatVND(p.amount)}</span>
-                      </div>
-                    ))}
-                    {payments.length === 0 && (
-                      <p className="py-2 text-[13px] text-muted">Chưa thu khoản nào.</p>
-                    )}
+            {lead.status !== "won" && (
+              <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/50 p-4">
+                <h3 className="text-[13px] font-semibold text-ink">Khách đã đồng ý học?</h3>
+                <p className="mb-3 mt-1 text-[12.5px] text-muted">
+                  Chốt khách và ghi luôn khoản đầu tiên nếu đã thu.
+                </p>
+                <CloseWonForm leadId={lead.id} />
+              </div>
+            )}
+
+            <div className="mt-4 border-t border-line-soft pt-4">
+              <h3 className="mb-3 text-[13px] font-semibold text-ink">Ghi nhận thanh toán</h3>
+              <LeadPaymentForm leadId={lead.id} classId={lead.class_id} />
+              <div className="mt-3">
+                {payments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex justify-between border-b border-line-soft py-2 text-[13px] last:border-b-0"
+                  >
+                    <span className="text-muted">
+                      {p.paid_at}
+                      {p.note ? ` · ${p.note}` : ""}
+                    </span>
+                    <span className="font-semibold text-ink tabular">{formatVND(p.amount)}</span>
                   </div>
-                </div>
-              )}
+                ))}
+                {payments.length === 0 && (
+                  <p className="py-2 text-[13px] text-muted">Chưa thu khoản nào.</p>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="panel p-[18px]">
-              <h2 className="panel-title">Chốt khách — tạo lớp học</h2>
-              <p className="mt-2 mb-4 text-[13px] text-muted">
-                Tạo lớp từ thông tin đã tư vấn. Lớp được gắn với khách này nên mọi khoản học phí
-                sau đó đều quy được về đúng nguồn quảng cáo đã mang khách tới.
-              </p>
-              <ConvertLeadForm leadId={lead.id} defaultName={lead.name} teachers={teachers} />
-            </div>
-          )}
+          </div>
 
           <div className="panel p-[18px]">
             <h2 className="panel-title mb-4">Thông tin khách hàng</h2>
-            <EditLeadForm lead={lead} staff={staff} />
+            <EditLeadForm lead={lead} staff={staff} services={services} />
           </div>
         </div>
 

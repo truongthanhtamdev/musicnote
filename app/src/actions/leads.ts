@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { todayISO } from "@/lib/format";
-import { addLeadNote, findLeadsByPhone } from "@/lib/queries";
+import { addLeadNote, findLeadsByPhone, getServiceByName } from "@/lib/queries";
 import {
   LEAD_STATUS_LABELS,
   normalizePhone,
@@ -113,7 +113,9 @@ export async function createLeadAction(
       f.receivedAt,
       f.status,
       f.temperature,
-      f.ownerId ?? session.userId,
+      // Chưa chọn người phụ trách thì lấy người mặc định của mảng dịch vụ —
+      // khách guitar về tay người lo guitar, môn khác về tay người lo môn đó.
+      f.ownerId ?? getServiceByName(f.subject)?.default_owner_id ?? session.userId,
       f.nextFollowUp || null,
       f.expectedValue || null,
       f.notes || null
@@ -314,27 +316,80 @@ export async function recordLeadPaymentAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin"]);
+  const session = await assertRole(["admin", "coordinator"]);
   const leadId = Number(formData.get("lead_id"));
-  const classId = Number(formData.get("class_id"));
+  const classIdRaw = String(formData.get("class_id") || "");
   const amount = Number(String(formData.get("amount") || "").replace(/[^\d]/g, ""));
   const paidAt = String(formData.get("paid_at") || "");
   const note = String(formData.get("note") || "").trim();
 
-  if (!classId) return { error: "Khách hàng chưa được tạo lớp, chưa ghi nhận thanh toán được" };
+  if (!leadId) return { error: "Thiếu khách hàng cho khoản thu này" };
   if (!amount || amount <= 0 || !paidAt) {
     return { error: "Vui lòng nhập số tiền và ngày thu hợp lệ" };
   }
 
-  db.prepare("INSERT INTO payments (class_id, amount, paid_at, note) VALUES (?, ?, ?, ?)").run(
-    classId,
-    amount,
-    paidAt,
-    note || null
+  db.prepare(
+    "INSERT INTO payments (lead_id, class_id, amount, paid_at, note) VALUES (?, ?, ?, ?, ?)"
+  ).run(leadId, classIdRaw ? Number(classIdRaw) : null, amount, paidAt, note || null);
+
+  addLeadNote(
+    leadId,
+    session.userId,
+    "note",
+    `Thu ${amount.toLocaleString("vi-VN")}đ ngày ${paidAt}${note ? ` — ${note}` : ""}`
   );
 
   revalidateLead(leadId);
   revalidatePath("/admin/finance");
+  revalidatePath("/admin/leads/report");
+  return { success: true };
+}
+
+/**
+ * Chốt khách: đánh dấu đã đăng ký và ghi luôn khoản tiền đầu tiên nếu có.
+ * Hệ thống này không quản lý lớp học nên không cần tạo lớp mới chốt được.
+ */
+export async function closeLeadWonAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const session = await assertRole(["admin", "coordinator"]);
+  const leadId = Number(formData.get("lead_id"));
+  const amount = Number(String(formData.get("amount") || "").replace(/[^\d]/g, ""));
+  const paidAt = String(formData.get("paid_at") || "").trim();
+  const note = String(formData.get("note") || "").trim();
+
+  const lead = db.prepare("SELECT status FROM leads WHERE id = ?").get(leadId) as
+    | { status: LeadStatus }
+    | undefined;
+  if (!lead) return { error: "Không tìm thấy khách hàng này" };
+
+  db.prepare(
+    "UPDATE leads SET status = 'won', won_at = ?, next_follow_up = NULL WHERE id = ?"
+  ).run(todayISO(), leadId);
+  addLeadNote(
+    leadId,
+    session.userId,
+    "status",
+    `${LEAD_STATUS_LABELS[lead.status]} → ${LEAD_STATUS_LABELS.won}`
+  );
+
+  if (amount > 0) {
+    if (!paidAt) return { error: "Vui lòng chọn ngày thu tiền" };
+    db.prepare(
+      "INSERT INTO payments (lead_id, amount, paid_at, note) VALUES (?, ?, ?, ?)"
+    ).run(leadId, amount, paidAt, note || "Học phí khi chốt");
+    addLeadNote(
+      leadId,
+      session.userId,
+      "note",
+      `Thu ${amount.toLocaleString("vi-VN")}đ khi chốt khách`
+    );
+  }
+
+  revalidateLead(leadId);
+  revalidatePath("/admin/finance");
+  revalidatePath("/admin/leads/report");
   return { success: true };
 }
 

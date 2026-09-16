@@ -7,7 +7,6 @@ import { todayISO } from "@/lib/format";
 import {
   LEAD_SOURCE_SUGGESTIONS,
   LEARNING_MODE_LABELS,
-  SUBJECT_SUGGESTIONS,
   type LeadLearningMode,
 } from "@/lib/types";
 
@@ -17,10 +16,10 @@ const inputClass = "input";
 
 export default function NewLeadForm({
   staff,
-  currentUserId,
+  services,
 }: {
   staff: { id: number; name: string }[];
-  currentUserId: number;
+  services: string[];
 }) {
   const [state, formAction, pending] = useActionState(createLeadAction, initialState);
   const [formKey, setFormKey] = useState(0);
@@ -66,9 +65,9 @@ export default function NewLeadForm({
 
       <div className="grid md:grid-cols-3 gap-3">
         <div>
-          <label className="label">Môn học</label>
-          <select name="subject" defaultValue="Guitar" className={inputClass}>
-            {SUBJECT_SUGGESTIONS.map((s) => (
+          <label className="label">Mảng / môn học</label>
+          <select name="subject" defaultValue={services[0] || "Guitar"} className={inputClass}>
+            {services.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -121,8 +120,8 @@ export default function NewLeadForm({
         </div>
         <div>
           <label className="label">Người phụ trách</label>
-          <select name="owner_id" defaultValue={String(currentUserId)} className={inputClass}>
-            <option value="">Chưa giao</option>
+          <select name="owner_id" defaultValue="" className={inputClass}>
+            <option value="">Theo mảng dịch vụ</option>
             {staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}

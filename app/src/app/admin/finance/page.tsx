@@ -1,5 +1,12 @@
 import { requireRole } from "@/lib/guard";
-import { listPayments, listExpenses, getRevenueSummary, listClasses, getPackage } from "@/lib/queries";
+import {
+  listPayments,
+  listExpenses,
+  getRevenueSummary,
+  listClasses,
+  listServices,
+  getPackage,
+} from "@/lib/queries";
 import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
 import NewPaymentForm from "./new-payment-form";
 import NewExpenseForm from "./new-expense-form";
@@ -19,6 +26,7 @@ export default async function FinancePage({
   const payments = listPayments(from, to);
   const expenses = listExpenses(from, to);
   const summary = getRevenueSummary(from, to);
+  const services = listServices().map((s) => ({ id: s.id, name: s.name }));
   const classes = listClasses().map((c) => ({
     id: c.id,
     label: `${c.student_name} (${c.teacher_name || "Chưa xếp GV"})`,
@@ -129,7 +137,7 @@ export default async function FinancePage({
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <h2 className="font-semibold text-slate-900 mb-3">Thêm chi phí</h2>
-            <NewExpenseForm />
+            <NewExpenseForm services={services} />
           </div>
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-200">

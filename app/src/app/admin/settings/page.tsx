@@ -1,11 +1,15 @@
 import { requireRole } from "@/lib/guard";
+import { listServices, listStaff } from "@/lib/queries";
 import { getDigestTime, getSetting } from "@/lib/settings";
 import { SETTING_KEYS } from "@/lib/types";
 import { PageHeader } from "@/components/app-shell";
 import TelegramForm from "./telegram-form";
+import ServicesPanel from "./services-panel";
 
 export default async function SettingsPage() {
   await requireRole(["admin"]);
+  const services = listServices(true);
+  const staff = listStaff().map((u) => ({ id: u.id, name: u.name }));
 
   return (
     <>
@@ -54,6 +58,15 @@ export default async function SettingsPage() {
             của nhóm (số âm, VD <code className="rounded bg-line-soft px-1">-1001234567890</code>).
           </p>
         </div>
+      </div>
+
+      <div className="panel mt-5 p-[18px]">
+        <h2 className="panel-title mb-1">Mảng dịch vụ &amp; người phụ trách</h2>
+        <p className="mb-4 text-[12.5px] text-muted">
+          Khách mới thuộc mảng nào sẽ tự về tay người phụ trách mảng đó, khỏi phải gán tay từng
+          khách. Ẩn một mảng thì nó biến khỏi các ô chọn nhưng khách cũ vẫn giữ nguyên.
+        </p>
+        <ServicesPanel services={services} staff={staff} />
       </div>
     </>
   );

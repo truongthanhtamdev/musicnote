@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
-import { listLeads, listLeadFieldValues, listStaff, type LeadWithMeta } from "@/lib/queries";
+import {
+  listLeads,
+  listLeadFieldValues,
+  listServices,
+  listStaff,
+  type LeadWithMeta,
+} from "@/lib/queries";
 import { formatVND, todayISO } from "@/lib/format";
 import {
   LEAD_STATUS_LABELS,
   LEARNING_MODE_LABELS,
-  SUBJECT_SUGGESTIONS,
   zaloLink,
   type LeadStatus,
 } from "@/lib/types";
@@ -94,7 +99,7 @@ export default async function LeadsPage({
     due?: string;
   }>;
 }) {
-  const session = await requireRole(["admin", "coordinator"]);
+  await requireRole(["admin", "coordinator"]);
   const sp = await searchParams;
   const dueOnly = sp.due === "1";
 
@@ -125,6 +130,7 @@ export default async function LeadsPage({
   const exportHref = `/admin/leads/export${exportQuery ? `?${exportQuery}` : ""}`;
 
   const staff = listStaff().map((s) => ({ id: s.id, name: s.name }));
+  const services = listServices().map((s) => s.name);
   const areas = listLeadFieldValues("area");
   const sources = listLeadFieldValues("source");
 
@@ -250,10 +256,10 @@ export default async function LeadsPage({
           </select>
         </div>
         <div>
-          <label className="label">Môn</label>
+          <label className="label">Mảng</label>
           <select name="subject" defaultValue={sp.subject || ""} className="input">
             <option value="">Tất cả</option>
-            {SUBJECT_SUGGESTIONS.map((s) => (
+            {services.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -336,7 +342,7 @@ export default async function LeadsPage({
 
       <div id="them-khach" className="panel mt-5 scroll-mt-20 p-[18px]">
         <h2 className="panel-title mb-4">Thêm khách hàng tiềm năng</h2>
-        <NewLeadForm staff={staff} currentUserId={session.userId} />
+        <NewLeadForm staff={staff} services={services} />
       </div>
     </>
   );

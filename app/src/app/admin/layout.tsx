@@ -7,16 +7,11 @@ import {
   IconBanknote,
   IconBell,
   IconClock,
-  IconBook,
-  IconCalendar,
   IconChart,
-  IconCheckSquare,
   IconDashboard,
-  IconGraduation,
   IconUpload,
   IconUserCog,
   IconUsers,
-  IconWallet,
 } from "@/components/icons";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -41,25 +36,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       ],
     },
     {
-      label: "Quản lý đào tạo",
-      items: [
-        { href: "/admin/classes", label: "Lớp học", icon: <IconBook /> },
-        { href: "/admin/assign", label: "Giao lớp", icon: <IconCalendar /> },
-        ...(isAdmin
-          ? [{ href: "/admin/students", label: "Học viên", icon: <IconGraduation /> }]
-          : []),
-        { href: "/admin/teachers", label: "Giáo viên", icon: <IconUsers /> },
-        { href: "/admin/attendance", label: "Điểm danh", icon: <IconCheckSquare /> },
-      ],
-    },
-    {
       label: "Vận hành",
       items: [
         ...(isAdmin
           ? [
-              { href: "/admin/payroll", label: "Chấm công / Lương", icon: <IconWallet /> },
-              { href: "/admin/finance", label: "Thu chi trung tâm", icon: <IconBanknote /> },
-              { href: "/admin/staff", label: "Nhân sự quản lý", icon: <IconUserCog /> },
+              { href: "/admin/finance", label: "Thu chi", icon: <IconBanknote /> },
+              { href: "/admin/staff", label: "Nhân sự", icon: <IconUserCog /> },
             ]
           : []),
         { href: "/admin/import", label: "Nhập dữ liệu", icon: <IconUpload /> },

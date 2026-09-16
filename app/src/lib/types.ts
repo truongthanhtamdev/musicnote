@@ -376,3 +376,15 @@ export const SETTING_KEYS = {
   /** Ngày đã gửi bản tóm tắt gần nhất — chặn gửi trùng trong cùng một ngày. */
   lastDigestDate: "last_digest_date",
 } as const;
+
+/* ── Mảng dịch vụ ────────────────────────────────────────────────────── */
+
+export interface ServiceRow {
+  id: number;
+  name: string;
+  /** Người mặc định nhận khách của mảng này. */
+  default_owner_id: number | null;
+  sort_order: number;
+  active: number;
+  created_at: string;
+}

@@ -182,6 +182,18 @@ function migrate() {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Mảng dịch vụ đang chạy (Guitar đệm hát, Tiếng Việt, OT Musics, chạy ads...).
+    -- Mỗi mảng có người phụ trách mặc định, nên khách mới vào là tự về đúng
+    -- tay người sắp lịch, không phải gán thủ công từng khách.
+    CREATE TABLE IF NOT EXISTS services (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      default_owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_attendance_teacher_date ON attendance(teacher_id, session_date);
@@ -213,6 +225,19 @@ function migrate() {
   ensureColumn("classes", "package_id", "INTEGER REFERENCES packages(id) ON DELETE SET NULL");
   ensureColumn("users", "languages", "TEXT NOT NULL DEFAULT 'vi'");
   ensureColumn("attendance", "lesson_content", "TEXT");
+  // Trước đây mọi khoản thu phải gắn với một lớp học. Hệ thống này chỉ quản lý
+  // khách hàng nên tiền được ghi thẳng vào khách; cột class_id giữ nguyên cho
+  // dữ liệu cũ đã nhập.
+  ensureColumn("payments", "lead_id", "INTEGER REFERENCES leads(id) ON DELETE SET NULL");
+  ensureColumn("expenses", "service_id", "INTEGER REFERENCES services(id) ON DELETE SET NULL");
+  ensureColumn("users", "telegram_chat_id", "TEXT");
+
+  // Index phải tạo SAU khi cột tồn tại. Để chung với khối CREATE TABLE ở trên
+  // thì câu lệnh nổ ngay lần chạy đầu và mọi bước migration phía sau bị bỏ qua.
+  db.exec("CREATE INDEX IF NOT EXISTS idx_payments_lead ON payments(lead_id);");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_expenses_service ON expenses(service_id);");
+
+  seedServices();
   ensureColumn("attendance", "is_trial", "INTEGER NOT NULL DEFAULT 0");
   ensureStudentRoleSupported();
   migratePackagesToTable();
@@ -239,6 +264,26 @@ function migratePackagesToTable() {
       .run(r.package_total_sessions, r.package_started_at);
     db.prepare("UPDATE classes SET package_id = ? WHERE id = ?").run(info.lastInsertRowid, r.id);
   }
+}
+
+/**
+ * Danh sách mảng dịch vụ ban đầu — chỉ chèn khi bảng còn trống, để lần chạy
+ * sau không đụng vào những gì người dùng đã sửa hoặc xoá.
+ */
+function seedServices() {
+  const count = (db.prepare("SELECT COUNT(*) as c FROM services").get() as { c: number }).c;
+  if (count > 0) return;
+  const insert = db.prepare("INSERT INTO services (name, sort_order) VALUES (?, ?)");
+  [
+    "Guitar",
+    "Piano",
+    "Guitar đệm hát",
+    "Thanh nhạc",
+    "Violin",
+    "Tiếng Việt",
+    "OT Musics",
+    "Học quảng cáo",
+  ].forEach((name, i) => insert.run(name, i));
 }
 
 function ensureColumn(table: string, column: string, definition: string) {

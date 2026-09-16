@@ -16,6 +16,7 @@ import {
   type LeadRow,
   type PackageRow,
   type PaymentRow,
+  type ServiceRow,
   type UserRow,
 } from "./types";
 
@@ -330,8 +331,9 @@ export function listPayments(
 ): (PaymentRow & { student_name: string | null })[] {
   return db
     .prepare(
-      `SELECT p.*, c.student_name as student_name
+      `SELECT p.*, COALESCE(l.name, c.student_name) as student_name
        FROM payments p
+       LEFT JOIN leads l ON l.id = p.lead_id
        LEFT JOIN classes c ON c.id = p.class_id
        WHERE p.paid_at >= ? AND p.paid_at <= ?
        ORDER BY p.paid_at DESC, p.id DESC`
@@ -390,7 +392,9 @@ export interface LeadWithMeta extends LeadRow {
 
 const LEAD_SELECT = `
   SELECT l.*, u.name as owner_name, c.student_name as class_student_name,
-         (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.class_id = l.class_id) as revenue,
+         (SELECT COALESCE(SUM(p.amount), 0) FROM payments p
+           WHERE p.lead_id = l.id
+              OR (l.class_id IS NOT NULL AND p.class_id = l.class_id)) as revenue,
          (SELECT COUNT(*) FROM lead_notes n WHERE n.lead_id = l.id) as note_count
   FROM leads l
   LEFT JOIN users u ON u.id = l.owner_id
@@ -579,7 +583,7 @@ export function getLeadStats(from: string, to: string): LeadStats {
     db
       .prepare(
         `SELECT COALESCE(SUM(p.amount), 0) as s FROM payments p
-         JOIN leads l ON l.class_id = p.class_id
+         JOIN leads l ON l.id = p.lead_id OR (p.class_id IS NOT NULL AND l.class_id = p.class_id)
          WHERE l.received_at >= ? AND l.received_at <= ?`
       )
       .get(from, to) as { s: number }
@@ -646,7 +650,9 @@ export function getLeadBreakdown(
               COUNT(*) as total,
               SUM(CASE WHEN l.status = 'won' THEN 1 ELSE 0 END) as won,
               COALESCE(SUM(
-                (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.class_id = l.class_id)
+                (SELECT COALESCE(SUM(p.amount), 0) FROM payments p
+                  WHERE p.lead_id = l.id
+                     OR (l.class_id IS NOT NULL AND p.class_id = l.class_id))
               ), 0) as revenue
        FROM leads l
        WHERE l.received_at >= ? AND l.received_at <= ?
@@ -814,4 +820,40 @@ export function getAgenda(dateISO: string): AgendaItem[] {
   }
 
   return items.sort((a, b) => a.time.localeCompare(b.time));
+}
+
+/* ── Mảng dịch vụ ────────────────────────────────────────────────────── */
+
+export interface ServiceWithOwner extends ServiceRow {
+  owner_name: string | null;
+  /** Số khách đang thuộc mảng này, để biết mảng nào còn dùng trước khi xoá. */
+  lead_count: number;
+}
+
+export function listServices(includeInactive = false): ServiceWithOwner[] {
+  return db
+    .prepare(
+      `SELECT s.*, u.name as owner_name,
+              (SELECT COUNT(*) FROM leads l WHERE l.subject = s.name) as lead_count
+       FROM services s
+       LEFT JOIN users u ON u.id = s.default_owner_id
+       ${includeInactive ? "" : "WHERE s.active = 1"}
+       ORDER BY s.sort_order, s.name`
+    )
+    .all() as ServiceWithOwner[];
+}
+
+export function getServiceByName(name: string): ServiceRow | undefined {
+  return db.prepare("SELECT * FROM services WHERE name = ?").get(name) as ServiceRow | undefined;
+}
+
+/** Các khoản đã thu của một khách, gồm cả khoản ghi qua lớp học cũ. */
+export function listPaymentsForLead(leadId: number, classId: number | null): PaymentRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM payments
+       WHERE lead_id = @leadId OR (@classId IS NOT NULL AND class_id = @classId)
+       ORDER BY paid_at DESC, id DESC`
+    )
+    .all({ leadId, classId }) as PaymentRow[];
 }

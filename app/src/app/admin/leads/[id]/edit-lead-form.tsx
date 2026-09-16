@@ -8,7 +8,6 @@ import {
   LEAD_STATUS_LABELS,
   LEAD_TEMPERATURE_LABELS,
   LEARNING_MODE_LABELS,
-  SUBJECT_SUGGESTIONS,
   type LeadLearningMode,
   type LeadRow,
   type LeadStatus,
@@ -21,9 +20,11 @@ const inputClass = "input";
 export default function EditLeadForm({
   lead,
   staff,
+  services,
 }: {
   lead: LeadRow;
   staff: { id: number; name: string }[];
+  services: string[];
 }) {
   const [state, formAction, pending] = useActionState(updateLeadAction, initialState);
 
@@ -53,9 +54,9 @@ export default function EditLeadForm({
           <input name="area" defaultValue={lead.area || ""} className={inputClass} />
         </div>
         <div>
-          <label className="label">Môn học</label>
+          <label className="label">Mảng / môn học</label>
           <select name="subject" defaultValue={lead.subject} className={inputClass}>
-            {[...new Set([...SUBJECT_SUGGESTIONS, lead.subject])].map((s) => (
+            {[...new Set([...services, lead.subject])].map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>

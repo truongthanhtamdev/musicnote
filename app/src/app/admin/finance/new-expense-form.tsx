@@ -8,7 +8,11 @@ import { todayISO } from "@/lib/format";
 
 const initialState: FormState = {};
 
-export default function NewExpenseForm() {
+export default function NewExpenseForm({
+  services,
+}: {
+  services: { id: number; name: string }[];
+}) {
   const [state, formAction, pending] = useActionState(addExpenseAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -31,6 +35,14 @@ export default function NewExpenseForm() {
           <option key={c} value={c} />
         ))}
       </datalist>
+      <select name="service_id" defaultValue="" className="input">
+        <option value="">Chi chung, không thuộc mảng nào</option>
+        {services.map((s) => (
+          <option key={s.id} value={s.id}>
+            Mảng: {s.name}
+          </option>
+        ))}
+      </select>
       <div className="grid grid-cols-2 gap-3">
         <input
           name="amount"
