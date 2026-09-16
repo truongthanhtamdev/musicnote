@@ -5,6 +5,8 @@ import {
   getRevenueSummary,
   listClasses,
   getPackage,
+  normalizeLoginPhone,
+  listStudentAccountsByLogin,
 } from "@/lib/queries";
 import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
 import { formatPayerLabel } from "@/lib/types";
@@ -28,12 +30,21 @@ export default async function FinancePage({
   const payments = listPayments(from, to);
   const expenses = listExpenses(from, to);
   const summary = getRevenueSummary(from, to);
-  const classes = listClasses().map((c) => ({
-    id: c.id,
-    label: `${formatPayerLabel(c)} (${c.teacher_name || "Chưa xếp GV"})`,
-    subject: c.subject,
-    packageTotal: c.package_id ? (getPackage(c.package_id)?.total_sessions ?? null) : null,
-  }));
+  // Để form thu tiền biết: lớp này đã có tài khoản chưa, số nào làm tên đăng
+  // nhập, và số đó có đang thuộc về tài khoản của người khác không.
+  const accountsByLogin = listStudentAccountsByLogin();
+  const classes = listClasses().map((c) => {
+    const loginPhone = normalizeLoginPhone(c.student_phone ?? "") || null;
+    return {
+      id: c.id,
+      label: `${formatPayerLabel(c)} (${c.teacher_name || "Chưa xếp GV"})`,
+      subject: c.subject,
+      packageTotal: c.package_id ? (getPackage(c.package_id)?.total_sessions ?? null) : null,
+      hasAccount: Boolean(c.student_user_id),
+      loginPhone,
+      existingAccountName: loginPhone ? (accountsByLogin.get(loginPhone) ?? null) : null,
+    };
+  });
 
   return (
     <div className="space-y-5">

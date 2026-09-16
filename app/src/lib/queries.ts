@@ -1670,6 +1670,14 @@ export function normalizeLoginPhone(raw: string): string {
   return /^\+?\d{8,15}$/.test(cleaned) ? cleaned : "";
 }
 
+/** Tài khoản học viên theo tên đăng nhập (số điện thoại) → tên chủ tài khoản. */
+export function listStudentAccountsByLogin(): Map<string, string> {
+  const rows = db
+    .prepare("SELECT name, email FROM users WHERE role = 'student'")
+    .all() as { name: string; email: string }[];
+  return new Map(rows.map((r) => [r.email.toLowerCase(), r.name]));
+}
+
 /**
  * Khách đang học mà chưa có tài khoản đăng nhập.
  *

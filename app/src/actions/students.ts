@@ -1,13 +1,13 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { getUserByEmail } from "@/lib/auth";
 import { listAccountCandidates } from "@/lib/queries";
 import { logAudit } from "@/lib/audit";
+import { createStudentAccount } from "@/lib/student-accounts";
 import type { FormState } from "./teachers";
 
 export async function createStudentAction(
@@ -69,16 +69,6 @@ export interface BulkAccountState extends FormState {
 }
 
 /**
- * Mật khẩu tạm dễ đọc qua điện thoại: bỏ các ký tự nhìn giống nhau (0/O,
- * 1/l/I) để giáo vụ đọc cho khách không bị nhầm.
- */
-function tempPassword(): string {
-  const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
-  const bytes = crypto.randomBytes(8);
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
-}
-
-/**
  * Tạo tài khoản đăng nhập hàng loạt cho khách đang học và gắn luôn lớp của họ
  * vào tài khoản đó.
  *
@@ -103,10 +93,6 @@ export async function createStudentAccountsAction(
     return { error: "Những khách đã chọn đều chưa tạo được (thiếu số điện thoại trong hồ sơ lớp)" };
   }
 
-  const insertUser = db.prepare(
-    `INSERT INTO users (name, email, password_hash, role, phone, active)
-     VALUES (?, ?, ?, 'student', ?, 1)`
-  );
   const linkClass = db.prepare("UPDATE classes SET student_user_id = ? WHERE id = ?");
 
   const created: CreatedAccount[] = [];
@@ -123,19 +109,16 @@ export async function createStudentAccountsAction(
         });
         continue;
       }
-      const password = tempPassword();
-      const info = insertUser.run(
-        c.customerName,
-        c.login!,
-        bcrypt.hashSync(password, 10),
-        c.login!
-      );
-      for (const classId of c.classIds) linkClass.run(info.lastInsertRowid, classId);
+      const account = createStudentAccount({
+        name: c.customerName,
+        login: c.login!,
+        classIds: c.classIds,
+      });
       created.push({
         customerName: c.customerName,
-        login: c.login!,
-        password,
-        classCount: c.classIds.length,
+        login: account.login,
+        password: account.password,
+        classCount: account.classCount,
       });
     }
   });

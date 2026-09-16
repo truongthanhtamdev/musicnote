@@ -4,10 +4,29 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { logAudit } from "@/lib/audit";
+import { accountTargetForClass, createStudentAccount } from "@/lib/student-accounts";
 import { formatVND } from "@/lib/format";
 import type { FormState } from "./teachers";
 
-export async function recordPaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+export interface PaymentState extends FormState {
+  /** Tài khoản vừa tạo kèm lúc thu tiền — mật khẩu chỉ trả về đúng lần này. */
+  account?: { name: string; login: string; password: string; classCount: number };
+  /** Khách đã có tài khoản sẵn, chỉ gắn thêm lớp. */
+  linkedTo?: { name: string; login: string; classCount: number };
+}
+
+/**
+ * Ghi nhận một khoản học phí, và tạo luôn tài khoản đăng nhập cho khách nếu
+ * giáo vụ tick ô đó.
+ *
+ * Gộp hai việc vào một bước vì chúng luôn đi cùng nhau ngoài đời: khách đóng
+ * tiền xong là lúc giáo vụ đang nhắn tin với khách, đưa luôn tài khoản thì
+ * khách dùng ngay; để lúc khác làm thì thường là quên.
+ */
+export async function recordPaymentAction(
+  _prev: PaymentState,
+  formData: FormData
+): Promise<PaymentState> {
   const session = await assertRole(["admin"]);
 
   const classId = formData.get("class_id") ? Number(formData.get("class_id")) : null;
@@ -26,7 +45,49 @@ export async function recordPaymentAction(_prev: FormState, formData: FormData):
   logAudit(session, "hoc_phi", `Thu học phí ${formatVND(amount)} ngày ${paidAt}${note ? ` (${note})` : ""}`);
   revalidatePath("/admin/finance");
   revalidatePath("/admin/classes");
-  return { success: true };
+
+  const result: PaymentState = { success: true };
+  if (classId && formData.get("create_account")) {
+    const target = accountTargetForClass(classId);
+    if (target?.existing) {
+      // Khách đã có tài khoản (đóng tiền khoá thứ hai chẳng hạn): gắn lớp
+      // chưa có tài khoản vào đó, đừng tạo tài khoản thứ hai cùng số.
+      const link = db.prepare("UPDATE classes SET student_user_id = ? WHERE id = ?");
+      for (const id of target.classIds) link.run(target.existing.id, id);
+      result.linkedTo = {
+        name: target.existing.name,
+        login: target.login,
+        classCount: target.classIds.length,
+      };
+      logAudit(
+        session,
+        "tai_khoan",
+        `Gắn ${target.classIds.length} lớp vào tài khoản có sẵn của ${target.existing.name}`
+      );
+    } else if (target) {
+      try {
+        const account = createStudentAccount({
+          name: target.name,
+          login: target.login,
+          classIds: target.classIds,
+        });
+        result.account = {
+          name: target.name,
+          login: account.login,
+          password: account.password,
+          classCount: account.classCount,
+        };
+        logAudit(session, "tai_khoan", `Tạo tài khoản cho ${target.name} lúc thu học phí`);
+      } catch (e) {
+        // Tiền đã ghi nhận xong rồi, nên tài khoản hỏng thì báo riêng chứ
+        // không nuốt mất khoản thu.
+        console.error("[thu-tien-tao-tk]", e);
+        result.error = "Đã ghi nhận tiền, nhưng chưa tạo được tài khoản. Bạn tạo lại ở trang Tài khoản học viên nhé.";
+      }
+    }
+    revalidatePath("/admin/students");
+  }
+  return result;
 }
 
 export async function updatePaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
