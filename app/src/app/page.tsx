@@ -8,6 +8,7 @@ import {
   IconChevronRight,
   IconClock,
   IconGuitar,
+  IconPiano,
   IconUsers,
   SubjectIcon,
 } from "@/components/icons";
@@ -211,20 +212,29 @@ export default async function HomePage() {
                 Miễn phí, không cần đăng nhập
               </p>
               <h2 className="text-xl sm:text-2xl font-bold text-ink-900 tracking-tight mt-2">
-                Thư viện hợp âm &amp; vòng hòa thanh guitar
+                Thư viện học nhạc miễn phí
               </h2>
               <p className="text-ink-600 mt-1.5 max-w-xl">
-                Tra thế bấm từng hợp âm, xem bảy hợp âm của mỗi tông và các vòng hòa thanh mà hầu
-                hết bài hát đang dùng.
+                Guitar: thế bấm hợp âm và vòng hòa thanh theo từng tông. Piano: mẹo nhớ nốt khóa
+                Sol, khóa Fa và game đọc nốt.
               </p>
             </div>
-            <Link
-              href="/guitar"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-white px-5 py-3 font-semibold transition"
-            >
-              Mở thư viện
-              <IconChevronRight className="w-4 h-4" />
-            </Link>
+            <div className="flex flex-wrap gap-2.5">
+              <Link
+                href="/guitar"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-white px-5 py-3 font-semibold transition"
+              >
+                <IconGuitar className="w-4 h-4" />
+                Guitar
+              </Link>
+              <Link
+                href="/piano"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-3 font-semibold transition"
+              >
+                <IconPiano className="w-4 h-4" />
+                Piano
+              </Link>
+            </div>
           </div>
         </section>
 

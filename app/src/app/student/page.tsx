@@ -18,7 +18,7 @@ import {
   formatClassSchedule,
   isNoticeInTime,
 } from "@/lib/types";
-import { IconClock, IconMusic, IconUser, SubjectIcon } from "@/components/icons";
+import { IconClock, IconGuitar, IconMusic, IconPiano, IconUser, SubjectIcon } from "@/components/icons";
 import {
   Banner,
   Card,
@@ -269,6 +269,25 @@ export default async function StudentHomePage() {
           })}
         </div>
       )}
+
+      {/* Tự học giữa hai buổi: chỗ này học viên hay vào nhất nên đặt lối tắt
+          ngay đây thay vì bắt nhớ địa chỉ trang. */}
+      <Card>
+        <p className="font-semibold text-ink-900">Luyện thêm giữa hai buổi học</p>
+        <p className="text-sm text-ink-500 mt-0.5">
+          Thư viện miễn phí của trung tâm — mở được cả trên điện thoại.
+        </p>
+        <div className="flex flex-wrap gap-2.5 mt-3">
+          <Link href="/guitar" className={`${btn.secondary} py-2.5`}>
+            <IconGuitar className="w-4 h-4" />
+            Hợp âm &amp; vòng hòa thanh guitar
+          </Link>
+          <Link href="/piano" className={`${btn.secondary} py-2.5`}>
+            <IconPiano className="w-4 h-4" />
+            Nhớ nốt &amp; game đọc nốt piano
+          </Link>
+        </div>
+      </Card>
 
       <Card>
         <ExtraTrialForm studyingSubjects={classes.map((c) => c.subject)} />

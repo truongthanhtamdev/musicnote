@@ -59,10 +59,10 @@ export default async function GuitarLibraryPage() {
           </Link>
           <nav className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Link
-              href="/#hoc-phi"
+              href="/piano"
               className="hidden sm:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
             >
-              Học phí
+              Thư viện piano
             </Link>
             <Link
               href={session ? roleHomePath(session.role) : "/login"}
@@ -166,13 +166,21 @@ export default async function GuitarLibraryPage() {
               Một buổi học thử miễn phí với giáo viên, sửa đúng chỗ tay bạn đang sai — thường nhanh
               hơn cả tháng tự mò.
             </p>
-            <Link
-              href="/#hoc-thu"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-coral-600 hover:bg-coral-700 text-white px-6 py-3 font-semibold mt-6 transition"
-            >
-              Đăng ký học thử miễn phí
-              <IconChevronRight className="w-4 h-4" />
-            </Link>
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
+              <Link
+                href="/#hoc-thu"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-coral-600 hover:bg-coral-700 text-white px-6 py-3 font-semibold transition"
+              >
+                Đăng ký học thử miễn phí
+                <IconChevronRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/piano"
+                className="inline-flex items-center rounded-xl border border-white/25 hover:bg-white/10 text-white px-6 py-3 font-semibold transition"
+              >
+                Thư viện piano
+              </Link>
+            </div>
           </div>
         </section>
       </main>
