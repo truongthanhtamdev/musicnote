@@ -7,6 +7,8 @@ import { Logo } from "@/components/logo";
 import { MusicStaff } from "@/components/music-staff";
 import { IconChevronRight, IconMusic, IconPiano } from "@/components/icons";
 import { ContactButtons } from "@/components/contact-buttons";
+import { learningResourceJsonLd } from "@/lib/seo";
+import { JsonLd } from "@/components/json-ld";
 import NoteGame from "./note-game";
 
 const TITLE = "Thư viện piano — mẹo nhớ nốt khóa Sol, khóa Fa và game đọc nốt";
@@ -39,6 +41,14 @@ export default async function PianoLibraryPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <JsonLd
+        data={learningResourceJsonLd({
+          path: "/piano",
+          name: "Mẹo nhớ nốt khóa Sol, khóa Fa và game đọc nốt piano",
+          description: "Cách nhớ nốt trên khuông nhạc khóa Sol và khóa Fa cho người mới học piano, kèm game đọc nốt để luyện phản xạ — miễn phí, không cần đăng nhập.",
+          about: "Piano",
+        })}
+      />
       <header className="sticky top-0 z-30 bg-ivory-50/90 backdrop-blur border-b border-navy-100">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 min-w-0">

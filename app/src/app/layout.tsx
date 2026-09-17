@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SITE_URL } from "@/lib/seo";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -18,7 +19,7 @@ const geistMono = Geist_Mono({
  * Facebook chỉ nhận URL đầy đủ, đường dẫn tương đối là mất ảnh.
  */
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL || "https://pianoguitardemhat.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Piano Guitar Đệm Hát — Học nhạc 1 kèm 1 online",
     template: "%s · Piano Guitar Đệm Hát",

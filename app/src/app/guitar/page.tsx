@@ -5,6 +5,8 @@ import { roleHomePath } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import { IconChevronRight, IconGuitar, IconMusic } from "@/components/icons";
 import { ContactButtons } from "@/components/contact-buttons";
+import { learningResourceJsonLd } from "@/lib/seo";
+import { JsonLd } from "@/components/json-ld";
 import ChordLibrary from "./chord-library";
 import ProgressionExplorer from "./progression-explorer";
 
@@ -49,6 +51,14 @@ export default async function GuitarLibraryPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <JsonLd
+        data={learningResourceJsonLd({
+          path: "/guitar",
+          name: "Thư viện hợp âm và vòng hòa thanh guitar",
+          description: "Thế bấm của từng hợp âm guitar, bảy hợp âm của mỗi tông và các vòng hòa thanh thông dụng — tra miễn phí, không cần đăng nhập.",
+          about: "Guitar",
+        })}
+      />
       <header className="sticky top-0 z-30 bg-ivory-50/90 backdrop-blur border-b border-navy-100">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 min-w-0">

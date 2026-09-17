@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import { getCenterContact } from "@/lib/queries";
+import { courseJsonLd, schoolJsonLd } from "@/lib/seo";
+import { JsonLd } from "@/components/json-ld";
 import { roleHomePath } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import {
@@ -74,9 +77,17 @@ const BILINGUAL_POINTS = [
 
 export default async function HomePage() {
   const session = await getSession();
+  const contact = getCenterContact();
+  const subjects = SUBJECT_GROUPS.flatMap((g) => g.items);
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Nói thẳng cho máy biết đây là trung tâm gì, dạy môn nào, giá bao
+          nhiêu — thay vì bắt nó đoán từ chữ trên trang. */}
+      <JsonLd data={schoolJsonLd(contact)} />
+      {courseJsonLd(subjects).map((c) => (
+        <JsonLd key={c.name} data={c} />
+      ))}
       <header className="sticky top-0 z-30 bg-ivory-50/90 backdrop-blur border-b border-navy-100">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 min-w-0">
