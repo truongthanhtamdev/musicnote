@@ -299,6 +299,11 @@ function migrate() {
   ensureColumn("packages", "used_override_set_at", "TEXT");
   ensureColumn("users", "languages", "TEXT NOT NULL DEFAULT 'vi'");
   ensureColumn("users", "subjects", "TEXT NOT NULL DEFAULT ''");
+  // Hồ sơ khách tự điền: trung tâm nhập lớp từ Excel nên nhiều ô bỏ trống,
+  // để khách tự bổ sung nhanh hơn là giáo vụ đi hỏi từng người.
+  ensureColumn("users", "facebook_url", "TEXT");
+  ensureColumn("users", "address", "TEXT");
+  ensureColumn("users", "note", "TEXT");
   ensureColumn("attendance", "lesson_content", "TEXT");
   ensureColumn("attendance", "is_trial", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("attendance", "rescheduled_to_date", "TEXT");

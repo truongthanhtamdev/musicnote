@@ -1,12 +1,13 @@
 import { requireRole } from "@/lib/guard";
 import { AppShell, type NavItem } from "@/components/app-shell";
-import { IconCalendarCheck } from "@/components/icons";
+import { IconCalendarCheck, IconUser } from "@/components/icons";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole(["student"]);
 
   const links: NavItem[] = [
     { href: "/student", label: "Lịch học của tôi", icon: <IconCalendarCheck className="w-5 h-5" /> },
+    { href: "/student/ho-so", label: "Thông tin của tôi", icon: <IconUser className="w-5 h-5" /> },
   ];
 
   return (

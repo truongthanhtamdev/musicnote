@@ -16,6 +16,11 @@ export interface UserRow {
   role: Role;
   phone: string | null;
   pay_per_session: number | null;
+  /** Facebook/Zalo của khách — khách tự điền trong trang hồ sơ. */
+  facebook_url: string | null;
+  address: string | null;
+  /** Ghi chú khách tự khai: trình độ, mong muốn, giờ rảnh... */
+  note: string | null;
   languages: string; // comma-separated: "vi" | "vi,en"
   subjects: string; // comma-separated free text, e.g. "Guitar,Piano"; empty = not specified (matches any)
   active: number;

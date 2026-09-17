@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { submitTrialRequestAction } from "@/actions/trial";
-import type { FormState } from "@/actions/teachers";
+import Link from "next/link";
+import { submitTrialRequestAction, type TrialFormState } from "@/actions/trial";
 import { LANGUAGE_LABELS, SUBJECT_SUGGESTIONS } from "@/lib/types";
 import { IconCheckCircle } from "@/components/icons";
 
-const initialState: FormState = {};
+const initialState: TrialFormState = {};
 
 const inputClass =
   "w-full rounded-xl border border-navy-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-400 focus:border-wood-400 focus:ring-2 focus:ring-wood-500/20 focus:outline-none transition";
@@ -37,6 +37,44 @@ export function TrialForm() {
         <p className="text-ink-600 mt-1.5">
           Trung tâm sẽ liên hệ trong thời gian sớm nhất để xếp buổi học thử miễn phí.
         </p>
+
+        {/* Tài khoản hiện ngay ở đây vì trung tâm chưa gửi được email — khách
+            không chụp lại bây giờ thì phải nhắn Zalo xin lại. */}
+        {state.account && (
+          <div className="mt-5 rounded-xl border border-navy-100 bg-ivory-50 px-4 py-4 text-left">
+            <p className="font-semibold text-ink-900">Tài khoản theo dõi lịch học của bạn</p>
+            <dl className="mt-2 text-sm space-y-1">
+              <div className="flex gap-2">
+                <dt className="text-ink-500 w-24 shrink-0">Đăng nhập</dt>
+                <dd className="tabular font-medium text-ink-900">{state.account.login}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="text-ink-500 w-24 shrink-0">Mật khẩu</dt>
+                <dd className="font-mono font-semibold text-wood-700">{state.account.password}</dd>
+              </div>
+            </dl>
+            <p className="text-xs text-ink-500 mt-2">
+              Chụp màn hình hoặc lưu lại giúp bạn nhé — mật khẩu chỉ hiện lần này. Đăng nhập xong
+              bạn đổi được mật khẩu riêng.
+            </p>
+            <Link
+              href="/login"
+              className="mt-3 inline-block rounded-xl bg-wood-500 hover:bg-wood-600 text-white text-sm font-semibold px-4 py-2.5"
+            >
+              Đăng nhập ngay
+            </Link>
+          </div>
+        )}
+        {state.accountExists && (
+          <p className="mt-5 text-sm text-ink-600 bg-ivory-50 border border-navy-100 rounded-xl px-4 py-3">
+            Số điện thoại này đã có tài khoản ở trung tâm — bạn{" "}
+            <Link href="/login" className="font-semibold text-wood-600 hover:underline">
+              đăng nhập
+            </Link>{" "}
+            bằng số đó để xem lịch. Quên mật khẩu thì nhắn Zalo cho trung tâm.
+          </p>
+        )}
+
         <button
           type="button"
           onClick={() => setDismissed(true)}
@@ -135,7 +173,8 @@ export function TrialForm() {
         {pending ? "Đang gửi..." : "Đăng ký học thử miễn phí"}
       </button>
       <p className="text-xs text-ink-400">
-        Buổi học thử hoàn toàn miễn phí và không ràng buộc đăng ký gói.
+        Buổi học thử hoàn toàn miễn phí và không ràng buộc đăng ký gói. Gửi xong bạn nhận luôn tài
+        khoản để theo dõi lịch học và tiến độ.
       </p>
     </form>
   );

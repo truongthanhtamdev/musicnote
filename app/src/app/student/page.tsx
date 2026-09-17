@@ -1,4 +1,5 @@
-import { getSession } from "@/lib/auth";
+import Link from "next/link";
+import { getSession, getUserById } from "@/lib/auth";
 import {
   listClassesForStudent,
   getPackageProgress,
@@ -17,8 +18,17 @@ import {
   formatClassSchedule,
   isNoticeInTime,
 } from "@/lib/types";
-import { IconClock, IconMusic, SubjectIcon } from "@/components/icons";
-import { Card, CardHeader, EmptyState, ProgressBar, StatusChip, packageTone } from "@/components/ui";
+import { IconClock, IconMusic, IconUser, SubjectIcon } from "@/components/icons";
+import {
+  Banner,
+  Card,
+  CardHeader,
+  EmptyState,
+  ProgressBar,
+  StatusChip,
+  btn,
+  packageTone,
+} from "@/components/ui";
 import { ContactButtons } from "@/components/contact-buttons";
 import { JoinClassLink } from "@/components/join-class-link";
 import ExtraTrialForm from "./extra-trial-form";
@@ -32,6 +42,8 @@ function countdownLabel(daysAway: number): string {
 
 export default async function StudentHomePage() {
   const session = await getSession();
+  const me = getUserById(session!.userId);
+  const missingProfile = !me?.phone || !me?.facebook_url;
   const classes = listClassesForStudent(session!.userId);
   const upcoming = listUpcomingSessionsForStudent(session!.userId);
   const rightNow = now();
@@ -60,6 +72,24 @@ export default async function StudentHomePage() {
           Lịch học, tiến độ gói và nội dung bài học của bạn.
         </p>
       </section>
+
+      {/* Nhắc một dòng khi hồ sơ còn thiếu — trung tâm cần số điện thoại để
+          báo khi giáo viên đổi lịch, mà lớp nhập từ Excel hay trống ô này. */}
+      {missingProfile && (
+        <Banner
+          tone="amber"
+          icon={<IconUser className="w-5 h-5" />}
+          title="Bổ sung thông tin liên hệ giúp trung tâm nhé"
+          action={
+            <Link href="/student/ho-so" className={btn.secondary}>
+              Điền ngay
+            </Link>
+          }
+        >
+          Trung tâm cần số điện thoại và Facebook/Zalo để báo bạn khi lịch học có thay đổi. Mất
+          khoảng 30 giây.
+        </Banner>
+      )}
 
       {classes.length > 0 && (
         <Card padded={false}>
@@ -146,10 +176,12 @@ export default async function StudentHomePage() {
 
       {classes.length === 0 ? (
         <Card padded={false}>
+          {/* Khách đăng ký học thử là có tài khoản ngay, nên phần lớn người
+              thấy màn hình này là người vừa đăng ký chứ không phải lỗi. */}
           <EmptyState
             icon={<IconMusic className="w-7 h-7" />}
-            title="Chưa có lớp học nào gắn với tài khoản của bạn"
-            description="Liên hệ trung tâm để được hỗ trợ kết nối lớp học vào tài khoản này."
+            title="Chưa có lớp nào trong tài khoản"
+            description="Trung tâm sẽ liên hệ để xếp buổi học thử; xếp lớp xong là lịch học, tiến độ gói và nội dung từng buổi hiện ở đây. Bạn đã học rồi mà chưa thấy lớp thì nhắn Zalo cho trung tâm nhé."
           />
         </Card>
       ) : (

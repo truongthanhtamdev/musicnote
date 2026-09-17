@@ -3,9 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
-import { getUserById } from "@/lib/auth";
+import { getUserById, getUserByEmail } from "@/lib/auth";
+import { createStudentAccount } from "@/lib/student-accounts";
+import { normalizeLoginPhone } from "@/lib/queries";
 import { SUBJECT_SUGGESTIONS, type TrialRequestStatus } from "@/lib/types";
 import type { FormState } from "./teachers";
+
+export interface TrialFormState extends FormState {
+  /** Tài khoản vừa tạo cho khách — chỉ trả về đúng lần gửi này. */
+  account?: { login: string; password: string };
+  /** Số này đã có tài khoản: nhắc khách đăng nhập, không lộ gì thêm. */
+  accountExists?: boolean;
+}
 
 /** Giới hạn độ dài từng ô. Form này ai vào trang chủ cũng gửi được nên phải tự cắt, không tin dữ liệu gửi lên. */
 const MAX = { name: 100, phone: 30, contact: 200, note: 500 };
@@ -20,9 +29,9 @@ function clean(formData: FormData, field: string, max: number): string {
  * đúng mấy ô cần thiết, cắt độ dài và ép bộ môn về danh sách có sẵn.
  */
 export async function submitTrialRequestAction(
-  _prev: FormState,
+  _prev: TrialFormState,
   formData: FormData
-): Promise<FormState> {
+): Promise<TrialFormState> {
   const name = clean(formData, "name", MAX.name);
   const phone = clean(formData, "phone", MAX.phone);
   const contact = clean(formData, "contact", MAX.contact);
@@ -44,7 +53,32 @@ export async function submitTrialRequestAction(
 
   revalidatePath("/admin/trial-requests");
   revalidatePath("/admin");
-  return { success: true };
+
+  // Tạo luôn tài khoản cho khách: đăng ký xong là xem được lịch, khỏi chờ
+  // giáo vụ. Chỉ cần tên và số điện thoại — mấy ô còn lại khách tự bổ sung
+  // trong trang hồ sơ sau khi đăng nhập.
+  const login = normalizeLoginPhone(phone);
+  if (!login) return { success: true };
+
+  // Số đã có tài khoản thì KHÔNG tạo và KHÔNG sinh mật khẩu mới: form này ai
+  // trên mạng cũng gửi được, làm thế là người lạ gõ số của khách rồi chiếm
+  // luôn tài khoản của họ.
+  if (getUserByEmail(login)) return { success: true, accountExists: true };
+
+  try {
+    const account = createStudentAccount({ name, login, classIds: [] });
+    db.prepare("UPDATE users SET phone = ?, note = ? WHERE id = ?").run(
+      phone,
+      contact || null,
+      account.userId
+    );
+    revalidatePath("/admin/students");
+    return { success: true, account: { login: account.login, password: account.password } };
+  } catch (e) {
+    // Đăng ký đã ghi nhận rồi, tài khoản hỏng thì thôi — giáo vụ tạo tay sau.
+    console.error("[dang-ky-hoc-thu-tao-tk]", e);
+    return { success: true };
+  }
 }
 
 export async function setTrialRequestStatusAction(id: number, status: TrialRequestStatus) {
