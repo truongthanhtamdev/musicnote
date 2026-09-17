@@ -32,6 +32,9 @@ export const metadata: Metadata = {
     locale: "vi_VN",
   },
   twitter: { card: "summary_large_image" },
+  // Google xác minh bằng tệp trong public/, Bing thì nhận cả tệp lẫn thẻ này.
+  // Khai cả hai để lần xác minh nào hỏng thì còn đường kia.
+  verification: { other: { "msvalidate.01": "492642B0FA42F9A2FD0643DBD97707FD" } },
 };
 
 export default function RootLayout({
