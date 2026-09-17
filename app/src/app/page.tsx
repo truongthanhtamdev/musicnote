@@ -7,6 +7,7 @@ import {
   IconCheck,
   IconChevronRight,
   IconClock,
+  IconGuitar,
   IconUsers,
   SubjectIcon,
 } from "@/components/icons";
@@ -84,6 +85,12 @@ export default async function HomePage() {
             >
               Bộ môn
             </a>
+            <Link
+              href="/guitar"
+              className="hidden sm:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+            >
+              Thư viện guitar
+            </Link>
             <a
               href="#hoc-phi"
               className="hidden sm:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
@@ -186,6 +193,33 @@ export default async function HomePage() {
               </div>
             </div>
           ))}
+        </section>
+
+        {/* Thư viện guitar miễn phí — vừa hữu ích cho học viên, vừa là cửa
+            vào cho người lạ tìm "hợp âm guitar" trên mạng. */}
+        <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-12 sm:pb-16">
+          <div className="rounded-2xl border border-navy-100 bg-white p-5 sm:p-7 flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-wood-600">
+                <IconGuitar className="w-5 h-5" />
+                Miễn phí, không cần đăng nhập
+              </p>
+              <h2 className="text-xl sm:text-2xl font-bold text-ink-900 tracking-tight mt-2">
+                Thư viện hợp âm &amp; vòng hòa thanh guitar
+              </h2>
+              <p className="text-ink-600 mt-1.5 max-w-xl">
+                Tra thế bấm từng hợp âm, xem bảy hợp âm của mỗi tông và các vòng hòa thanh mà hầu
+                hết bài hát đang dùng.
+              </p>
+            </div>
+            <Link
+              href="/guitar"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-white px-5 py-3 font-semibold transition"
+            >
+              Mở thư viện
+              <IconChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
         </section>
 
         {/* Giáo viên song ngữ */}
