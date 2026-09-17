@@ -10,6 +10,7 @@ import {
   type ClefName,
 } from "@/lib/piano";
 import { MusicStaff } from "@/components/music-staff";
+import { PianoKeys } from "@/components/piano-keys";
 import { IconCheckCircle, IconX } from "@/components/icons";
 import { btn } from "@/components/ui";
 
@@ -209,7 +210,7 @@ export default function NoteGame() {
             })}
           </div>
 
-          <div className="h-6 mt-3 text-center text-sm">
+          <div className="min-h-6 mt-3 text-center text-sm">
             {answered &&
               (answered.correct ? (
                 <span className="inline-flex items-center gap-1.5 font-semibold text-mint-700">
@@ -217,10 +218,17 @@ export default function NoteGame() {
                   Chính xác!
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 font-semibold text-coral-600">
-                  <IconX className="w-4 h-4" />
-                  Nốt này là {noteLabel(question.step)}
-                </span>
+                <>
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-coral-600">
+                    <IconX className="w-4 h-4" />
+                    Nốt này là {noteLabel(question.step)}
+                  </span>
+                  {/* Sai thì chỉ luôn phím đàn: đúng lúc người chơi đang thắc
+                      mắc là lúc họ nhớ lâu nhất. */}
+                  <div className="flex justify-center overflow-x-auto scroll-thin mt-2">
+                    <PianoKeys step={question.step} octaves={2} fromStep={-7} />
+                  </div>
+                </>
               ))}
           </div>
         </>

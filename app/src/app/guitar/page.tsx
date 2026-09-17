@@ -5,6 +5,8 @@ import { roleHomePath } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import { IconChevronRight, IconGuitar, IconMusic } from "@/components/icons";
 import { ContactButtons } from "@/components/contact-buttons";
+import { STRUM_PATTERNS } from "@/lib/strum";
+import { StrumGrid, StrumLegend } from "@/components/strum-grid";
 import { learningResourceJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import ChordLibrary from "./chord-library";
@@ -100,9 +102,9 @@ export default async function GuitarLibraryPage() {
             Hợp âm và vòng hòa thanh cho người mới tập đệm hát
           </h1>
           <p className="text-ink-600 mt-4 max-w-2xl">
-            Tra thế bấm từng hợp âm, xem bảy hợp âm của mỗi tông, và học các vòng hòa thanh mà hầu
-            hết bài hát đang dùng. Không cần đăng nhập, mở trên điện thoại lúc đang ôm đàn cũng
-            được.
+            Thế bấm từng hợp âm, bảy hợp âm của mỗi tông, các vòng hòa thanh mà hầu hết bài hát
+            đang dùng, và điệu đệm cho tay phải. Không cần đăng nhập, mở trên điện thoại lúc đang
+            ôm đàn cũng được.
           </p>
           <div className="flex flex-wrap gap-3 mt-6">
             <a
@@ -117,6 +119,12 @@ export default async function GuitarLibraryPage() {
               className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
             >
               Vòng hòa thanh theo tông
+            </a>
+            <a
+              href="#dieu"
+              className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
+            >
+              Điệu đệm
             </a>
           </div>
         </section>
@@ -148,6 +156,65 @@ export default async function GuitarLibraryPage() {
               <ProgressionExplorer />
             </div>
           </div>
+        </section>
+
+        {/* Điệu: mảnh còn thiếu giữa "biết hợp âm" và "đệm được bài". */}
+        <section id="dieu" className="scroll-mt-20 max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+            Điệu đệm — tay phải làm gì
+          </h2>
+          <p className="text-ink-600 mt-2 max-w-3xl">
+            Biết hợp âm mới xong một nửa. Nửa còn lại là tay phải: quạt hay rải, vào lúc nào.
+            Mỗi cột dưới đây là một khoảng thời gian bằng nhau — đọc từ trái sang phải, đếm đều
+            theo số ghi ở trên.
+          </p>
+          <div className="rounded-2xl border border-navy-100 bg-white p-4 sm:p-5 mt-5">
+            <StrumLegend />
+          </div>
+
+          <div className="grid grid-cols-1 [&>*]:min-w-0 lg:grid-cols-2 gap-5 mt-5">
+            {STRUM_PATTERNS.map((pat) => (
+              <div key={pat.id} className="rounded-2xl border border-navy-100 bg-white p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-bold text-ink-900 text-lg">{pat.name}</h3>
+                  <span className="rounded-full bg-ivory-100 text-ink-600 px-2.5 py-0.5 text-xs font-semibold">
+                    {pat.hand}
+                  </span>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      pat.level === "Dễ"
+                        ? "bg-mint-50 text-mint-700"
+                        : pat.level === "Vừa"
+                          ? "bg-wood-50 text-wood-700"
+                          : "bg-coral-50 text-coral-700"
+                    }`}
+                  >
+                    {pat.level}
+                  </span>
+                </div>
+                <p className="text-sm text-ink-500 mt-1">
+                  Nhịp {pat.meter} · khoảng {pat.tempo} phách/phút
+                </p>
+
+                <div className="mt-4">
+                  <StrumGrid pattern={pat} />
+                </div>
+
+                <p className="text-sm text-ink-600 mt-4 leading-relaxed">{pat.description}</p>
+                <p className="text-sm text-ink-500 mt-2">
+                  <span className="font-semibold text-ink-700">Hay dùng cho:</span> {pat.songs}
+                </p>
+                <p className="text-sm text-wood-700 mt-3 leading-relaxed border-t border-navy-100 pt-3">
+                  <span className="font-semibold">Mẹo:</span> {pat.tip}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-sm text-ink-500 mt-6 max-w-3xl leading-relaxed">
+            Điệu nào cũng có nhiều biến thể tuỳ người dạy và tuỳ bài. Đây là bản phổ biến nhất,
+            đủ để đệm được bài thật — tập chắc rồi thì tự biến tấu thêm.
+          </p>
         </section>
 
         <section className="max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">

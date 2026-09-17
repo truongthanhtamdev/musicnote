@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { roleHomePath } from "@/lib/types";
-import { CLEFS, MEMORY_TIPS } from "@/lib/piano";
+import { CLEFS, MEMORY_TIPS, NOTE_VALUES, RHYTHM_TIPS } from "@/lib/piano";
 import { Logo } from "@/components/logo";
 import { MusicStaff } from "@/components/music-staff";
+import { PianoKeys } from "@/components/piano-keys";
+import { BeatBar, NoteValueGlyph } from "@/components/note-value";
 import { IconChevronRight, IconMusic, IconPiano } from "@/components/icons";
 import { ContactButtons } from "@/components/contact-buttons";
 import { learningResourceJsonLd } from "@/lib/seo";
@@ -90,8 +92,9 @@ export default async function PianoLibraryPage() {
             Nhớ nốt khóa Sol và khóa Fa — rồi luyện bằng game
           </h1>
           <p className="text-ink-600 mt-4 max-w-2xl">
-            Đọc nốt là phản xạ chứ không phải trí nhớ. Dưới đây là cách nhớ nhanh nhất, và một game
-            20 câu để luyện mỗi ngày vài phút.
+            Đọc nốt là phản xạ chứ không phải trí nhớ. Dưới đây là cách nhớ nhanh nhất, chỗ mỗi nốt
+            nằm trên bàn phím, cách tính nốt ngân bao lâu, và một game 20 câu để luyện mỗi ngày
+            vài phút.
           </p>
           <div className="flex flex-wrap gap-3 mt-6">
             <a
@@ -106,6 +109,18 @@ export default async function PianoLibraryPage() {
               className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
             >
               Xem mẹo nhớ nốt
+            </a>
+            <a
+              href="#ban-phim"
+              className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
+            >
+              Nốt nằm ở phím nào
+            </a>
+            <a
+              href="#truong-do"
+              className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
+            >
+              Nốt ngân bao lâu
             </a>
           </div>
         </section>
@@ -160,10 +175,40 @@ export default async function PianoLibraryPage() {
                 <div className="overflow-x-auto scroll-thin">
                   <MusicStaff clef={e.clef} step={e.step} width={230} />
                 </div>
+                <div className="overflow-x-auto scroll-thin mt-1">
+                  <PianoKeys step={e.step} octaves={2} fromStep={-7} />
+                </div>
                 <p className="font-bold text-ink-900 mt-2">{e.note}</p>
                 <p className="text-xs text-ink-600 mt-1 leading-relaxed">{e.why}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Bàn phím: chỗ nối giữa nốt trên giấy và phím trên đàn. */}
+        <section id="ban-phim" className="scroll-mt-20 bg-ivory-100 border-y border-navy-100">
+          <div className="max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+            <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+              Từ nốt trên giấy tới phím trên đàn
+            </h2>
+            <p className="text-ink-600 mt-2 max-w-3xl">
+              Đọc được tên nốt mới xong một nửa — còn phải biết bấm phím nào. Cách dò nhanh nhất
+              là nhìn cụm phím đen: chúng đi thành cụm 2 rồi cụm 3, lặp đi lặp lại suốt cây đàn.
+              <span className="font-semibold text-ink-900">
+                {" "}Phím trắng nằm ngay bên trái cụm 2 phím đen luôn là nốt Đô.
+              </span>
+            </p>
+
+            <div className="rounded-2xl border border-navy-100 bg-white p-5 mt-6">
+              <div className="overflow-x-auto scroll-thin">
+                <PianoKeys step={0} octaves={3} fromStep={-7} />
+              </div>
+              <p className="text-sm text-ink-600 mt-3 leading-relaxed">
+                Phím tô nâu có vòng tròn là <span className="font-semibold">Đô giữa</span> — nốt
+                nằm gần chính giữa đàn, cũng là nốt nối hai khuông nhạc khóa Sol và khóa Fa. Tìm
+                được Đô giữa rồi thì mọi nốt khác chỉ việc đếm sang trái hoặc sang phải.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -198,6 +243,55 @@ export default async function PianoLibraryPage() {
                 <p className="text-sm text-ink-600 mt-1.5 leading-relaxed">{t.text}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Trường độ: vế thứ hai của việc đọc bản nhạc. */}
+        <section id="truong-do" className="scroll-mt-20 bg-ivory-100 border-y border-navy-100">
+          <div className="max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+            <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+              Nốt ngân bao lâu
+            </h2>
+            <p className="text-ink-600 mt-2 max-w-3xl">
+              Đọc bản nhạc là biết <span className="font-semibold text-ink-900">nốt gì</span> cộng{" "}
+              <span className="font-semibold text-ink-900">ngân bao lâu</span>. Phần trên lo vế
+              đầu, phần này lo vế sau. Số phách dưới đây tính theo nhịp 4/4 — nhịp bạn gặp nhiều
+              nhất.
+            </p>
+
+            <div className="grid grid-cols-1 [&>*]:min-w-0 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+              {NOTE_VALUES.map((v) => (
+                <div key={v.id} className="rounded-2xl border border-navy-100 bg-white p-5">
+                  <div className="flex items-center gap-3">
+                    <NoteValueGlyph value={v} />
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-ink-900">{v.name}</h3>
+                      <p className="text-xs text-ink-500">
+                        {v.filled ? "Đầu đặc" : "Đầu rỗng"}
+                        {v.stem ? " · có đuôi" : " · không đuôi"}
+                        {v.flags > 0 ? ` · ${v.flags} móc` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <BeatBar beats={v.beats} />
+                  </div>
+                  <p className="text-sm text-ink-600 mt-3 leading-relaxed">{v.text}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 [&>*]:min-w-0 sm:grid-cols-2 gap-4 mt-6">
+              {RHYTHM_TIPS.map((t) => (
+                <div key={t.title} className="rounded-2xl border border-navy-100 bg-white p-5">
+                  <h3 className="font-semibold text-ink-900 flex items-start gap-2">
+                    <IconMusic className="w-5 h-5 text-wood-500 shrink-0 mt-0.5" />
+                    {t.title}
+                  </h3>
+                  <p className="text-sm text-ink-600 mt-1.5 leading-relaxed">{t.text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

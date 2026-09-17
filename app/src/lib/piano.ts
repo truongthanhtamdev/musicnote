@@ -121,3 +121,95 @@ export function gameSteps(clef: ClefName | "both"): number[] {
   }
   return steps;
 }
+
+// ---------------------------------------------------------------------------
+// Trường độ
+// ---------------------------------------------------------------------------
+
+/**
+ * Đọc bản nhạc là biết NỐT GÌ cộng NGÂN BAO LÂU. Phần trên mới lo vế đầu;
+ * đây là vế sau.
+ *
+ * `beats` tính theo nhịp 4/4 — nhịp thông dụng nhất, cũng là nhịp người mới
+ * gặp đầu tiên.
+ */
+export interface NoteValue {
+  id: string;
+  name: string;
+  beats: number;
+  /** Đầu nốt rỗng hay đặc. */
+  filled: boolean;
+  /** Có gạch đuôi không. */
+  stem: boolean;
+  /** Số móc ở đuôi. */
+  flags: number;
+  text: string;
+}
+
+export const NOTE_VALUES: NoteValue[] = [
+  {
+    id: "tron",
+    name: "Nốt tròn",
+    beats: 4,
+    filled: false,
+    stem: false,
+    flags: 0,
+    text: "Ngân 4 phách — trọn một ô nhịp 4/4. Đếm thầm 1-2-3-4 rồi mới sang nốt sau.",
+  },
+  {
+    id: "trang",
+    name: "Nốt trắng",
+    beats: 2,
+    filled: false,
+    stem: true,
+    flags: 0,
+    text: "Ngân 2 phách. Bằng nửa nốt tròn — hai nốt trắng vừa đúng một ô nhịp.",
+  },
+  {
+    id: "den",
+    name: "Nốt đen",
+    beats: 1,
+    filled: true,
+    stem: true,
+    flags: 0,
+    text: "Ngân 1 phách. Đây là nốt bạn gặp nhiều nhất, cứ coi nó là đơn vị đếm.",
+  },
+  {
+    id: "moc-don",
+    name: "Nốt móc đơn",
+    beats: 0.5,
+    filled: true,
+    stem: true,
+    flags: 1,
+    text: "Nửa phách. Hai nốt móc đơn bằng một nốt đen — đếm 'một-và, hai-và'.",
+  },
+  {
+    id: "moc-kep",
+    name: "Nốt móc kép",
+    beats: 0.25,
+    filled: true,
+    stem: true,
+    flags: 2,
+    text: "Một phần tư phách. Bốn nốt móc kép mới bằng một nốt đen, nghe rất nhanh.",
+  },
+];
+
+/** Mẹo nhớ trường độ, tách riêng khỏi MEMORY_TIPS vì là chủ đề khác hẳn. */
+export const RHYTHM_TIPS: MemoryTip[] = [
+  {
+    title: "Cứ chia đôi là ra nốt tiếp theo",
+    text: "Tròn 4 phách, chia đôi thành trắng 2 phách, chia đôi nữa thành đen 1 phách, rồi móc đơn nửa phách, móc kép một phần tư. Không cần thuộc lòng năm con số — chỉ cần nhớ mỗi bậc là một nửa bậc trước.",
+  },
+  {
+    title: "Đầu nốt rỗng là nốt dài",
+    text: "Nốt tròn và nốt trắng có đầu rỗng ruột, từ nốt đen trở đi đầu tô đặc. Nhìn cái đầu nốt là đoán ngay được nó dài hay ngắn, chưa cần đếm.",
+  },
+  {
+    title: "Đuôi càng nhiều móc càng nhanh",
+    text: "Nốt đen đuôi trơn. Thêm một móc thành móc đơn, hai móc thành móc kép. Mỗi cái móc là chia đôi thời gian một lần.",
+  },
+  {
+    title: "Đếm thành tiếng, đừng đếm trong đầu",
+    text: "Vừa đàn vừa đếm to '1 - 2 - 3 - 4', nốt nửa phách thì đếm '1 và 2 và'. Nghe thấy giọng mình đều là tay sẽ đều theo — đếm thầm rất dễ trôi nhịp mà không biết.",
+  },
+];
