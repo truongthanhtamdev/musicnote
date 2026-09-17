@@ -13,9 +13,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+/**
+ * metadataBase để Next dựng link tuyệt đối cho ảnh xem trước — Zalo và
+ * Facebook chỉ nhận URL đầy đủ, đường dẫn tương đối là mất ảnh.
+ */
 export const metadata: Metadata = {
-  title: "Piano Guitar Đệm Hát - Quản lý giáo viên",
-  description: "Điểm danh, chấm công và giao lớp cho giáo viên guitar online",
+  metadataBase: new URL(process.env.SITE_URL || "https://pianoguitardemhat.com"),
+  title: {
+    default: "Piano Guitar Đệm Hát — Học nhạc 1 kèm 1 online",
+    template: "%s · Piano Guitar Đệm Hát",
+  },
+  description:
+    "Trung tâm dạy Guitar, Piano, Violin, Saxophone, Thanh nhạc và Toán, Tiếng Việt, Tiếng Anh — học 1 kèm 1 online, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.",
+  openGraph: {
+    type: "website",
+    siteName: "Piano Guitar Đệm Hát",
+    locale: "vi_VN",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

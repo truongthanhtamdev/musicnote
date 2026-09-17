@@ -15,10 +15,16 @@ import { ContactButtons } from "@/components/contact-buttons";
 import { PricingTabs } from "./pricing-tabs";
 import { TrialForm } from "./trial-form";
 
+const HOME_TITLE = "Piano Guitar Đệm Hát — Học 1 kèm 1 online";
+const HOME_DESC =
+  "Guitar, Piano, Violin, Saxophone, Thanh nhạc và Toán, Tiếng Việt, Tiếng Anh — học 1 kèm 1 online 60 phút/buổi, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.";
+
 export const metadata: Metadata = {
-  title: "Piano Guitar Đệm Hát — Học 1 kèm 1 online",
-  description:
-    "Guitar, Piano, Violin, Saxophone, Thanh nhạc và Toán, Tiếng Việt, Tiếng Anh — học 1 kèm 1 online 60 phút/buổi, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.",
+  // absolute: tiêu đề trang chủ không cần gắn thêm tên trung tâm phía sau.
+  title: { absolute: HOME_TITLE },
+  description: HOME_DESC,
+  alternates: { canonical: "/" },
+  openGraph: { title: HOME_TITLE, description: HOME_DESC, url: "/" },
 };
 
 /**

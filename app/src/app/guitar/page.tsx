@@ -8,10 +8,15 @@ import { ContactButtons } from "@/components/contact-buttons";
 import ChordLibrary from "./chord-library";
 import ProgressionExplorer from "./progression-explorer";
 
+const TITLE = "Thư viện hợp âm & vòng hòa thanh guitar";
+const DESC =
+  "Tra thế bấm 33 hợp âm guitar (có số ngón), xem bảy hợp âm của mỗi tông và 9 vòng hòa thanh thông dụng — 1-5-6-4, Canon, 2-5-1 — đổi được theo 10 tông. Miễn phí, không cần đăng nhập.";
+
 export const metadata: Metadata = {
-  title: "Thư viện guitar — hợp âm & vòng hòa thanh cho người mới",
-  description:
-    "Tra thế bấm hợp âm guitar cơ bản, hợp âm chặn và các vòng hòa thanh thông dụng (1-5-6-4, canon, 2-5-1) theo từng tông. Miễn phí, dành cho người mới tập đệm hát.",
+  title: TITLE,
+  description: DESC,
+  alternates: { canonical: "/guitar" },
+  openGraph: { title: `${TITLE} · Piano Guitar Đệm Hát`, description: DESC, url: "/guitar" },
 };
 
 const PRACTICE_TIPS = [
