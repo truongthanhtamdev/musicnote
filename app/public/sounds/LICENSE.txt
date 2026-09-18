@@ -1,0 +1,8 @@
+Mẫu tiếng đàn trong thư mục này lấy từ FluidR3_GM soundfont, qua bản
+pre-rendered của dự án midi-js-soundfonts (https://github.com/gleitz/midi-js-soundfonts).
+
+FluidR3_GM: Creative Commons Attribution 3.0 (CC BY 3.0)
+https://creativecommons.org/licenses/by/3.0/us/
+
+piano/  — acoustic_grand_piano, C3..C6
+guitar/ — acoustic_guitar_steel, E2..E5

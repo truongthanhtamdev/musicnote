@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NOTE_NAMES, noteNameOfStep } from "@/lib/piano";
-import { playPianoStep } from "@/lib/audio";
+import { playPianoStep, warmPiano } from "@/lib/audio";
 import { readBest, saveBest } from "@/lib/best-score";
 import { IconCheckCircle, IconSpeaker, IconX } from "@/components/icons";
 import { btn } from "@/components/ui";
@@ -40,6 +40,7 @@ function playPair(q: Q) {
  */
 export default function EarTraining() {
   const [mode, setMode] = useState<Mode>("cao-thap");
+  useEffect(warmPiano, []);
   const [q, setQ] = useState<Q | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);

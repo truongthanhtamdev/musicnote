@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PianoKeys } from "@/components/piano-keys";
 import { MusicStaff } from "@/components/music-staff";
-import { playPianoStep } from "@/lib/audio";
+import { playPianoStep, warmPiano } from "@/lib/audio";
 import { noteLabel, noteNameOfStep } from "@/lib/piano";
 
 /**
@@ -14,6 +14,7 @@ import { noteLabel, noteNameOfStep } from "@/lib/piano";
  */
 export default function PlayablePiano() {
   const [last, setLast] = useState<number | null>(null);
+  useEffect(warmPiano, []);
 
   function press(step: number) {
     playPianoStep(step);
@@ -46,8 +47,8 @@ export default function PlayablePiano() {
       </div>
       <p className="text-xs text-ink-500 mt-3">
         Nốt từ Đô giữa trở lên vẽ trên khuông khóa Sol, từ Đô giữa trở xuống vẽ trên khuông khóa
-        Fa — Đô giữa hiện ở cả hai. Tiếng là tiếng tổng hợp cho đúng cao độ, không phải tiếng
-        đàn thật.
+        Fa — Đô giữa hiện ở cả hai. Tiếng ghi từ piano thật; lần đầu bấm một nốt có thể chậm
+        một nhịp vì đang tải, các lần sau thì tức thì.
       </p>
     </div>
   );

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PIANO_CHORDS, PIANO_CHORD_BY_NAME, PIANO_PROGRESSIONS } from "@/lib/piano-chords";
-import { playPianoChord } from "@/lib/audio";
+import { playPianoChord, warmPiano } from "@/lib/audio";
 import { PianoKeys } from "@/components/piano-keys";
 import { IconSpeaker } from "@/components/icons";
 
@@ -13,6 +13,7 @@ import { IconSpeaker } from "@/components/icons";
  */
 export default function PianoChords() {
   const [active, setActive] = useState(PIANO_CHORDS[0].name);
+  useEffect(warmPiano, []);
   const chord = PIANO_CHORD_BY_NAME.get(active) ?? PIANO_CHORDS[0];
 
   function pick(name: string) {

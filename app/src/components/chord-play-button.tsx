@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { audioSupported, playGuitarChord } from "@/lib/audio";
+import { audioSupported, playGuitarChord, warmGuitar } from "@/lib/audio";
 import { IconSpeaker } from "@/components/icons";
 
 /**
@@ -16,6 +16,7 @@ export function ChordPlayButton({ frets, compact = false }: { frets: number[]; c
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- đọc năng lực trình duyệt, chỉ chạy một lần sau khi mount
     setSupported(audioSupported());
+    warmGuitar();
   }, []);
   if (!supported) return null;
 

@@ -325,7 +325,13 @@ export default async function GuitarLibraryPage() {
 
       <footer className="bg-white">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-7 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
-          <span>© {new Date().getFullYear()} Piano Guitar Đệm Hát</span>
+          <span>
+            © {new Date().getFullYear()} Piano Guitar Đệm Hát · Tiếng đàn:{" "}
+            <a href="https://github.com/gleitz/midi-js-soundfonts" className="underline hover:text-ink-700" rel="noopener" target="_blank">
+              FluidR3_GM
+            </a>{" "}
+            (CC BY 3.0)
+          </span>
           <Link href="/" className="font-semibold text-wood-600 hover:text-wood-700">
             Về trang chủ
           </Link>

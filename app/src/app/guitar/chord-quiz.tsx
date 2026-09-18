@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CHORDS, type ChordShape } from "@/lib/guitar";
-import { playGuitarChord } from "@/lib/audio";
+import { playGuitarChord, warmGuitar } from "@/lib/audio";
 import { readBest, saveBest, shuffle } from "@/lib/best-score";
 import { ChordDiagram } from "@/components/chord-diagram";
 import { IconCheckCircle, IconSpeaker, IconX } from "@/components/icons";
@@ -37,6 +37,7 @@ function makeQuestion(avoid?: string): Q {
  */
 export default function ChordQuiz() {
   const [q, setQ] = useState<Q | null>(null);
+  useEffect(warmGuitar, []);
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(0);
