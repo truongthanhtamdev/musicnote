@@ -97,21 +97,30 @@ export default async function HomePage() {
             </span>
           </Link>
           <nav className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Hai thư viện hiện sớm hơn Bộ môn và Học phí: đó là thứ người lạ
+                vào xem trước khi quan tâm tới học phí, mà cũng là thứ mang
+                khách từ Google về. */}
             <a
               href="#bo-mon"
-              className="hidden sm:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+              className="hidden lg:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
             >
               Bộ môn
             </a>
             <Link
               href="/guitar"
-              className="hidden sm:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+              className="hidden md:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
             >
               Thư viện guitar
             </Link>
+            <Link
+              href="/piano"
+              className="hidden md:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+            >
+              Thư viện piano
+            </Link>
             <a
               href="#hoc-phi"
-              className="hidden sm:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+              className="hidden lg:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
             >
               Học phí
             </a>
