@@ -62,7 +62,8 @@ export interface StrumPattern {
 }
 
 /**
- * Sáu điệu phủ gần hết nhạc Việt phổ thông, xếp từ dễ tới khó.
+ * Tám điệu phủ gần hết nhạc Việt phổ thông, xếp từ dễ tới khó, có đủ cả
+ * quạt lẫn rải — nhiều bài chậm người ta rải chứ không quạt.
  *
  * Mỗi điệu đều có nhiều biến thể tuỳ người dạy — đây là bản phổ biến nhất,
  * đủ để đệm được bài thật, chứ không phải bản duy nhất đúng.
@@ -99,6 +100,21 @@ export const STRUM_PATTERNS: StrumPattern[] = [
     tip: "Tay phải cứ đưa lên xuống đều không ngừng, ô nào nghỉ thì vung tay qua chứ đừng dừng lại — có vậy nhịp mới không vấp.",
   },
   {
+    id: "ballad-rai",
+    name: "Ballad rải",
+    beats: 4,
+    perBeat: 2,
+    steps: [bass(), p(3), p(2), p(1), bass(), p(3), p(2), p(1)],
+    meter: "4/4",
+    tempo: "60–80",
+    level: "Vừa",
+    hand: "Rải",
+    description:
+      "Cùng nhịp với Ballad quạt nhưng khảy từng dây một. Nghe trong và nhẹ hơn hẳn — kiểu rải hay gặp nhất trong nhạc trẻ chậm và acoustic cover.",
+    songs: "Nhạc trẻ chậm, acoustic, đoạn mở đầu bài",
+    tip: "Nhát bass thứ hai nên đổi sang dây bass phụ cho đỡ đơn điệu: hợp âm C thì dây 5 rồi dây 4, hợp âm G thì dây 6 rồi dây 5.",
+  },
+  {
     id: "valse",
     name: "Valse",
     beats: 3,
@@ -112,6 +128,21 @@ export const STRUM_PATTERNS: StrumPattern[] = [
       "Nhịp 3: một bass rồi hai nhát quạt. Đếm 'một – hai – ba' đều nhau, nhấn vào phách một.",
     songs: "Nhạc thiếu nhi, nhạc trữ tình nhịp 3",
     tip: "Nhận ra bài nhịp 3 bằng cách hát và đếm: nếu đếm tới 3 là quay vòng thì dùng Valse, đếm tới 4 mới quay vòng thì dùng Ballad.",
+  },
+  {
+    id: "valse-rai",
+    name: "Valse rải",
+    beats: 3,
+    perBeat: 2,
+    steps: [bass(), p(3), p(2), p(1), p(2), p(3)],
+    meter: "3/4",
+    tempo: "90–120",
+    level: "Vừa",
+    hand: "Rải",
+    description:
+      "Nhịp 3 nhưng khảy dây thay vì quạt: bass rồi rải lên xuống. Nhẹ nhàng, hợp hát ru và nhạc thiếu nhi. Lưới giống hệt Slow Rock nhưng đếm khác: ở đây đếm '1 và 2 và 3 và', còn Slow Rock đếm thẳng 1 tới 6.",
+    songs: "Nhạc thiếu nhi, hát ru, nhạc trữ tình nhịp 3",
+    tip: "Rải đều tay, đừng để nốt bass to hơn hẳn phần còn lại — nhịp 3 mà bass nặng quá sẽ nghe thành hành khúc.",
   },
   {
     id: "slow-rock",

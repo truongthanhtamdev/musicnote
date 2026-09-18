@@ -164,7 +164,16 @@ export default async function GuitarLibraryPage() {
             Điệu đệm — tay phải làm gì
           </h2>
           <p className="text-ink-600 mt-2 max-w-3xl">
-            Biết hợp âm mới xong một nửa. Nửa còn lại là tay phải: quạt hay rải, vào lúc nào.
+            Biết hợp âm mới xong một nửa. Nửa còn lại là tay phải.
+          </p>
+          <p className="text-ink-600 mt-3 max-w-3xl">
+            Có hai kiểu: <span className="font-semibold text-ink-900">quạt</span> là gạt cả chùm
+            dây cùng lúc, nghe dày và khoẻ — hợp bài nhanh, hợp hát tập thể.{" "}
+            <span className="font-semibold text-ink-900">Rải</span> là khảy từng dây một, nghe
+            trong và nhẹ — hợp bài chậm, hợp đoạn mở đầu. Cùng một bài có thể rải đoạn đầu rồi
+            quạt khi vào điệp khúc.
+          </p>
+          <p className="text-ink-600 mt-3 max-w-3xl">
             Mỗi cột dưới đây là một khoảng thời gian bằng nhau — đọc từ trái sang phải, đếm đều
             theo số ghi ở trên.
           </p>
