@@ -1,3 +1,5 @@
+"use client";
+
 import { NOTE_NAMES, noteNameOfStep, octaveOfStep } from "@/lib/piano";
 
 const WHITE_W = 26;
@@ -18,17 +20,25 @@ const BLACK_AFTER = [true, true, false, true, true, true, false];
 export function PianoKeys({
   /** Bậc so với Đô giữa; null = không tô phím nào. */
   step = null,
+  /** Tô nhiều phím cùng lúc (hợp âm). Dùng thay cho `step`. */
+  steps,
   /** Số quãng tám vẽ ra, mỗi quãng bắt đầu từ Đô. */
   octaves = 2,
   /** Bậc của phím Đô ngoài cùng bên trái. */
   fromStep = -7,
   showLabels = true,
+  /** Có thì phím bấm được và gọi hàm này với bậc của phím. */
+  onKeyClick,
 }: {
   step?: number | null;
+  steps?: number[];
   octaves?: number;
   fromStep?: number;
   showLabels?: boolean;
+  onKeyClick?: (step: number) => void;
 }) {
+  const lit = new Set<number>(steps ?? (step == null ? [] : [step]));
+  const interactive = !!onKeyClick;
   const whiteCount = octaves * 7;
   const width = whiteCount * WHITE_W;
   // Chừa chỗ phía dưới cho nhãn tên nốt.
@@ -44,17 +54,25 @@ export function PianoKeys({
       height={height}
       role="img"
       aria-label={
-        step == null
+        lit.size === 0
           ? "Bàn phím piano"
-          : `Phím của nốt ${noteNameOfStep(step)}${octaveOfStep(step)} trên bàn phím piano`
+          : lit.size === 1 && step != null
+            ? `Phím của nốt ${noteNameOfStep(step)}${octaveOfStep(step)} trên bàn phím piano`
+            : `${lit.size} phím được tô trên bàn phím piano`
       }
       className="max-w-full"
     >
       {/* Phím trắng */}
       {whites.map((s, i) => {
-        const active = step === s;
+        const active = lit.has(s);
         return (
-          <g key={`w${s}`}>
+          <g
+            key={`w${s}`}
+            onClick={interactive ? () => onKeyClick(s) : undefined}
+            className={interactive ? "cursor-pointer" : undefined}
+            role={interactive ? "button" : undefined}
+            aria-label={interactive ? `Phím ${NOTE_NAMES[((s % 7) + 7) % 7]}` : undefined}
+          >
             <rect
               x={i * WHITE_W}
               y={0}

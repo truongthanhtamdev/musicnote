@@ -12,6 +12,10 @@ import { ContactButtons } from "@/components/contact-buttons";
 import { learningResourceJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import NoteGame from "./note-game";
+import PlayablePiano from "./playable-piano";
+import EarTraining from "./ear-training";
+import PianoChords from "./piano-chords";
+import { Metronome } from "@/components/metronome";
 
 const TITLE = "Thư viện piano — mẹo nhớ nốt khóa Sol, khóa Fa và game đọc nốt";
 const DESC =
@@ -122,6 +126,18 @@ export default async function PianoLibraryPage() {
             >
               Nốt ngân bao lâu
             </a>
+            <a
+              href="#hop-am"
+              className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
+            >
+              Hợp âm đệm hát
+            </a>
+            <a
+              href="#luyen-tai"
+              className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
+            >
+              Luyện tai
+            </a>
           </div>
         </section>
 
@@ -199,15 +215,13 @@ export default async function PianoLibraryPage() {
               </span>
             </p>
 
-            <div className="rounded-2xl border border-navy-100 bg-white p-5 mt-6">
-              <div className="overflow-x-auto scroll-thin">
-                <PianoKeys step={0} octaves={3} fromStep={-7} />
-              </div>
-              <p className="text-sm text-ink-600 mt-3 leading-relaxed">
-                Phím tô nâu có vòng tròn là <span className="font-semibold">Đô giữa</span> — nốt
-                nằm gần chính giữa đàn, cũng là nốt nối hai khuông nhạc khóa Sol và khóa Fa. Tìm
-                được Đô giữa rồi thì mọi nốt khác chỉ việc đếm sang trái hoặc sang phải.
-              </p>
+            <p className="text-ink-600 mt-3 max-w-3xl">
+              Phím có vòng tròn là <span className="font-semibold text-ink-900">Đô giữa</span> — nốt
+              nằm gần chính giữa đàn, cũng là nốt nối hai khuông khóa Sol và khóa Fa. Tìm được Đô
+              giữa rồi thì mọi nốt khác chỉ việc đếm sang trái hoặc sang phải.
+            </p>
+            <div className="mt-6">
+              <PlayablePiano />
             </div>
           </div>
         </section>
@@ -225,6 +239,35 @@ export default async function PianoLibraryPage() {
             <div className="mt-6">
               <NoteGame />
             </div>
+
+            <h2 id="luyen-tai" className="scroll-mt-20 text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight mt-12">
+              Game: luyện tai
+            </h2>
+            <p className="text-ink-600 mt-2">
+              Mắt đọc được nốt rồi thì tới tai. Nghe hai nốt, đoán cao hay thấp; nghe Đô rồi đoán
+              nốt kế tiếp. Bật loa lên.
+            </p>
+            <div className="mt-6">
+              <EarTraining />
+            </div>
+
+            <div className="mt-8">
+              <Metronome />
+            </div>
+          </div>
+        </section>
+
+        {/* Hợp âm: piano đệm hát cũng cần hợp âm y như guitar. */}
+        <section id="hop-am" className="scroll-mt-20 max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+            Hợp âm piano đệm hát — tông Đô
+          </h2>
+          <p className="text-ink-600 mt-2 max-w-3xl">
+            Bấm tên hợp âm để thấy phím nào và nghe tiếng. Tay phải bấm ba nốt, tay trái đánh nốt
+            gốc thấp hơn một quãng tám. Bảy hợp âm tông Đô toàn phím trắng — buổi đầu bấm được ngay.
+          </p>
+          <div className="mt-6">
+            <PianoChords />
           </div>
         </section>
 

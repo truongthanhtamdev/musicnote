@@ -7,6 +7,10 @@ import { IconChevronRight, IconGuitar, IconMusic } from "@/components/icons";
 import { ContactButtons } from "@/components/contact-buttons";
 import { STRUM_PATTERNS } from "@/lib/strum";
 import { StrumGrid, StrumLegend } from "@/components/strum-grid";
+import { Metronome } from "@/components/metronome";
+import ChordQuiz from "./chord-quiz";
+import ChordSwitchDrill from "./chord-switch-drill";
+import CapoTable from "./capo-table";
 import { learningResourceJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import ChordLibrary from "./chord-library";
@@ -126,6 +130,18 @@ export default async function GuitarLibraryPage() {
             >
               Điệu đệm
             </a>
+            <a
+              href="#luyen-tap"
+              className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
+            >
+              Game &amp; luyện tập
+            </a>
+            <a
+              href="#capo"
+              className="inline-flex items-center rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-5 py-2.5 font-semibold transition"
+            >
+              Bảng capo
+            </a>
           </div>
         </section>
 
@@ -136,7 +152,10 @@ export default async function GuitarLibraryPage() {
           <p className="text-ink-500 mt-2 max-w-2xl">
             Số trong chấm tròn là ngón tay: 1 trỏ, 2 giữa, 3 áp út, 4 út. Dấu{" "}
             <span className="font-semibold text-ink-700">o</span> là dây buông (vẫn đánh),{" "}
-            <span className="font-semibold text-ink-700">x</span> là dây không đánh.
+            <span className="font-semibold text-ink-700">x</span> là dây không đánh. Bấm{" "}
+            <span className="font-semibold text-ink-700">Nghe</span> để nghe hợp âm kêu thế nào,{" "}
+            <span className="font-semibold text-ink-700">Rải</span> để nghe từng dây — dò xem dây nào
+            mình bấm chưa kêu.
           </p>
           <div className="mt-6">
             <ChordLibrary />
@@ -224,6 +243,39 @@ export default async function GuitarLibraryPage() {
             Điệu nào cũng có nhiều biến thể tuỳ người dạy và tuỳ bài. Đây là bản phổ biến nhất,
             đủ để đệm được bài thật — tập chắc rồi thì tự biến tấu thêm.
           </p>
+        </section>
+
+        {/* Chơi và luyện: game đoán hợp âm, bài tập đổi hợp âm, máy đếm nhịp. */}
+        <section id="luyen-tap" className="scroll-mt-20 bg-ivory-100 border-y border-navy-100">
+          <div className="max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+            <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+              Game &amp; luyện tập mỗi ngày
+            </h2>
+            <p className="text-ink-600 mt-2 max-w-3xl">
+              Mỗi thứ dưới đây 1–3 phút. Kỷ lục lưu ngay trong máy bạn, hôm sau vào chơi tiếp thấy
+              số tăng là biết mình tiến bộ.
+            </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-6 [&>*]:min-w-0">
+              <ChordQuiz />
+              <ChordSwitchDrill />
+            </div>
+            <div className="mt-5">
+              <Metronome />
+            </div>
+          </div>
+        </section>
+
+        <section id="capo" className="scroll-mt-20 max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+            Bảng capo
+          </h2>
+          <p className="text-ink-600 mt-2 max-w-3xl">
+            Bài ở tông khó bấm thì không ai bấm chặn cả bài — kẹp capo rồi bấm thế dễ. Bảng này
+            trả lời &ldquo;kẹp ngăn mấy&rdquo; và &ldquo;kẹp rồi thì ra tông gì&rdquo;.
+          </p>
+          <div className="mt-6">
+            <CapoTable />
+          </div>
         </section>
 
         <section className="max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">

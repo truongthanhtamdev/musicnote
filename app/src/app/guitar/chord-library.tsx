@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CHORDS, CHORD_GROUPS, type ChordGroup } from "@/lib/guitar";
 import { foldVietnamese } from "@/lib/format";
 import { ChordDiagram } from "@/components/chord-diagram";
+import { ChordPlayButton } from "@/components/chord-play-button";
 import { IconSearch } from "@/components/icons";
 
 /**
@@ -70,6 +71,9 @@ export default function ChordLibrary() {
               <p className="text-lg font-bold text-ink-900">{c.name}</p>
               <p className="text-xs text-ink-500 mb-2">{c.fullName}</p>
               <ChordDiagram chord={c} />
+              <div className="mt-2">
+                <ChordPlayButton frets={c.frets} compact />
+              </div>
               {c.tip && <p className="text-xs text-ink-600 mt-2 leading-relaxed">{c.tip}</p>}
             </div>
           ))}

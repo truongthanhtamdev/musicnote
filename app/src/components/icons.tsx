@@ -277,6 +277,42 @@ export const IconMusic = (p: IconProps) => (
   </Svg>
 );
 
+export const IconPlay = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 5v14l11-7z" />
+  </Svg>
+);
+
+export const IconPause = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="6" y="5" width="4" height="14" rx="1" />
+    <rect x="14" y="5" width="4" height="14" rx="1" />
+  </Svg>
+);
+
+export const IconSpeaker = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 10v4h4l5 4V6L8 10z" />
+    <path d="M16 9a4 4 0 0 1 0 6" />
+    <path d="M18.5 6.5a8 8 0 0 1 0 11" />
+  </Svg>
+);
+
+export const IconRefresh = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M20 12a8 8 0 1 1-2.3-5.7" />
+    <path d="M20 4v5h-5" />
+  </Svg>
+);
+
+export const IconTimer = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="13" r="8" />
+    <path d="M12 9v4l2.5 2.5" />
+    <path d="M9 2h6" />
+  </Svg>
+);
+
 export const IconCalculator = (p: IconProps) => (
   <Svg {...p}>
     <rect x="4" y="3" width="16" height="18" rx="2.5" />
