@@ -1,11 +1,17 @@
 import { getSession } from "@/lib/auth";
 import { now } from "@/lib/format";
-import { listClassesForTeacher, getPackageProgressForClasses } from "@/lib/queries";
-import { DAY_LABELS, DAY_ORDER } from "@/lib/types";
+import {
+  listClassesForTeacher,
+  getPackageProgressForClasses,
+  listTeacherFreeSlots,
+  listUpcomingSessionsForTeacher,
+} from "@/lib/queries";
+import { DAY_LABELS, DAY_ORDER, MAKEUP_WINDOW_DAYS } from "@/lib/types";
 import { IconClasses, IconClock } from "@/components/icons";
 import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import NewClassForm from "./new-class-form";
 import TeacherClassRow from "./class-row";
+import ReschedulePanel from "../reschedule-panel";
 
 export default async function TeacherSchedulePage() {
   const session = await getSession();
@@ -18,6 +24,14 @@ export default async function TeacherSchedulePage() {
   const flexibleClasses = classes.filter((c) => c.schedule_type === "flexible");
   const todayDow = now().getDay();
 
+  // Buổi sắp tới + khung còn trống, để giáo viên dời giúp khách ngay tại đây.
+  const upcoming = listUpcomingSessionsForTeacher(session!.userId);
+  const freeSlots = listTeacherFreeSlots({
+    teacherId: session!.userId,
+    durationMinutes: 60,
+    days: MAKEUP_WINDOW_DAYS,
+  });
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -25,6 +39,23 @@ export default async function TeacherSchedulePage() {
         subtitle={`Bạn đang có ${classes.length} lớp. Có học viên mới? Thêm lớp — hệ thống sẽ tự gán lớp đó cho bạn.`}
         action={<NewClassForm />}
       />
+
+      {upcoming.length > 0 && (
+        <Card padded={false}>
+          <CardHeader
+            icon={<IconClock className="w-5 h-5" />}
+            title="Dời buổi cho khách"
+            count={upcoming.length}
+          />
+          <div className="p-4 sm:p-5">
+            <p className="text-sm text-ink-500 mb-4">
+              Khách nhắn xin dời thì bạn nhập thẳng ở đây. Buổi sắp tới của từng khách để cạnh
+              nhau — xin dời cả tuần thì dời một lượt.
+            </p>
+            <ReschedulePanel groups={upcoming} freeSlots={freeSlots} />
+          </div>
+        </Card>
+      )}
 
       {classes.length === 0 ? (
         <Card padded={false}>

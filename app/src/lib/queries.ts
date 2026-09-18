@@ -628,6 +628,107 @@ export function listTeacherFreeSlots(opts: {
   return out;
 }
 
+/** Một buổi sắp tới của giáo viên, gom theo khách để dời cả cụm cho gọn. */
+export interface TeacherUpcomingSession {
+  cls: ClassRow;
+  /** YYYY-MM-DD */
+  date: string;
+  /** HH:MM */
+  time: string;
+  daysAway: number;
+  /** Buổi đã ghi vào sổ (dời, nghỉ, GV vắng) — hiện để biết chứ không dời tiếp. */
+  recorded: { status: AttendanceStatus; toDate: string | null; toTime: string | null } | null;
+  /** Đơn học viên xin dời buổi này đang chờ duyệt. */
+  pendingRequest: boolean;
+}
+
+/**
+ * Buổi sắp tới của tất cả lớp giáo viên đang phụ trách.
+ *
+ * Gom theo khách chứ không theo lớp: một khách học thứ 2 và thứ 5 là hai dòng
+ * `classes` khác nhau, mà lúc khách xin dời thì thường xin dời cả tuần — để
+ * cạnh nhau thì giáo viên dời hai buổi trong một chỗ, khỏi đi tìm hai lớp.
+ */
+export function listUpcomingSessionsForTeacher(
+  teacherId: number,
+  days = REMINDER_DAYS
+): { customer: string; phone: string | null; sessions: TeacherUpcomingSession[] }[] {
+  const classes = db
+    .prepare(
+      "SELECT * FROM classes WHERE teacher_id = ? AND status = 'active' AND schedule_type = 'fixed'"
+    )
+    .all(teacherId) as ClassRow[];
+  if (classes.length === 0) return [];
+
+  const ids = classes.map((c) => c.id);
+  const ph = ids.map(() => "?").join(",");
+  const today = now();
+  const todayStr = toISODate(today);
+
+  const recorded = new Map<string, { status: AttendanceStatus; toDate: string | null; toTime: string | null }>();
+  for (const a of db
+    .prepare(
+      `SELECT class_id, session_date, status, rescheduled_to_date, rescheduled_to_time
+       FROM attendance WHERE class_id IN (${ph}) AND session_date >= ?`
+    )
+    .all(...ids, todayStr) as {
+    class_id: number;
+    session_date: string;
+    status: AttendanceStatus;
+    rescheduled_to_date: string | null;
+    rescheduled_to_time: string | null;
+  }[]) {
+    recorded.set(`${a.class_id}|${a.session_date}`, {
+      status: a.status,
+      toDate: a.rescheduled_to_date,
+      toTime: a.rescheduled_to_time,
+    });
+  }
+
+  const pending = new Set<string>();
+  for (const r of db
+    .prepare(`SELECT class_id, session_date FROM reschedule_requests WHERE class_id IN (${ph}) AND status = 'pending'`)
+    .all(...ids) as { class_id: number; session_date: string }[]) {
+    pending.add(`${r.class_id}|${r.session_date}`);
+  }
+
+  const groups = new Map<string, { customer: string; phone: string | null; sessions: TeacherUpcomingSession[] }>();
+  for (const cls of classes) {
+    for (let i = 0; i < days; i++) {
+      const date = addDays(today, i);
+      if (date.getDay() !== cls.day_of_week) continue;
+      const iso = toISODate(date);
+      const key = `${cls.id}|${iso}`;
+      const rec = recorded.get(key) ?? null;
+      // Buổi đã dạy xong thì thôi hiện; buổi đã ghi khác thì vẫn hiện để biết.
+      if (rec?.status === "completed") continue;
+      // Gom theo người đứng tên: phụ huynh nếu có, không thì tên học viên.
+      const customer = cls.guardian_name?.trim() || cls.student_name;
+      const gk = `${customer}|${cls.student_phone ?? ""}`;
+      let g = groups.get(gk);
+      if (!g) {
+        g = { customer, phone: cls.student_phone ?? null, sessions: [] };
+        groups.set(gk, g);
+      }
+      g.sessions.push({
+        cls,
+        date: iso,
+        time: cls.start_time,
+        daysAway: i,
+        recorded: rec,
+        pendingRequest: pending.has(key),
+      });
+    }
+  }
+
+  for (const g of groups.values()) {
+    g.sessions.sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)));
+  }
+  return [...groups.values()].sort((a, b) =>
+    a.sessions[0].date.localeCompare(b.sessions[0].date)
+  );
+}
+
 export function getAttendance(classId: number, sessionDate: string): AttendanceRow | undefined {
   return db
     .prepare("SELECT * FROM attendance WHERE class_id = ? AND session_date = ?")

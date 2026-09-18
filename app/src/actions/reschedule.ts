@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { assertRole, assertSession } from "@/lib/guard";
 import { addDays, now, toISODate } from "@/lib/format";
 import { listTeacherFreeSlots, notifyUser } from "@/lib/queries";
+import { logAudit } from "@/lib/audit";
 import { DAY_LABELS, MAKEUP_WINDOW_DAYS, REMINDER_DAYS, type ClassRow } from "@/lib/types";
 import type { FormState } from "./teachers";
 
@@ -179,6 +180,117 @@ export async function respondRescheduleAction(
       ? `Đã duyệt dời buổi ${req.session_date} sang ${describe(req, req.to_date, req.to_time)}`
       : `Không dời được buổi ${req.session_date}${note ? ` — ${note}` : ""}. Vui lòng chọn giờ khác.`,
     req.class_id
+  );
+
+  revalidatePath("/student");
+  revalidatePath("/teacher");
+  revalidatePath("/teacher/schedule");
+  revalidatePath("/teacher/attendance");
+  revalidatePath("/admin/reschedule");
+  revalidatePath("/admin/attendance");
+  return { success: true };
+}
+
+/**
+ * Giáo viên (hoặc trung tâm) tự dời một buổi, không qua đơn từ.
+ *
+ * Thực tế khách nhắn Zalo cho giáo viên chứ ít ai vào web bấm xin dời, nên
+ * giáo viên cần nhập thẳng được. Người duyệt cũng chính là giáo viên nên
+ * không có bước chờ duyệt — ghi vào sổ luôn rồi báo cho học viên.
+ *
+ * Quan trọng: việc này KHÔNG đụng tới lịch cố định hàng tuần của lớp. Dời một
+ * buổi chỉ ghi thêm một dòng điểm danh cho đúng ngày đó; tuần sau lớp tự về
+ * đúng thứ cũ vì `classes.day_of_week` không hề thay đổi. Sửa thẳng thứ của
+ * lớp mới là cái sai — vừa phải nhớ sửa lại, vừa làm hỏng lịch sử các buổi đã
+ * học.
+ */
+export async function teacherRescheduleAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const session = await assertRole(["teacher", "admin", "coordinator"]);
+
+  const classId = Number(formData.get("class_id"));
+  const sessionDate = String(formData.get("session_date") || "").trim();
+  const slot = String(formData.get("slot") || "").trim(); // "YYYY-MM-DD HH:MM"
+  const reason = String(formData.get("reason") || "").trim().slice(0, 300);
+  const [toDate, toTime] = slot.split(" ");
+
+  if (!classId || !sessionDate || !toDate || !toTime) {
+    return { error: "Vui lòng chọn buổi cần dời và giờ học bù" };
+  }
+
+  const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(classId) as ClassRow | undefined;
+  if (!cls) return { error: "Không tìm thấy lớp" };
+  if (session.role === "teacher" && cls.teacher_id !== session.userId) {
+    return { error: "Bạn không phụ trách lớp này" };
+  }
+  if (!cls.teacher_id) return { error: "Lớp chưa có giáo viên phụ trách" };
+  if (cls.status !== "active") return { error: "Lớp này không còn đang học" };
+
+  const todayStr = toISODate(now());
+  if (sessionDate < todayStr) return { error: "Không dời được buổi đã qua" };
+  if (new Date(`${sessionDate}T00:00:00`).getDay() !== cls.day_of_week) {
+    return { error: "Ngày này không phải buổi học của lớp" };
+  }
+
+  const existing = db
+    .prepare("SELECT status FROM attendance WHERE class_id = ? AND session_date = ?")
+    .get(classId, sessionDate) as { status: string } | undefined;
+  if (existing?.status === "completed") {
+    return { error: "Buổi này đã dạy xong, không dời được" };
+  }
+
+  const free = listTeacherFreeSlots({
+    teacherId: cls.teacher_id,
+    durationMinutes: cls.duration_minutes,
+    days: MAKEUP_WINDOW_DAYS,
+  });
+  if (!free.some((f) => f.date === toDate && f.time === toTime)) {
+    return { error: "Giờ này đã kín hoặc đã qua, chọn giờ khác giúp mình" };
+  }
+
+  const apply = db.transaction(() => {
+    db.prepare(
+      `INSERT INTO attendance (class_id, teacher_id, session_date, status, rescheduled_to_date, rescheduled_to_time, note, counts_as_used)
+       VALUES (?, ?, ?, 'rescheduled', ?, ?, ?, 0)
+       ON CONFLICT(class_id, session_date) DO UPDATE SET
+         status = 'rescheduled',
+         rescheduled_to_date = excluded.rescheduled_to_date,
+         rescheduled_to_time = excluded.rescheduled_to_time,
+         note = excluded.note,
+         counts_as_used = 0`
+    ).run(
+      classId,
+      cls.teacher_id,
+      sessionDate,
+      toDate,
+      toTime,
+      reason || "Giáo viên dời giúp khách"
+    );
+
+    // Đơn của học viên cho đúng buổi này thành thừa — đóng lại để khỏi treo
+    // trên màn hình chờ duyệt.
+    db.prepare(
+      `UPDATE reschedule_requests
+       SET status = 'approved', response_note = 'Giáo viên đã dời trực tiếp',
+           responded_by = ?, responded_at = datetime('now')
+       WHERE class_id = ? AND session_date = ? AND status = 'pending'`
+    ).run(session.userId, classId, sessionDate);
+  });
+  apply();
+
+  if (cls.student_user_id) {
+    notifyUser(
+      cls.student_user_id,
+      `Buổi ${sessionDate} đã được dời sang ${describe(cls, toDate, toTime)}${reason ? ` — ${reason}` : ""}`,
+      cls.id
+    );
+  }
+  logAudit(
+    session,
+    "lop_hoc",
+    `Dời buổi ${sessionDate} của ${cls.student_name} sang ${toDate} ${toTime}`
   );
 
   revalidatePath("/student");
