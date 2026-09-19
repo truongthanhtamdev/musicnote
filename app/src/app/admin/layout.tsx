@@ -89,6 +89,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             icon: <IconWallet className={ICON} />,
           },
           { href: "/admin/finance", label: "Doanh thu", icon: <IconChart className={ICON} /> },
+          {
+            href: "/admin/thuong",
+            label: "Thưởng giáo vụ",
+            icon: <IconWallet className={ICON} />,
+          },
         ]
       : []),
     { href: "/admin/import", label: "Nhập dữ liệu", icon: <IconUpload className={ICON} /> },

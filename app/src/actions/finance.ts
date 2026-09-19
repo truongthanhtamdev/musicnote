@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { logAudit } from "@/lib/audit";
+import { awardConversionBonus } from "@/lib/bonus";
 import { accountTargetForClass, createStudentAccount } from "@/lib/student-accounts";
 import { formatVND } from "@/lib/format";
 import type { FormState } from "./teachers";
@@ -38,13 +39,20 @@ export async function recordPaymentAction(
     return { error: "Vui lòng nhập số tiền và ngày thu hợp lệ" };
   }
 
-  db.prepare(
-    "INSERT INTO payments (class_id, amount, paid_at, note) VALUES (?, ?, ?, ?)"
-  ).run(classId, amount, paidAt, note || null);
+  const inserted = db
+    .prepare(
+      "INSERT INTO payments (class_id, amount, paid_at, note, recorded_by) VALUES (?, ?, ?, ?, ?)"
+    )
+    .run(classId, amount, paidAt, note || null, session.userId);
+
+  // Ghi thưởng chốt lớp cho giáo vụ phụ trách. Neo theo gói nên khách đóng
+  // làm nhiều đợt, hay học nhiều buổi trong tuần, cũng chỉ thưởng một lần.
+  awardConversionBonus(Number(inserted.lastInsertRowid));
 
   logAudit(session, "hoc_phi", `Thu học phí ${formatVND(amount)} ngày ${paidAt}${note ? ` (${note})` : ""}`);
   revalidatePath("/admin/finance");
   revalidatePath("/admin/classes");
+  revalidatePath("/admin/thuong");
 
   const result: PaymentState = { success: true };
   if (classId && formData.get("create_account")) {

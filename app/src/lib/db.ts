@@ -267,6 +267,31 @@ function migrate() {
       UNIQUE(class_id, session_date)
     );
 
+    -- Thưởng giáo vụ: mỗi dòng là một khoản đã ghi nhận, sinh tự động khi có
+    -- buổi học thử dạy xong hoặc khi khách đóng tiền lần đầu.
+    --
+    -- Ghi thành dòng riêng chứ không tính lại từ đầu mỗi lần xem báo cáo: mức
+    -- thưởng sửa được trong Cài đặt, mà sửa mức mới thì không được làm đổi số
+    -- tiền của những khoản đã chốt tháng trước. Lưu số tiền tại thời điểm ghi
+    -- nhận là cách duy nhất giữ đúng lịch sử.
+    --
+    -- UNIQUE(ref_type, ref_id) là khoá chống trùng: một buổi học thử chỉ thưởng
+    -- một lần dù giáo viên sửa điểm danh bao nhiêu lần, một khách chỉ thưởng
+    -- một lần dù đóng tiền làm nhiều đợt.
+    CREATE TABLE IF NOT EXISTS staff_bonuses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      staff_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL CHECK(kind IN ('trial','conversion','manual')),
+      amount INTEGER NOT NULL,
+      ref_type TEXT NOT NULL CHECK(ref_type IN ('attendance','package','class','manual')),
+      ref_id INTEGER NOT NULL,
+      note TEXT,
+      /** Ngày ghi nhận, dùng để gom theo kỳ. */
+      earned_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(ref_type, ref_id)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);
@@ -279,6 +304,8 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_reschedule_status ON reschedule_requests(status, created_at);
     CREATE INDEX IF NOT EXISTS idx_reschedule_class ON reschedule_requests(class_id, session_date);
     CREATE INDEX IF NOT EXISTS idx_confirmations_date ON session_confirmations(session_date);
+    CREATE INDEX IF NOT EXISTS idx_staff_bonuses_staff ON staff_bonuses(staff_id, earned_at);
+    CREATE INDEX IF NOT EXISTS idx_staff_bonuses_date ON staff_bonuses(earned_at);
   `);
 
   // CREATE TABLE IF NOT EXISTS above only helps on a brand-new database file;
@@ -306,6 +333,10 @@ function migrate() {
   ensureColumn("users", "note", "TEXT");
   ensureColumn("attendance", "lesson_content", "TEXT");
   ensureColumn("attendance", "is_trial", "INTEGER NOT NULL DEFAULT 0");
+  // Giáo vụ phụ trách khách của lớp này — gốc để biết khoản thưởng thuộc về ai.
+  ensureColumn("classes", "coordinator_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL");
+  // Ai bấm ghi khoản thu; dùng làm phương án dự phòng khi lớp chưa gán giáo vụ.
+  ensureColumn("payments", "recorded_by", "INTEGER REFERENCES users(id) ON DELETE SET NULL");
   ensureColumn("attendance", "rescheduled_to_date", "TEXT");
   ensureColumn("attendance", "rescheduled_to_time", "TEXT");
   ensureColumn("classes", "trial_pending", "INTEGER NOT NULL DEFAULT 0");

@@ -103,9 +103,19 @@ export async function createClassAction(
     packageId = Number(info.lastInsertRowid);
   }
 
+  // Giáo vụ phụ trách: ai tạo lớp thì mặc định người đó, admin chọn lại được.
+  // Đây là gốc để tính thưởng nên phải có từ lúc tạo lớp, không để điền sau.
+  const coordinatorRaw = Number(formData.get("coordinator_id") || 0);
+  const coordinatorId =
+    coordinatorRaw > 0
+      ? coordinatorRaw
+      : session.role === "coordinator" || session.role === "admin"
+        ? session.userId
+        : null;
+
   const insert = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   );
   let firstClassId: number | null = null;
   for (const slot of slots) {
@@ -124,7 +134,8 @@ export async function createClassAction(
       slot.startTime,
       slot.durationMinutes,
       teacherId,
-      notes || null
+      notes || null,
+      coordinatorId
     );
     firstClassId ??= Number(info.lastInsertRowid);
   }

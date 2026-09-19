@@ -13,6 +13,7 @@ import {
   type AttendanceStatus,
 } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
+import { awardTrialBonus } from "@/lib/bonus";
 import type { FormState } from "./teachers";
 
 const VALID_STATUS: AttendanceStatus[] = [
@@ -153,6 +154,13 @@ export async function markAttendanceAction(
       crypto.randomBytes(9).toString("base64url")
     );
   }
+
+  // Ghi thưởng cho giáo vụ nếu đây là buổi học thử đã dạy xong. Neo vào dòng
+  // điểm danh nên sửa đi sửa lại cũng chỉ thưởng một lần.
+  const saved = db
+    .prepare("SELECT id FROM attendance WHERE class_id = ? AND session_date = ?")
+    .get(classId, sessionDate) as { id: number } | undefined;
+  if (saved) awardTrialBonus(saved.id);
 
   if (statedSessionNumber !== null) applyStatedSessionNumber(classId, statedSessionNumber);
 

@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { assertRole } from "@/lib/guard";
-import { normalizeFacebookUrl } from "@/lib/format";
+import { formatVND, normalizeFacebookUrl } from "@/lib/format";
 import { CONTACT_KEYS, LATE_CHECKIN_QUOTA_KEY, setSetting } from "@/lib/queries";
+import { setBonusRates } from "@/lib/bonus";
+import { logAudit } from "@/lib/audit";
 import type { FormState } from "./teachers";
 
 /** Chỉ giữ chữ số để làm link zalo.me — khách hay gõ "0965 817 021" hoặc "+84...". */
@@ -62,5 +64,32 @@ export async function saveLateCheckinQuotaAction(
   revalidatePath("/admin/payroll");
   revalidatePath("/teacher");
   revalidatePath("/teacher/attendance");
+  return { success: true };
+}
+
+/**
+ * Mức thưởng giáo vụ. Sửa mức chỉ ảnh hưởng khoản ghi nhận từ lúc này về sau
+ * — những khoản đã ghi giữ nguyên số tiền cũ, vì chúng đã vào sổ của kỳ trước.
+ */
+export async function saveBonusRatesAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const session = await assertRole(["admin"]);
+
+  const trial = Number(formData.get("bonus_trial_amount") || 0);
+  const conversion = Number(formData.get("bonus_conversion_amount") || 0);
+  if (!Number.isFinite(trial) || !Number.isFinite(conversion) || trial < 0 || conversion < 0) {
+    return { error: "Mức thưởng phải là số không âm" };
+  }
+
+  setBonusRates(trial, conversion);
+  logAudit(
+    session,
+    "luong",
+    `Đổi mức thưởng giáo vụ: học thử ${formatVND(trial)}, chốt lớp ${formatVND(conversion)}`
+  );
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/thuong");
   return { success: true };
 }

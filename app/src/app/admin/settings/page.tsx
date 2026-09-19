@@ -1,14 +1,17 @@
 import { requireRole } from "@/lib/guard";
 import { getCenterContact, getLateCheckinQuota } from "@/lib/queries";
+import { getBonusRates } from "@/lib/bonus";
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { ContactButtons } from "@/components/contact-buttons";
 import ContactForm from "./contact-form";
 import QuotaForm from "./quota-form";
+import BonusForm from "./bonus-form";
 
 export default async function AdminSettingsPage() {
   await requireRole(["admin"]);
   const contact = getCenterContact();
   const quota = getLateCheckinQuota();
+  const bonus = getBonusRates();
 
   return (
     <div className="space-y-5">
@@ -37,6 +40,17 @@ export default async function AdminSettingsPage() {
             bảng lương tự trừ.
           </p>
           <QuotaForm quota={quota} />
+        </div>
+      </Card>
+
+      <Card padded={false}>
+        <CardHeader title="Thưởng giáo vụ" />
+        <div className="p-5">
+          <p className="text-sm text-ink-500 mb-4">
+            Hệ thống tự ghi thưởng cho giáo vụ phụ trách lớp: một khoản khi buổi học thử dạy xong,
+            một khoản khi khách đóng tiền lần đầu. Xem tổng theo tháng ở mục Thưởng giáo vụ.
+          </p>
+          <BonusForm trial={bonus.trial} conversion={bonus.conversion} />
         </div>
       </Card>
 
