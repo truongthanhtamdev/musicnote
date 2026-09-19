@@ -33,7 +33,7 @@ export default function BonusForm({ trial, conversion }: { trial: number; conver
         </div>
         <div>
           <label className={label} htmlFor="bonus_conversion_amount">
-            Thưởng khi chốt lớp
+            Cộng thêm khi chốt lớp
           </label>
           <input
             id="bonus_conversion_amount"
@@ -46,10 +46,16 @@ export default function BonusForm({ trial, conversion }: { trial: number; conver
             className={`${field} tabular`}
           />
           <p className="text-xs text-ink-400 mt-1.5">
-            Ghi khi khách đóng tiền lần đầu. Mỗi khách một lần, dù đóng nhiều đợt.
+            Cộng thêm khi khách đóng tiền lần đầu. Mỗi khách một lần, dù đóng nhiều đợt.
           </p>
         </div>
       </div>
+
+      <p className="text-sm text-ink-700 bg-wood-50 border border-wood-200 rounded-lg px-3 py-2">
+        Hai mức cộng dồn: một khách đi từ học thử tới lúc đóng tiền mang về{" "}
+        <span className="font-semibold">tổng {(trial + conversion).toLocaleString("vi-VN")}đ</span>{" "}
+        cho giáo vụ.
+      </p>
 
       <p className="text-xs text-ink-500 bg-ivory-100 rounded-lg px-3 py-2">
         Đổi mức chỉ áp cho những khoản ghi nhận từ lúc này về sau. Khoản đã ghi giữ nguyên số tiền

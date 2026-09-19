@@ -48,7 +48,8 @@ export default async function AdminSettingsPage() {
         <div className="p-5">
           <p className="text-sm text-ink-500 mb-4">
             Hệ thống tự ghi thưởng cho giáo vụ phụ trách lớp: một khoản khi buổi học thử dạy xong,
-            một khoản khi khách đóng tiền lần đầu. Xem tổng theo tháng ở mục Thưởng giáo vụ.
+            cộng thêm một khoản khi khách đóng tiền lần đầu. Hai khoản cộng dồn trên cùng một
+            khách. Xem tổng theo tháng ở mục Thưởng giáo vụ.
           </p>
           <BonusForm trial={bonus.trial} conversion={bonus.conversion} />
         </div>

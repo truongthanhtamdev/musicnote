@@ -1,9 +1,12 @@
 /**
  * Thưởng giáo vụ.
  *
- * Hai mốc được thưởng:
+ * Hai mốc được thưởng, cộng dồn trên cùng một khách:
  *   • Buổi học thử dạy xong  → mức "thưởng học thử"
- *   • Khách đóng tiền lần đầu → mức "thưởng chốt lớp"
+ *   • Khách đóng tiền lần đầu → CỘNG THÊM mức "thưởng chốt lớp"
+ *
+ * Nên một khách đi trọn đường từ học thử tới đóng tiền mang về tổng bằng hai
+ * mức cộng lại (mặc định 25.000 + 75.000 = 100.000).
  *
  * Cả hai đều ghi thành một dòng trong `staff_bonuses` ngay lúc sự việc xảy ra,
  * kèm số tiền tại thời điểm đó. Không tính lại từ đầu mỗi lần mở báo cáo, vì
@@ -20,8 +23,13 @@ export const BONUS_KEYS = {
   conversion: "bonus_conversion_amount",
 } as const;
 
-/** Mức mặc định khi chủ trung tâm chưa khai gì trong Cài đặt. */
-export const DEFAULT_BONUS = { trial: 25_000, conversion: 100_000 };
+/**
+ * Mức mặc định khi chủ trung tâm chưa khai gì trong Cài đặt.
+ *
+ * `conversion` là phần CỘNG THÊM lúc chốt, không phải tổng: 25.000 lúc học
+ * thử rồi 75.000 lúc đóng tiền, cộng lại vừa đúng 100.000 cho một khách.
+ */
+export const DEFAULT_BONUS = { trial: 25_000, conversion: 75_000 };
 
 function readAmount(key: string, fallback: number): number {
   const raw = getSetting(key);

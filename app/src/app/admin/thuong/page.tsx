@@ -47,7 +47,7 @@ export default async function BonusPage({
     <div className="space-y-5">
       <PageHeader
         title="Thưởng giáo vụ"
-        subtitle={`Mỗi buổi học thử dạy xong ${formatVND(rates.trial)}, mỗi lần khách đóng tiền lần đầu ${formatVND(rates.conversion)}. Hệ thống tự ghi khi sự việc xảy ra; sửa mức trong Cài đặt chỉ áp cho khoản mới.`}
+        subtitle={`Mỗi buổi học thử dạy xong ${formatVND(rates.trial)}, khách đóng tiền lần đầu cộng thêm ${formatVND(rates.conversion)} — một khách đi trọn đường là ${formatVND(rates.trial + rates.conversion)}. Hệ thống tự ghi khi sự việc xảy ra; sửa mức trong Cài đặt chỉ áp cho khoản mới.`}
       />
 
       <Card>
