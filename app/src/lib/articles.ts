@@ -147,22 +147,22 @@ export const ARTICLES: Article[] = [
     question: "Học guitar bao lâu thì đệm hát được?",
     title: "Học guitar bao lâu thì đệm hát được?",
     description:
-      "Các mốc thực tế khi học guitar đệm hát: tuần đầu làm gì, khi nào đệm được bài đầu tiên, cái gì làm chậm tiến độ và cách rút ngắn.",
+      "Các mốc thực tế khi học guitar đệm hát: tháng đầu làm gì, khi nào đệm được bài đầu tiên, cái gì làm chậm tiến độ và cách rút ngắn.",
     updated: UPDATED,
     answer:
-      "Người tập đều 2 buổi học mỗi tuần và 15–20 phút mỗi ngày ở nhà thường đệm được bài đầu tiên sau 4–8 tuần, ở mức hát theo được trọn bài. Mốc quyết định không phải số buổi đã học mà là đổi hợp âm có mượt chưa: đổi được khoảng 60 lần một phút cho một cặp hợp âm là ghép vào bài được.",
+      "Người tập đều 2 buổi học mỗi tuần và 15–20 phút mỗi ngày ở nhà thường đệm được bài đầu tiên sau khoảng 2–3 tháng, ở mức hát theo được trọn bài. Tập thưa hơn thì kéo dài ra, chứ không phải không tới được. Mốc quyết định không phải số buổi đã học mà là đổi hợp âm có mượt chưa: đổi được khoảng 60 lần một phút cho một cặp hợp âm là ghép vào bài được.",
     blocks: [
       {
         heading: "Các mốc thường gặp",
         paragraphs: [
-          "Con số dưới đây tính cho người lớn hoặc thiếu niên bắt đầu từ con số 0, học 1 kèm 1 và có tập ở nhà. Tập ít hơn thì kéo dài ra theo tỉ lệ, chứ không phải không tới được.",
+          "Con số dưới đây tính cho người lớn hoặc thiếu niên bắt đầu từ con số 0, học 1 kèm 1 và có tập ở nhà. Đây là mốc thong thả chứ không phải mốc nhanh nhất — nhiều người tới sớm hơn, và tới muộn hơn cũng hoàn toàn bình thường. Tốc độ chênh nhau giữa người này người kia lớn hơn nhiều so với chênh lệch do phương pháp dạy.",
         ],
         steps: [
-          { label: "Tuần 1–2", text: "Làm quen cây đàn, tư thế cầm, và 2–3 hợp âm dễ nhất như Em, Am, C. Giai đoạn này đầu ngón tay đau là bình thường, khoảng hai tuần là chai và hết." },
-          { label: "Tuần 3–4", text: "Thêm G và D, bắt đầu tập đổi qua lại giữa từng cặp. Tập được một điệu quạt đơn giản: một nhát bass rồi ba nhát quạt xuống." },
-          { label: "Tuần 5–8", text: "Đệm trọn được bài đầu tiên, thường là bài chỉ dùng bốn hợp âm. Còn vấp ở chỗ đổi hợp âm nhưng đã hát theo được từ đầu tới cuối." },
-          { label: "Tháng 3–4", text: "Đổi hợp âm gần như không phải nghĩ. Biết thêm vài điệu, đệm được nhiều bài cùng vòng hợp âm mà không cần xem bản hợp âm." },
-          { label: "Tháng 5–6", text: "Chặn được hợp âm F và B, tức là mở ra mọi tông. Nghe một bài lạ có thể đoán ra vòng hợp âm và đệm theo." },
+          { label: "Tháng 1", text: "Làm quen cây đàn, tư thế cầm, và 2–3 hợp âm dễ nhất như Em, Am, C. Giai đoạn này đầu ngón tay đau là bình thường, khoảng 3–4 tuần là chai và hết." },
+          { label: "Tháng 2", text: "Thêm G và D, bắt đầu tập đổi qua lại giữa từng cặp. Tập được một điệu quạt đơn giản: một nhát bass rồi ba nhát quạt xuống." },
+          { label: "Tháng 3", text: "Đệm trọn được bài đầu tiên, thường là bài chỉ dùng bốn hợp âm. Còn vấp ở chỗ đổi hợp âm nhưng đã hát theo được từ đầu tới cuối." },
+          { label: "Tháng 4–6", text: "Đổi hợp âm gần như không phải nghĩ. Biết thêm vài điệu, đệm được nhiều bài cùng vòng hợp âm mà không cần xem bản hợp âm." },
+          { label: "Tháng 6–12", text: "Chặn được hợp âm F và B, tức là mở ra mọi tông. Nghe một bài lạ có thể đoán ra vòng hợp âm và đệm theo." },
         ],
       },
       {
@@ -198,7 +198,7 @@ export const ARTICLES: Article[] = [
     faq: [
       {
         q: "Học guitar bao lâu thì đệm hát được một bài?",
-        a: "Thường 4–8 tuần nếu học đều 2 buổi mỗi tuần và tập 15–20 phút mỗi ngày ở nhà. Bài đầu tiên thường là bài chỉ dùng bốn hợp âm mở, đệm ở mức hát theo được trọn bài dù còn vấp nhẹ ở chỗ đổi hợp âm.",
+        a: "Thường khoảng 2–3 tháng nếu học đều 2 buổi mỗi tuần và tập 15–20 phút mỗi ngày ở nhà. Bài đầu tiên thường là bài chỉ dùng bốn hợp âm mở, đệm ở mức hát theo được trọn bài dù còn vấp nhẹ ở chỗ đổi hợp âm. Tập thưa hơn thì lâu hơn tương ứng.",
       },
       {
         q: "Mỗi ngày nên tập guitar bao nhiêu phút?",
@@ -210,7 +210,7 @@ export const ARTICLES: Article[] = [
       },
       {
         q: "Bao lâu thì chặn được hợp âm F?",
-        a: "Thường 1–3 tháng nếu tập khoảng 5 phút mỗi ngày. Chưa chặn được thì dùng tạm Fmaj7 chỉ bấm bốn dây mỏng để vẫn chơi hết bài — không cần dừng cả việc học lại chỉ vì một hợp âm.",
+        a: "Thường 3–6 tháng nếu tập khoảng 5 phút mỗi ngày, và chênh nhau khá nhiều tuỳ lực tay từng người. Chưa chặn được thì dùng tạm Fmaj7 chỉ bấm bốn dây mỏng để vẫn chơi hết bài — không cần dừng cả việc học lại chỉ vì một hợp âm.",
       },
     ],
     related: [
@@ -269,7 +269,7 @@ export const ARTICLES: Article[] = [
         heading: "Người lớn bắt đầu có muộn không",
         paragraphs: [
           "Không. Người lớn học chậm hơn trẻ em ở khả năng nghe tuyệt đối và độ mềm dẻo của ngón tay, nhưng nhanh hơn hẳn ở khả năng hiểu lý thuyết, tự kỷ luật và biết mình muốn gì. Trẻ em cần ba tháng để hiểu vòng hợp âm là gì, người lớn hiểu trong một buổi.",
-          "Với mục tiêu đệm hát cho vui — mục tiêu của phần lớn người học — thì tuổi bắt đầu gần như không ảnh hưởng tới kết quả. Người 40 tuổi tập đều vẫn đệm được bài sau vài tháng, y như người 20 tuổi.",
+          "Với mục tiêu đệm hát cho vui — mục tiêu của phần lớn người học — thì tuổi bắt đầu gần như không ảnh hưởng tới kết quả. Người 40 tuổi tập đều vẫn đệm được bài sau vài tháng, y như người 20 tuổi — có thể chậm hơn chút nhưng không khác biệt đáng kể.",
         ],
       },
     ],
@@ -320,7 +320,7 @@ export const ARTICLES: Article[] = [
       {
         heading: "Năm đầu nên mua gì",
         steps: [
-          { label: "Guitar", text: "Người mới nên bắt đầu bằng guitar dây nylon (classic) vì dây mềm, đỡ đau tay hơn dây sắt. Nếu định đệm hát nhạc trẻ thì guitar dây sắt (acoustic) cho tiếng hợp hơn, nhưng chấp nhận hai tuần đầu đau ngón. Đàn phổ thông là đủ; quan trọng nhất là cần đàn không cong và dây không quá cao so với phím." },
+          { label: "Guitar", text: "Người mới nên bắt đầu bằng guitar dây nylon (classic) vì dây mềm, đỡ đau tay hơn dây sắt. Nếu định đệm hát nhạc trẻ thì guitar dây sắt (acoustic) cho tiếng hợp hơn, nhưng chấp nhận khoảng một tháng đầu đau ngón. Đàn phổ thông là đủ; quan trọng nhất là cần đàn không cong và dây không quá cao so với phím." },
           { label: "Piano", text: "Đàn điện (digital piano) là đủ cho người mới, không cần piano cơ. Cần nhất hai thứ: đủ 88 phím và phím có chạm nặng (weighted). Đàn organ phím nhẹ vẫn học được những buổi đầu nhưng sẽ phải tập lại lực ngón khi chuyển sang piano thật." },
           { label: "Violin", text: "Nên mua đúng cỡ theo chiều dài cánh tay, không mua rộng ra để dùng lâu — cỡ sai làm hỏng tư thế ngay từ đầu. Trẻ em sẽ phải đổi cỡ vài lần khi lớn, nên đây là nhạc cụ đáng cân nhắc mua cũ hoặc thuê." },
         ],
@@ -451,12 +451,12 @@ export const ARTICLES: Article[] = [
       "So sánh guitar và piano cho người mới: cái nào ra bài nhanh hơn, cái nào dễ hiểu nhạc lý hơn, và chọn theo mục tiêu nào.",
     updated: UPDATED,
     answer:
-      "Muốn nhanh chóng đệm hát cho vui thì chọn guitar — khoảng một hai tháng là đệm được bài đầu tiên, đàn lại rẻ và mang đi được. Muốn hiểu nhạc lý chắc và có nền để sau này học nhạc cụ khác thì chọn piano — vì các nốt xếp thẳng hàng nên nhìn là thấy cấu trúc, và tập được cả hai tay độc lập.",
+      "Muốn sớm đệm hát cho vui thì chọn guitar — khoảng 2–3 tháng là đệm được bài đầu tiên, đàn lại rẻ và mang đi được. Muốn hiểu nhạc lý chắc và có nền để sau này học nhạc cụ khác thì chọn piano — vì các nốt xếp thẳng hàng nên nhìn là thấy cấu trúc, và tập được cả hai tay độc lập.",
     blocks: [
       {
         heading: "Guitar hơn ở chỗ nào",
         list: [
-          "Ra bài nhanh hơn. Bốn hợp âm mở là đệm được rất nhiều bài, thường trong 4–8 tuần.",
+          "Ra bài sớm hơn. Bốn hợp âm mở là đệm được rất nhiều bài, thường sau khoảng 2–3 tháng.",
           "Đàn rẻ hơn và mang đi được — đi chơi, đi cắm trại, sinh hoạt nhóm.",
           "Rất hợp để vừa đàn vừa hát, nên nếu mục tiêu là đệm hát thì đây là lựa chọn tự nhiên.",
           "Chiếm ít chỗ trong nhà.",
@@ -474,7 +474,7 @@ export const ARTICLES: Article[] = [
       {
         heading: "Cái khó của mỗi bên",
         steps: [
-          { label: "Guitar khó ở đầu", text: "Hai tuần đầu đau đầu ngón tay cho tới khi chai. Hợp âm chặn (F, B) là ngưỡng khiến nhiều người bỏ. Bù lại qua được giai đoạn này thì tiến rất nhanh." },
+          { label: "Guitar khó ở đầu", text: "Ba tới bốn tuần đầu đau đầu ngón tay cho tới khi chai. Hợp âm chặn (F, B) là ngưỡng khiến nhiều người bỏ. Bù lại qua được giai đoạn này thì tiến rất nhanh." },
           { label: "Piano khó ở giữa", text: "Bắt đầu rất dễ chịu, nhưng tới lúc phải phối hợp hai tay làm hai việc khác nhau thì đó là ngưỡng thật sự. Cũng phải đọc hai khuông nhạc cùng lúc, khóa Sol cho tay phải và khóa Fa cho tay trái." },
         ],
       },
@@ -501,11 +501,11 @@ export const ARTICLES: Article[] = [
     faq: [
       {
         q: "Nên học guitar hay piano trước?",
-        a: "Guitar nếu muốn đệm hát cho vui và ra bài nhanh — khoảng 4–8 tuần là đệm được bài đầu tiên. Piano nếu muốn hiểu nhạc lý chắc và có nền để học nhạc cụ khác về sau, vì các nốt xếp thẳng hàng nên cấu trúc nhạc hiện ra thành hình.",
+        a: "Guitar nếu muốn đệm hát cho vui và ra bài sớm — khoảng 2–3 tháng là đệm được bài đầu tiên. Piano nếu muốn hiểu nhạc lý chắc và có nền để học nhạc cụ khác về sau, vì các nốt xếp thẳng hàng nên cấu trúc nhạc hiện ra thành hình.",
       },
       {
         q: "Guitar và piano cái nào dễ hơn?",
-        a: "Piano dễ hơn lúc bắt đầu vì bấm phím là ra tiếng ngay, không đau tay. Guitar khó ở hai tuần đầu khi ngón tay chưa chai và ở hợp âm chặn, nhưng qua được thì đệm hát được sớm hơn. Cái khó của piano đến muộn hơn, ở chỗ phối hợp hai tay làm hai việc khác nhau.",
+        a: "Piano dễ hơn lúc bắt đầu vì bấm phím là ra tiếng ngay, không đau tay. Guitar khó ở khoảng một tháng đầu khi ngón tay chưa chai và ở hợp âm chặn, nhưng qua được thì đệm hát được sớm hơn. Cái khó của piano đến muộn hơn, ở chỗ phối hợp hai tay làm hai việc khác nhau.",
       },
       {
         q: "Biết piano rồi học guitar có dễ hơn không?",
