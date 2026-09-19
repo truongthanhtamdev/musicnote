@@ -9,6 +9,7 @@
  */
 
 import { PRICING } from "./types";
+import { LIBRARY_PATHS } from "./library";
 
 /** Một chỗ duy nhất định nghĩa địa chỉ site, để metadata/sitemap/robots không lệch nhau. */
 export const SITE_URL = process.env.SITE_URL || "https://pianoguitardemhat.com";
@@ -16,7 +17,7 @@ export const SITE_URL = process.env.SITE_URL || "https://pianoguitardemhat.com";
 export const SITE_NAME = "Piano Guitar Đệm Hát";
 
 /** Trang công khai — chỉ những trang này mới cho lập chỉ mục và nằm trong sitemap. */
-export const PUBLIC_PATHS = ["/", "/guitar", "/piano"] as const;
+export const PUBLIC_PATHS: string[] = ["/", ...LIBRARY_PATHS];
 
 const abs = (path: string) => new URL(path, SITE_URL).toString();
 
@@ -126,5 +127,38 @@ export function learningResourceJsonLd(opts: {
     educationalLevel: "Beginner",
     learningResourceType: "Reference material",
     provider: { "@id": abs("/#school") },
+  };
+}
+
+/**
+ * Hỏi–đáp có cấu trúc. Đây là thứ công cụ AI trích nhiều nhất: câu hỏi rõ,
+ * câu trả lời gọn, không phải đọc hiểu cả trang mới rút ra được.
+ *
+ * Chỉ khai những câu trả lời được bằng sự thật nhạc lý hoặc bằng đúng nội
+ * dung đang hiện trên trang — không khai câu nào phải bịa.
+ */
+export function faqJsonLd(items: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((i) => ({
+      "@type": "Question",
+      name: i.q,
+      acceptedAnswer: { "@type": "Answer", text: i.a },
+    })),
+  };
+}
+
+/** Dấu vết đường dẫn, để Google hiện "Trang chủ › Thư viện guitar › Điệu đệm". */
+export function breadcrumbJsonLd(trail: { name: string; path: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map((t, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: t.name,
+      item: abs(t.path),
+    })),
   };
 }
