@@ -10,6 +10,7 @@
 
 import { PRICING } from "./types";
 import { LIBRARY_PATHS } from "./library";
+import { ARTICLE_PATHS } from "./articles";
 
 /** Một chỗ duy nhất định nghĩa địa chỉ site, để metadata/sitemap/robots không lệch nhau. */
 export const SITE_URL = process.env.SITE_URL || "https://pianoguitardemhat.com";
@@ -17,7 +18,7 @@ export const SITE_URL = process.env.SITE_URL || "https://pianoguitardemhat.com";
 export const SITE_NAME = "Piano Guitar Đệm Hát";
 
 /** Trang công khai — chỉ những trang này mới cho lập chỉ mục và nằm trong sitemap. */
-export const PUBLIC_PATHS: string[] = ["/", ...LIBRARY_PATHS];
+export const PUBLIC_PATHS: string[] = ["/", ...LIBRARY_PATHS, ...ARTICLE_PATHS];
 
 const abs = (path: string) => new URL(path, SITE_URL).toString();
 

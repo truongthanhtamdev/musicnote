@@ -44,6 +44,12 @@ export async function LibraryShell({
               </Link>
             )}
             <Link
+              href="/hoc-nhac"
+              className="hidden md:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+            >
+              Góc tư vấn
+            </Link>
+            <Link
               href={session ? roleHomePath(session.role) : "/login"}
               className="text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
             >
@@ -105,6 +111,18 @@ export async function LibraryShell({
                   <p className="text-sm text-ink-600 mt-1 leading-relaxed">{t.blurb}</p>
                 </Link>
               ))}
+            <Link
+              href="/hoc-nhac"
+              className="group rounded-xl border border-navy-100 bg-white hover:border-wood-300 p-4 transition"
+            >
+              <p className="font-semibold text-ink-900 flex items-center gap-1">
+                Góc tư vấn
+                <IconChevronRight className="w-4 h-4 text-ink-300 group-hover:text-wood-600 transition" />
+              </p>
+              <p className="text-sm text-ink-600 mt-1 leading-relaxed">
+                Học online có hiệu quả không, học bao lâu thì đệm hát được, bé mấy tuổi học đàn được.
+              </p>
+            </Link>
             {other && (
               <Link
                 href={other.root}

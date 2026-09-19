@@ -118,6 +118,12 @@ export default async function HomePage() {
             >
               Thư viện piano
             </Link>
+            <Link
+              href="/hoc-nhac"
+              className="hidden lg:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+            >
+              Góc tư vấn
+            </Link>
             <a
               href="#hoc-phi"
               className="hidden lg:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
