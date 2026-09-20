@@ -21,7 +21,7 @@ import { TrialForm } from "./trial-form";
 
 const HOME_TITLE = "Piano Guitar Đệm Hát — Học 1 kèm 1 online";
 const HOME_DESC =
-  "Guitar, Piano, Violin, Saxophone, Thanh nhạc và Toán, Tiếng Việt, Tiếng Anh — học 1 kèm 1 online 60 phút/buổi, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.";
+  "Guitar, Piano, Violin, Saxophone, Thanh nhạc, Toán, Tiếng Việt, Tiếng Anh, Quảng cáo và Quay chụp dựng — học 1 kèm 1 online 60 phút/buổi, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.";
 
 export const metadata: Metadata = {
   // absolute: tiêu đề trang chủ không cần gắn thêm tên trung tâm phía sau.
@@ -56,6 +56,19 @@ const SUBJECT_GROUPS = [
       { name: "Toán", text: "Kèm bài trên lớp, lấy lại gốc, luyện đề theo trình độ." },
       { name: "Tiếng Việt", text: "Tập đọc, chính tả, tập làm văn cho bậc tiểu học." },
       { name: "Tiếng Anh", text: "Giao tiếp, ngữ pháp và luyện thi theo mục tiêu của bạn." },
+    ],
+  },
+  {
+    label: "Kỹ năng nghề",
+    items: [
+      {
+        name: "Quảng cáo",
+        text: "Chạy quảng cáo Facebook: lên chiến dịch, nhắm đối tượng, đọc số liệu.",
+      },
+      {
+        name: "Quay chụp dựng",
+        text: "Quay và chụp bằng điện thoại, dựng video ngắn cho trang bán hàng.",
+      },
     ],
   },
 ];
@@ -156,7 +169,7 @@ export default async function HomePage() {
             Học 1 kèm 1 online, giáo viên song ngữ Việt–Anh
           </h1>
           <p className="text-ink-600 text-base sm:text-lg mt-4 max-w-2xl">
-            Nhạc cụ, thanh nhạc và cả Toán, Tiếng Việt, Tiếng Anh — 60 phút mỗi buổi, lịch học
+            Nhạc cụ, thanh nhạc, các môn văn hoá và cả kỹ năng nghề — 60 phút mỗi buổi, lịch học
             linh hoạt theo múi giờ của bạn. Học thử 1 buổi miễn phí trước khi quyết định đăng ký
             gói.
           </p>

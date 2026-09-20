@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s · Piano Guitar Đệm Hát",
   },
   description:
-    "Trung tâm dạy Guitar, Piano, Violin, Saxophone, Thanh nhạc và Toán, Tiếng Việt, Tiếng Anh — học 1 kèm 1 online, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.",
+    "Trung tâm dạy Guitar, Piano, Violin, Saxophone, Thanh nhạc, Toán, Tiếng Việt, Tiếng Anh, Quảng cáo và Quay chụp dựng — học 1 kèm 1 online, giáo viên song ngữ Việt–Anh. Học thử 1 buổi miễn phí.",
   openGraph: {
     type: "website",
     siteName: "Piano Guitar Đệm Hát",

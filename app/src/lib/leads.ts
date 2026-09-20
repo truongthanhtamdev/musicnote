@@ -172,6 +172,7 @@ export const DEFAULT_LEAD_SOURCES = [
   "Fanpage Piano Guitar Đệm Hát",
   "Fanpage Guitar Online 1:1",
   "Fanpage Tiếng Việt",
+  "Fanpage em Tâm",
   "Zalo",
   "Giới thiệu",
   "Tự tìm thấy web",

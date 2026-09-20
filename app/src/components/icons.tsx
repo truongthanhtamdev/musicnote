@@ -313,6 +313,20 @@ export const IconTimer = (p: IconProps) => (
   </Svg>
 );
 
+export const IconMegaphone = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1z" />
+    <path d="M18 9a4 4 0 0 1 0 6" />
+  </Svg>
+);
+
+export const IconCamera = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 8h3l1.5-2h9L18 8h3v11H3z" />
+    <circle cx="12" cy="13.5" r="3.5" />
+  </Svg>
+);
+
 export const IconCalculator = (p: IconProps) => (
   <Svg {...p}>
     <rect x="4" y="3" width="16" height="18" rx="2.5" />
@@ -360,5 +374,9 @@ export function SubjectIcon({ subject, className }: { subject: string; className
   if (s.includes("guitar")) return <IconGuitar className={className} />;
   if (s.includes("toan")) return <IconCalculator className={className} />;
   if (s.includes("tieng ") || s.includes("english")) return <IconBook className={className} />;
+  if (s.includes("quang cao") || s.includes("ads")) return <IconMegaphone className={className} />;
+  if (s.includes("quay") || s.includes("chup") || s.includes("dung")) {
+    return <IconCamera className={className} />;
+  }
   return <IconMusic className={className} />;
 }

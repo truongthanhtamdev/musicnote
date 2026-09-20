@@ -444,6 +444,8 @@ export const SUBJECT_SUGGESTIONS = [
   "Toán",
   "Tiếng Việt",
   "Tiếng Anh",
+  "Quảng cáo",
+  "Quay chụp dựng",
 ];
 
 export const PACKAGE_OPTIONS = [20, 50, 100];

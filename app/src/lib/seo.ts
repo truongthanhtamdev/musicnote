@@ -49,7 +49,7 @@ export function schoolJsonLd(contact: { facebook?: string | null; zalo?: string 
     name: SITE_NAME,
     url: SITE_URL,
     description:
-      "Trung tâm dạy Guitar, Piano, Violin, Saxophone, Thanh nhạc và Toán, Tiếng Việt, Tiếng Anh theo hình thức 1 kèm 1 online, giáo viên song ngữ Việt–Anh. Buổi học thử đầu tiên miễn phí.",
+      "Trung tâm dạy Guitar, Piano, Violin, Saxophone, Thanh nhạc, Toán, Tiếng Việt, Tiếng Anh, Quảng cáo và Quay chụp dựng theo hình thức 1 kèm 1 online, giáo viên song ngữ Việt–Anh. Buổi học thử đầu tiên miễn phí.",
     inLanguage: ["vi", "en"],
     availableLanguage: [
       { "@type": "Language", name: "Vietnamese", alternateName: "vi" },
