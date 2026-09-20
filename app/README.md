@@ -85,15 +85,16 @@ Gợi ý:
 - Đặt `AUTH_SECRET` là một chuỗi ngẫu nhiên dài, giữ bí mật và **không đổi**
   sau khi đã có người đăng nhập (đổi sẽ làm mất hiệu lực mọi phiên đăng
   nhập hiện tại).
-- **Đo lượng truy cập (Google Analytics 4)**: tạo một property GA4, lấy mã đo
-  dạng `G-XXXXXXXXXX`, rồi thêm vào `.env.local`:
+- **Đo lượng truy cập (Google Analytics 4)**: đã bật sẵn, **không cần cấu
+  hình gì**. Mã đo của trung tâm nằm trong `src/lib/analytics.ts`; mã này
+  không phải bí mật vì nó hiện trong mã nguồn trang web.
 
-  ```
-  NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
-  ```
+  Muốn trỏ sang property khác thì khai `NEXT_PUBLIC_GA_ID` trong `.env.local`;
+  khai rỗng thì tắt hẳn, web không tải GA và không đặt cookie nào. Đây là biến
+  `NEXT_PUBLIC_` nên đổi xong **phải build lại** (`npm run build`).
 
-  Đây là biến `NEXT_PUBLIC_` nên **phải build lại** (`npm run build`) mới có
-  tác dụng. Bỏ trống thì web không tải GA và không đặt cookie nào.
+  `next dev` không bao giờ gửi dữ liệu lên GA, nên lượt xem lúc lập trình
+  không làm hỏng số liệu thật.
 
   App chỉ đo **trang công khai** (trang chủ, thư viện guitar/piano, góc tư
   vấn). Trang quản trị, trang giáo viên và trang học viên không gửi gì lên
