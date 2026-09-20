@@ -9,6 +9,7 @@
 
 import { db } from "./db";
 import { todayISO } from "./format";
+import { getSetting, setSetting } from "./queries";
 import { LEAD_STAGES, OPEN_STAGES, type LeadRow, type LeadStage } from "./lead-types";
 
 export * from "./lead-types";
@@ -154,4 +155,77 @@ export function updateLead(
 
 export function deleteLead(id: number) {
   db.prepare("DELETE FROM leads WHERE id = ?").run(id);
+}
+
+// ---------------------------------------------------------------------------
+// Nguồn khách
+// ---------------------------------------------------------------------------
+
+export const LEAD_SOURCES_KEY = "lead_sources";
+
+/**
+ * Nguồn mặc định. Cố ý tách RIÊNG từng fanpage chứ không gộp thành "Quảng cáo
+ * Facebook": gộp lại thì mãi mãi không biết trang nào ra khách tốt, mà đó lại
+ * đúng là câu cần trả lời để quyết định đổ tiền quảng cáo vào đâu.
+ */
+export const DEFAULT_LEAD_SOURCES = [
+  "Fanpage Piano Guitar Đệm Hát",
+  "Fanpage Guitar Online 1:1",
+  "Fanpage Tiếng Việt",
+  "Zalo",
+  "Giới thiệu",
+  "Tự tìm thấy web",
+  "Khác",
+];
+
+export function getLeadSources(): string[] {
+  const raw = getSetting(LEAD_SOURCES_KEY);
+  if (!raw) return DEFAULT_LEAD_SOURCES;
+  const list = raw
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return list.length ? list : DEFAULT_LEAD_SOURCES;
+}
+
+export function setLeadSources(list: string[]) {
+  setSetting(LEAD_SOURCES_KEY, list.map((s) => s.trim()).filter(Boolean).join("\n"));
+}
+
+export interface SourceStat {
+  source: string;
+  total: number;
+  trial: number;
+  won: number;
+  lost: number;
+  /** Phần trăm khách của nguồn này chốt được lớp. */
+  winRate: number;
+}
+
+/**
+ * Hiệu quả từng nguồn: bao nhiêu khách, bao nhiêu người đặt học thử, bao
+ * nhiêu chốt.
+ *
+ * "Đã đặt học thử" đếm cả những người sau đó chốt hoặc bỏ, vì một khách đã
+ * chốt thì chắc chắn từng qua bước học thử — không cộng dồn thì nguồn nào
+ * chuyển đổi tốt lại hiện ra số học thử thấp, ngược đời.
+ */
+export function statsBySource(): SourceStat[] {
+  const rows = db
+    .prepare(
+      `SELECT COALESCE(NULLIF(TRIM(source), ''), 'Chưa rõ') AS source,
+              COUNT(*) AS total,
+              SUM(CASE WHEN stage IN ('trial_booked','won') THEN 1 ELSE 0 END) AS trial,
+              SUM(CASE WHEN stage = 'won' THEN 1 ELSE 0 END) AS won,
+              SUM(CASE WHEN stage = 'lost' THEN 1 ELSE 0 END) AS lost
+       FROM leads
+       GROUP BY source
+       ORDER BY won DESC, total DESC`
+    )
+    .all() as Omit<SourceStat, "winRate">[];
+
+  return rows.map((r) => ({
+    ...r,
+    winRate: r.total ? Math.round((r.won / r.total) * 100) : 0,
+  }));
 }

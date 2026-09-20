@@ -1,17 +1,20 @@
 import { requireRole } from "@/lib/guard";
 import { getCenterContact, getLateCheckinQuota } from "@/lib/queries";
 import { getBonusRates } from "@/lib/bonus";
+import { getLeadSources } from "@/lib/leads";
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { ContactButtons } from "@/components/contact-buttons";
 import ContactForm from "./contact-form";
 import QuotaForm from "./quota-form";
 import BonusForm from "./bonus-form";
+import LeadSourcesForm from "./lead-sources-form";
 
 export default async function AdminSettingsPage() {
   await requireRole(["admin"]);
   const contact = getCenterContact();
   const quota = getLateCheckinQuota();
   const bonus = getBonusRates();
+  const leadSources = getLeadSources();
 
   return (
     <div className="space-y-5">
@@ -52,6 +55,17 @@ export default async function AdminSettingsPage() {
             khách. Xem tổng theo tháng ở mục Thưởng giáo vụ.
           </p>
           <BonusForm trial={bonus.trial} conversion={bonus.conversion} />
+        </div>
+      </Card>
+
+      <Card padded={false}>
+        <CardHeader title="Nguồn khách" />
+        <div className="p-5">
+          <p className="text-sm text-ink-500 mb-4">
+            Danh sách hiện trong ô &ldquo;Từ đâu tới&rdquo; khi thêm khách tiềm năng. Khai riêng
+            từng fanpage thì trang Khách tiềm năng mới so sánh được fanpage nào ra khách tốt nhất.
+          </p>
+          <LeadSourcesForm sources={leadSources} />
         </div>
       </Card>
 

@@ -11,15 +11,6 @@ import { IconPlus } from "@/components/icons";
 
 const initialState: FormState = {};
 
-const SOURCES = [
-  "Quảng cáo Facebook",
-  "Nhắn tin trang",
-  "Zalo",
-  "Giới thiệu",
-  "Tự tìm thấy web",
-  "Khác",
-];
-
 /**
  * Thêm hoặc sửa khách tiềm năng.
  *
@@ -27,7 +18,7 @@ const SOURCES = [
  * biết mỗi cái tên — bắt điền đủ thì người ta bỏ không nhập, mà không nhập
  * thì mất khách, tức mất đúng thứ trang này sinh ra để giữ.
  */
-export default function LeadForm({ lead }: { lead?: LeadRow }) {
+export default function LeadForm({ lead, sources }: { lead?: LeadRow; sources: string[] }) {
   const editing = !!lead;
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(
@@ -129,7 +120,12 @@ export default function LeadForm({ lead }: { lead?: LeadRow }) {
               </label>
               <select id="l-source" name="source" defaultValue={lead?.source ?? ""} className={field}>
                 <option value="">Chưa rõ</option>
-                {SOURCES.map((s) => (
+                {/* Nguồn cũ đã bị xoá khỏi danh sách vẫn phải hiện, không thì
+                    mở form sửa một khách là mất luôn nguồn của họ. */}
+                {lead?.source && !sources.includes(lead.source) && (
+                  <option value={lead.source}>{lead.source}</option>
+                )}
+                {sources.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>

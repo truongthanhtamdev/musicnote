@@ -5,6 +5,7 @@ import { assertRole } from "@/lib/guard";
 import { formatVND, normalizeFacebookUrl } from "@/lib/format";
 import { CONTACT_KEYS, LATE_CHECKIN_QUOTA_KEY, setSetting } from "@/lib/queries";
 import { setBonusRates } from "@/lib/bonus";
+import { setLeadSources } from "@/lib/leads";
 import { logAudit } from "@/lib/audit";
 import type { FormState } from "./teachers";
 
@@ -91,5 +92,30 @@ export async function saveBonusRatesAction(
   );
   revalidatePath("/admin/settings");
   revalidatePath("/admin/thuong");
+  return { success: true };
+}
+
+/**
+ * Danh sách nguồn khách, mỗi dòng một nguồn.
+ *
+ * Để chủ trung tâm tự khai vì mỗi nơi chạy quảng cáo một kiểu, và fanpage thì
+ * mở thêm đóng bớt liên tục — viết cứng trong mã là vài tuần lại phải sửa.
+ */
+export async function saveLeadSourcesAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const session = await assertRole(["admin"]);
+  const raw = String(formData.get("lead_sources") || "");
+  const list = raw
+    .split("\n")
+    .map((s) => s.trim().slice(0, 60))
+    .filter(Boolean);
+  if (list.length === 0) return { error: "Cần ít nhất một nguồn" };
+
+  setLeadSources(list);
+  logAudit(session, "he_thong", `Cập nhật danh sách nguồn khách (${list.length} nguồn)`);
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/tiem-nang");
   return { success: true };
 }

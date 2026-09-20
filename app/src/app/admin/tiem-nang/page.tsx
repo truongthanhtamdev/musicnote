@@ -4,12 +4,14 @@ import {
   LEAD_STAGES,
   LEAD_STAGE_LABELS,
   countByStage,
+  getLeadSources,
   listDueLeads,
   listLeads,
+  statsBySource,
   type LeadStage,
 } from "@/lib/leads";
 import { IconBell, IconUsers } from "@/components/icons";
-import { Card, EmptyState, MetricCard, PageHeader, TableShell, Th } from "@/components/ui";
+import { Card, CardHeader, EmptyState, MetricCard, PageHeader, TableShell, Th } from "@/components/ui";
 import LeadForm from "./lead-form";
 import LeadRowItem from "./lead-row";
 
@@ -35,6 +37,8 @@ export default async function LeadsPage({
   const due = listDueLeads();
   const leads = listLeads({ stage });
   const counts = countByStage();
+  const sources = getLeadSources();
+  const bySource = statsBySource();
   const openCount = counts.new + counts.talking + counts.callback + counts.trial_booked;
 
   return (
@@ -42,7 +46,7 @@ export default async function LeadsPage({
       <PageHeader
         title="Khách tiềm năng"
         subtitle="Khách đã nhắn tin hỏi nhưng chưa đặt lịch học thử. Ghi lại rồi hẹn ngày liên hệ — tới hạn hệ thống sẽ nhắc ở đây."
-        action={<LeadForm />}
+        action={<LeadForm sources={sources} />}
       />
 
       {due.length > 0 && (
@@ -76,6 +80,54 @@ export default async function LeadsPage({
         <MetricCard label="Đã đặt học thử" value={counts.trial_booked} unit="người" />
         <MetricCard label="Đã chốt lớp" value={counts.won} unit="người" tone="mint" />
       </div>
+
+      {bySource.length > 0 && (
+        <Card padded={false}>
+          <CardHeader title="Nguồn nào ra khách tốt nhất" />
+          <div className="px-5 pt-3 pb-1">
+            <p className="text-sm text-ink-500">
+              Tỉ lệ chốt tính trên tổng khách của nguồn đó. Số còn ít thì đọc cho vui thôi — vài
+              chục khách mỗi nguồn trở lên mới đủ để tin.
+            </p>
+          </div>
+          <TableShell>
+            <thead>
+              <tr>
+                <Th>Nguồn</Th>
+                <Th className="text-right">Tổng khách</Th>
+                <Th className="text-right">Đặt học thử</Th>
+                <Th className="text-right">Chốt lớp</Th>
+                <Th className="text-right">Tỉ lệ chốt</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {bySource.map((r) => (
+                <tr key={r.source} className="border-t border-navy-100">
+                  <td className="px-4 py-2.5 text-sm font-medium text-ink-900">{r.source}</td>
+                  <td className="px-4 py-2.5 text-sm text-ink-700 tabular text-right">{r.total}</td>
+                  <td className="px-4 py-2.5 text-sm text-ink-700 tabular text-right">{r.trial}</td>
+                  <td className="px-4 py-2.5 text-sm font-semibold text-mint-700 tabular text-right">
+                    {r.won}
+                  </td>
+                  <td className="px-4 py-2.5 text-sm tabular text-right">
+                    <span
+                      className={`rounded-full px-2 py-0.5 font-semibold ${
+                        r.winRate >= 30
+                          ? "bg-mint-50 text-mint-700"
+                          : r.winRate >= 10
+                            ? "bg-wood-50 text-wood-700"
+                            : "bg-ivory-100 text-ink-500"
+                      }`}
+                    >
+                      {r.winRate}%
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </TableShell>
+        </Card>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {(["all", ...LEAD_STAGES] as const).map((s) => (
@@ -119,7 +171,7 @@ export default async function LeadsPage({
             </thead>
             <tbody>
               {leads.map((l) => (
-                <LeadRowItem key={l.id} lead={l} todayISO={today} />
+                <LeadRowItem key={l.id} lead={l} todayISO={today} sources={sources} />
               ))}
             </tbody>
           </TableShell>

@@ -29,7 +29,15 @@ function followUpInfo(date: string | null, todayISO: string) {
   return { text: `${short} · còn ${days} ngày`, tone: "text-ink-600", urgent: false };
 }
 
-export default function LeadRowItem({ lead, todayISO }: { lead: Lead; todayISO: string }) {
+export default function LeadRowItem({
+  lead,
+  todayISO,
+  sources,
+}: {
+  lead: Lead;
+  todayISO: string;
+  sources: string[];
+}) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const fu = followUpInfo(lead.next_follow_up, todayISO);
   const done = lead.stage === "won" || lead.stage === "lost";
@@ -105,7 +113,7 @@ export default function LeadRowItem({ lead, todayISO }: { lead: Lead; todayISO: 
               </button>
             </form>
           )}
-          <LeadForm lead={lead} />
+          <LeadForm lead={lead} sources={sources} />
           {confirmDelete ? (
             <form action={deleteLeadAction.bind(null, lead.id)} className="inline-flex items-center gap-1">
               <button type="submit" className="text-xs font-semibold text-coral-600 px-1.5 py-1">
