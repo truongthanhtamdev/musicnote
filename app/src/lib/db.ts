@@ -292,6 +292,37 @@ function migrate() {
       UNIQUE(ref_type, ref_id)
     );
 
+    -- Khách tiềm năng: người đã nhắn tin hỏi han nhưng chưa đặt lịch học thử.
+    --
+    -- Khác bảng trial_requests ở chỗ đó là khách tự điền form trên web, còn bảng
+    -- này là khách nhắn Facebook/Zalo do giáo vụ tự nhập vào. Phần lớn khách
+    -- thật nằm ở nhóm sau, và trước giờ họ chỉ tồn tại trong hộp thư Facebook
+    -- — nơi vài trăm cuộc trò chuyện đè lên nhau nên hẹn "hai tuần nữa gọi
+    -- lại" là chắc chắn quên.
+    --
+    -- Cột next_follow_up là lý do chính bảng này tồn tại: có ngày hẹn thì hệ
+    -- thống nhắc được, không có thì khách trôi mất.
+    CREATE TABLE IF NOT EXISTS leads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT,
+      facebook_url TEXT,
+      subject TEXT,
+      /** Khách đến từ đâu: quảng cáo, giới thiệu, tự tìm... */
+      source TEXT,
+      stage TEXT NOT NULL DEFAULT 'new'
+        CHECK(stage IN ('new','talking','callback','trial_booked','won','lost')),
+      /** Ngày hẹn liên hệ lại (YYYY-MM-DD). Trống nghĩa là chưa hẹn gì. */
+      next_follow_up TEXT,
+      note TEXT,
+      /** Giáo vụ đang theo khách này — sau chuyển thành lớp thì gán tiếp. */
+      coordinator_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      /** Lớp đã tạo khi khách chốt, để khỏi nhập lại từ đầu. */
+      converted_class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);
@@ -306,6 +337,8 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_confirmations_date ON session_confirmations(session_date);
     CREATE INDEX IF NOT EXISTS idx_staff_bonuses_staff ON staff_bonuses(staff_id, earned_at);
     CREATE INDEX IF NOT EXISTS idx_staff_bonuses_date ON staff_bonuses(earned_at);
+    CREATE INDEX IF NOT EXISTS idx_leads_followup ON leads(next_follow_up, stage);
+    CREATE INDEX IF NOT EXISTS idx_leads_stage ON leads(stage, updated_at);
   `);
 
   // CREATE TABLE IF NOT EXISTS above only helps on a brand-new database file;

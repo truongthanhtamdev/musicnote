@@ -6,6 +6,7 @@ import {
   countNewTrialRequests,
   countPendingRescheduleRequests,
 } from "@/lib/queries";
+import { countDueLeads } from "@/lib/leads";
 import { todayISO, now } from "@/lib/format";
 import {
   IconBell,
@@ -46,6 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await requireRole(["admin", "coordinator"]);
 
   const newTrialRequests = countNewTrialRequests();
+  const dueLeads = countDueLeads();
   const pendingReschedules = countPendingRescheduleRequests();
 
   const links: NavItem[] = [
@@ -66,6 +68,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           },
         ]
       : []),
+    {
+      href: "/admin/tiem-nang",
+      label: "Khách tiềm năng",
+      icon: <IconUsers className={ICON} />,
+      badge: dueLeads || undefined,
+    },
     {
       href: "/admin/trial-requests",
       label: "Đăng ký học thử",
