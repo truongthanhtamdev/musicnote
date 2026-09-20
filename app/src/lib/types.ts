@@ -23,6 +23,10 @@ export interface UserRow {
   note: string | null;
   languages: string; // comma-separated: "vi" | "vi,en"
   subjects: string; // comma-separated free text, e.g. "Guitar,Piano"; empty = not specified (matches any)
+  /** Hộp thư Telegram đã kết nối; null là chưa bật nhắc lịch qua Telegram. */
+  telegram_chat_id: string | null;
+  /** Mã một lần để kết nối Telegram, đổi mới sau mỗi lần kết nối thành công. */
+  telegram_link_code: string | null;
   active: number;
   created_at: string;
 }

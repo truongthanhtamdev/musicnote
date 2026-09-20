@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SITE_URL } from "@/lib/seo";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics";
+import { AnalyticsPageView } from "@/components/analytics";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -47,7 +50,27 @@ export default function RootLayout({
       lang="vi"
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-ivory-50 text-ink-900">{children}</body>
+      <body className="min-h-full flex flex-col bg-ivory-50 text-ink-900">
+        {children}
+        {GA_MEASUREMENT_ID && (
+          <>
+            {/* Thẻ nội tuyến chạy ngay lúc trình duyệt đọc HTML, nên window.gtag
+                đã sẵn sàng trước khi React chạy — không có lượt xem nào bị rơi
+                vì gọi sớm hơn lúc thư viện GA tải xong. */}
+            <script
+              id="ga-init"
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}',{send_page_view:false});`,
+              }}
+            />
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <AnalyticsPageView />
+          </>
+        )}
+      </body>
     </html>
   );
 }

@@ -85,6 +85,46 @@ Gợi ý:
 - Đặt `AUTH_SECRET` là một chuỗi ngẫu nhiên dài, giữ bí mật và **không đổi**
   sau khi đã có người đăng nhập (đổi sẽ làm mất hiệu lực mọi phiên đăng
   nhập hiện tại).
+- **Đo lượng truy cập (Google Analytics 4)**: tạo một property GA4, lấy mã đo
+  dạng `G-XXXXXXXXXX`, rồi thêm vào `.env.local`:
+
+  ```
+  NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+  ```
+
+  Đây là biến `NEXT_PUBLIC_` nên **phải build lại** (`npm run build`) mới có
+  tác dụng. Bỏ trống thì web không tải GA và không đặt cookie nào.
+
+  App chỉ đo **trang công khai** (trang chủ, thư viện guitar/piano, góc tư
+  vấn). Trang quản trị, trang giáo viên và trang học viên không gửi gì lên
+  GA, nên số liệu không bị nhân sự trung tâm làm sai lệch. Ngoài lượt xem
+  trang, app còn gửi ba sự kiện chuyển đổi: `dang_ky_hoc_thu` (khách gửi form
+  học thử), `nhan_zalo` và `nhan_facebook` (khách bấm nút liên hệ) — nhờ đó
+  biết được trang nào thật sự kéo ra khách.
+- **Bot Telegram nhắc lịch**: nhắn `/newbot` cho [@BotFather](https://t.me/BotFather)
+  trên Telegram để tạo bot, rồi thêm token vào `.env.local`:
+
+  ```
+  TELEGRAM_BOT_TOKEN=123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  ```
+
+  Khởi động lại app là bot chạy — không cần cài cron, không cần khai webhook
+  hay mở thêm cổng nào (app tự hỏi Telegram bằng `getUpdates`). Bỏ trống
+  token thì toàn bộ phần Telegram tắt hẳn.
+
+  Bot làm ba việc: gửi lịch ngày mai vào khoảng 20h mỗi tối, nhắc lại trước
+  mỗi buổi khoảng một tiếng, và đẩy mọi thông báo trong web ra điện thoại.
+  Mỗi tin có mã chống trùng lưu trong bảng `telegram_log`, nên deploy lại
+  giữa chừng cũng không ai nhận hai lần.
+
+  Từng người tự kết nối máy của mình: đăng nhập, vào mục **Nhắc lịch
+  Telegram** trong menu, bấm nút mở Telegram. Trạng thái chung xem ở
+  **Cài đặt trung tâm**. Lệnh dùng được với bot: `/lich` xem lịch 7 ngày tới,
+  `/huy` ngừng nhận nhắc lịch.
+
+  > **Chỉ được chạy một tiến trình app với mỗi token.** Hai tiến trình cùng
+  > hỏi Telegram sẽ giành mất tin của nhau. Dùng `pm2 start ... -i 1` hoặc
+  > một service systemd duy nhất.
 
 ## Các luồng chính
 

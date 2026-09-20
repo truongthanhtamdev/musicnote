@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { submitTrialRequestAction, type TrialFormState } from "@/actions/trial";
 import { LANGUAGE_LABELS, SUBJECT_SUGGESTIONS } from "@/lib/types";
 import { IconCheckCircle } from "@/components/icons";
+import { trackEvent } from "@/lib/analytics";
 
 const initialState: TrialFormState = {};
 
@@ -28,6 +29,13 @@ export function TrialForm() {
       setDismissed(false);
     }
   }
+
+  // Ghi nhận chuyển đổi cho Google Analytics: đây là câu trả lời cho
+  // "trang nào kéo ra khách đăng ký học thử". Chạy trong useEffect vì mỗi
+  // lượt gửi thành công tạo một đối tượng state mới, nên đếm đúng một lần.
+  useEffect(() => {
+    if (state.success) trackEvent("dang_ky_hoc_thu");
+  }, [state]);
 
   if (state.success && !dismissed) {
     return (

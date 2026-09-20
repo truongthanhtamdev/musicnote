@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { getCenterContact, getLateCheckinQuota } from "@/lib/queries";
 import { getBonusRates } from "@/lib/bonus";
 import { getLeadSources } from "@/lib/leads";
+import { telegramStatus } from "@/lib/telegram";
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { ContactButtons } from "@/components/contact-buttons";
 import ContactForm from "./contact-form";
@@ -15,6 +17,7 @@ export default async function AdminSettingsPage() {
   const quota = getLateCheckinQuota();
   const bonus = getBonusRates();
   const leadSources = getLeadSources();
+  const telegram = await telegramStatus();
 
   return (
     <div className="space-y-5">
@@ -66,6 +69,66 @@ export default async function AdminSettingsPage() {
             từng fanpage thì trang Khách tiềm năng mới so sánh được fanpage nào ra khách tốt nhất.
           </p>
           <LeadSourcesForm sources={leadSources} />
+        </div>
+      </Card>
+
+      <Card padded={false}>
+        <CardHeader title="Bot Telegram nhắc lịch" />
+        <div className="p-5">
+          {telegram.enabled ? (
+            <>
+              <p className="text-sm text-ink-500 mb-3">
+                Bot đang chạy{telegram.botUsername ? ` với tên @${telegram.botUsername}` : ""}. Mỗi
+                tối bot gửi lịch ngày mai, và nhắc lại trước mỗi buổi khoảng một tiếng. Ai đã nối
+                tài khoản cũng nhận luôn các thông báo của web ngay trên điện thoại.
+              </p>
+              <dl className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-xl border border-navy-100 bg-ivory-50 px-3 py-2.5">
+                  <dt className="text-xs text-ink-500">Đã nối</dt>
+                  <dd className="text-lg font-bold text-ink-900 tabular">{telegram.linkedTotal}</dd>
+                </div>
+                <div className="rounded-xl border border-navy-100 bg-ivory-50 px-3 py-2.5">
+                  <dt className="text-xs text-ink-500">Giáo viên</dt>
+                  <dd className="text-lg font-bold text-ink-900 tabular">
+                    {telegram.linkedTeachers}
+                  </dd>
+                </div>
+                <div className="rounded-xl border border-navy-100 bg-ivory-50 px-3 py-2.5">
+                  <dt className="text-xs text-ink-500">Học viên</dt>
+                  <dd className="text-lg font-bold text-ink-900 tabular">
+                    {telegram.linkedStudents}
+                  </dd>
+                </div>
+              </dl>
+              <p className="text-sm text-ink-500 mt-3">
+                Mỗi người tự nối máy của mình ở trang{" "}
+                <Link href="/account/telegram" className="font-medium text-wood-700 hover:underline">
+                  Nhắc lịch Telegram
+                </Link>{" "}
+                — giáo viên và học viên đều thấy mục này trong menu.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-ink-500 mb-3">
+                Chưa bật. Bật xong thì giáo viên và học viên nhận nhắc lịch thẳng vào Telegram, không
+                cần ai ngồi nhắn tay.
+              </p>
+              <ol className="text-sm text-ink-600 space-y-1.5 list-decimal pl-5">
+                <li>
+                  Mở Telegram, nhắn cho <span className="font-mono text-ink-900">@BotFather</span>,
+                  gõ <span className="font-mono text-ink-900">/newbot</span> rồi đặt tên.
+                </li>
+                <li>BotFather trả về một dãy token — chép lại.</li>
+                <li>
+                  Trên máy chủ, thêm dòng{" "}
+                  <span className="font-mono text-ink-900">TELEGRAM_BOT_TOKEN=...</span> vào tệp{" "}
+                  <span className="font-mono text-ink-900">.env.local</span>.
+                </li>
+                <li>Khởi động lại web. Mục này sẽ tự chuyển sang &ldquo;đang chạy&rdquo;.</li>
+              </ol>
+            </>
+          )}
         </div>
       </Card>
 

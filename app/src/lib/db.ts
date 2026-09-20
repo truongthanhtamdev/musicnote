@@ -323,6 +323,24 @@ function migrate() {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    /*
+     * Sổ những tin đã bắn qua Telegram, chỉ để KHỎI GỬI TRÙNG.
+     *
+     * Lịch nhắc do chính app chạy bằng bộ hẹn giờ trong tiến trình, nên mỗi
+     * lần khởi động lại (deploy, VPS reboot) là bộ hẹn giờ chạy lại từ đầu.
+     * Không có sổ này thì học viên nhận đúng một lời nhắc ba bốn lần trong
+     * ngày deploy. dedup_key là duy nhất ở tầng cơ sở dữ liệu, nên dù hai
+     * tiến trình cùng chạy thì vẫn chỉ một tin được gửi.
+     */
+    CREATE TABLE IF NOT EXISTS telegram_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dedup_key TEXT NOT NULL UNIQUE,
+      chat_id TEXT NOT NULL,
+      sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_telegram_log_sent ON telegram_log(sent_at);
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);
@@ -388,6 +406,11 @@ function migrate() {
   // chưa có nó lúc chạy khối CREATE TABLE ở trên.
   db.exec("CREATE INDEX IF NOT EXISTS idx_classes_code ON classes(code)");
   backfillClassCodes();
+  // Telegram của từng người dùng. chat_id là "hộp thư" mà bot nhắn tới; nó do
+  // Telegram cấp khi người dùng bấm Bắt đầu, không phải thứ tự khai được.
+  // link_code là mã một lần người dùng gửi cho bot để bot biết đây là ai.
+  ensureColumn("users", "telegram_chat_id", "TEXT");
+  ensureColumn("users", "telegram_link_code", "TEXT");
   ensureColumn("packages", "bonus_sessions", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("packages", "course_count", "INTEGER NOT NULL DEFAULT 1");
   backfillClassStages();

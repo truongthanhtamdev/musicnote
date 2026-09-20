@@ -229,6 +229,13 @@ export const IconChat = (p: IconProps) => (
   </Svg>
 );
 
+export const IconTelegram = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M21.5 4.5 2.8 11.2a.5.5 0 0 0 .03.94l4.6 1.4 1.75 5.3a.5.5 0 0 0 .87.16l2.4-2.7 4.5 3.3a.5.5 0 0 0 .78-.28l3.6-14.2a.5.5 0 0 0-.66-.6z" />
+    <path d="m7.4 13.5 10.7-6.6-7.9 8.1" />
+  </Svg>
+);
+
 export const IconVideo = (p: IconProps) => (
   <Svg {...p}>
     <rect x="2.5" y="6" width="13" height="12" rx="2.5" />

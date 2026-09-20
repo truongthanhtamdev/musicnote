@@ -121,6 +121,68 @@ export function listClassesByDay(dayOfWeek: number): ClassWithTeacher[] {
     .all(dayOfWeek) as ClassWithTeacher[];
 }
 
+/** Một buổi học có thật trên lịch của một ngày cụ thể. */
+export interface ScheduledSession {
+  cls: ClassWithTeacher;
+  date: string;
+  time: string;
+  /** Buổi được dời TỚI ngày này, không phải buổi cố định hằng tuần. */
+  moved: boolean;
+}
+
+/**
+ * Mọi buổi học dự kiến diễn ra trong một ngày, dùng cho lời nhắc tự động.
+ *
+ * Khác `listClassesByDay` ở chỗ đây là lịch THẬT của một ngày cụ thể chứ
+ * không phải khuôn lịch hằng tuần: buổi đã điểm danh rồi thì bỏ ra (dạy xong
+ * còn nhắc là phiền), buổi đã dời đi thì không nhắc ở ngày cũ mà nhắc ở ngày
+ * mới. Lớp linh hoạt không có ngày cố định nên không đoán trước được, chỉ vào
+ * đây khi có buổi dời tới.
+ */
+export function listSessionsOn(dateISO: string): ScheduledSession[] {
+  const dayOfWeek = new Date(`${dateISO}T00:00:00`).getDay();
+
+  const recurring = db
+    .prepare(
+      `SELECT c.*, u.name AS teacher_name
+       FROM classes c LEFT JOIN users u ON u.id = c.teacher_id
+       WHERE c.status = 'active' AND c.schedule_type = 'fixed'
+         AND c.day_of_week = ? AND date(c.created_at) <= ?`
+    )
+    .all(dayOfWeek, dateISO) as ClassWithTeacher[];
+
+  // Có hàng điểm danh trên ngày này nghĩa là buổi đã được xử lý xong — dạy
+  // xong, vắng, hoặc dời đi nơi khác. Cả ba trường hợp đều không nhắc nữa.
+  const handled = new Set(
+    (
+      db.prepare("SELECT class_id FROM attendance WHERE session_date = ?").all(dateISO) as {
+        class_id: number;
+      }[]
+    ).map((r) => r.class_id)
+  );
+
+  const sessions: ScheduledSession[] = recurring
+    .filter((c) => !handled.has(c.id))
+    .map((cls) => ({ cls, date: dateISO, time: cls.start_time, moved: false }));
+
+  const movedIn = db
+    .prepare(
+      `SELECT c.*, u.name AS teacher_name, a.rescheduled_to_time AS moved_time
+       FROM attendance a
+       JOIN classes c ON c.id = a.class_id
+       LEFT JOIN users u ON u.id = c.teacher_id
+       WHERE a.status = 'rescheduled' AND a.rescheduled_to_date = ? AND c.status = 'active'`
+    )
+    .all(dateISO) as (ClassWithTeacher & { moved_time: string | null })[];
+
+  for (const row of movedIn) {
+    const { moved_time, ...cls } = row;
+    sessions.push({ cls, date: dateISO, time: moved_time || cls.start_time, moved: true });
+  }
+
+  return sessions.sort((a, b) => a.time.localeCompare(b.time));
+}
+
 export function teacherSpeaksLanguage(teacher: UserRow, language: string): boolean {
   return parseLanguages(teacher.languages).includes(language as "vi" | "en");
 }
@@ -947,6 +1009,13 @@ export function notifyUser(userId: number, message: string, classId: number | nu
     message,
     classId
   );
+
+  // Ai đã nối Telegram thì nhận luôn trên điện thoại, khỏi phải vào web mới
+  // thấy. Nạp động để queries.ts không kéo theo phần Telegram khi chưa bật,
+  // và để hai tệp không tham chiếu vòng lẫn nhau.
+  void import("./telegram")
+    .then((m) => m.pushNotification(userId, message))
+    .catch(() => {});
 }
 
 /** Đăng ký học thử từ trang chủ, mới nhất lên đầu. */

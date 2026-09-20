@@ -13,8 +13,10 @@ import {
   IconClasses,
   IconClock,
   IconHome,
+  IconTelegram,
   IconWallet,
 } from "@/components/icons";
+import { telegramEnabled } from "@/lib/telegram";
 
 const ICON = "w-5 h-5";
 
@@ -31,6 +33,17 @@ export default async function TeacherLayout({ children }: { children: React.Reac
     },
     { href: "/teacher/availability", label: "Lịch tuần", icon: <IconClock className={ICON} /> },
     { href: "/teacher/earnings", label: "Thu nhập", icon: <IconWallet className={ICON} /> },
+    // Chỉ hiện khi trung tâm đã cài bot — không thì đây là một mục dẫn tới
+    // trang báo "chưa bật", vô ích với giáo viên.
+    ...(telegramEnabled()
+      ? [
+          {
+            href: "/account/telegram",
+            label: "Nhắc lịch Telegram",
+            icon: <IconTelegram className={ICON} />,
+          },
+        ]
+      : []),
   ];
 
   // Badge chuông: lớp hôm nay chưa điểm danh + thông báo chưa đọc + đơn xin dời lịch chờ duyệt.
@@ -52,9 +65,9 @@ export default async function TeacherLayout({ children }: { children: React.Reac
       userName={session.name}
       roleLabel="Giáo viên"
       links={links}
-      bottomNav={links.map((l) =>
-        l.href === "/teacher/availability" ? { ...l, label: "Lịch tuần" } : l
-      )}
+      bottomNav={links
+        .filter((l) => l.href !== "/account/telegram")
+        .map((l) => (l.href === "/teacher/availability" ? { ...l, label: "Lịch tuần" } : l))}
       alertCount={pending + unread + reschedules}
       maxWidth="max-w-5xl"
     >
