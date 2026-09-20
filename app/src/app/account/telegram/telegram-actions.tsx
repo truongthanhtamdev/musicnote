@@ -1,12 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
-import { testTelegramAction, unlinkTelegramAction } from "@/actions/telegram";
-import type { FormState } from "@/actions/account";
+import {
+  testTelegramAction,
+  unlinkTelegramAction,
+  type TelegramActionState,
+} from "@/actions/telegram";
 import { IconAlert, IconCheck } from "@/components/icons";
 import { btn } from "@/components/ui";
 
-const initialState: FormState = {};
+const initialState: TelegramActionState = {};
 
 export default function TelegramActions() {
   const [testState, runTest, testing] = useActionState(testTelegramAction, initialState);

@@ -181,3 +181,39 @@ export function startTelegramReminders() {
   setInterval(() => void tick(), TICK_MS).unref();
   console.log("[telegram] đã bật lịch nhắc tự động");
 }
+
+/* ------------------------------------------------------------------ */
+/* Xem trước cho người quản lý                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Gửi ngay lịch ngày mai của CẢ TRUNG TÂM cho một người quản lý.
+ *
+ * Có nút này vì lời nhắc thật chỉ chạy lúc 20h hoặc sát giờ học, nên sau khi
+ * cài bot xong thì không có cách nào nhìn thấy nó hoạt động mà không phải
+ * ngồi đợi. Cố ý KHÔNG ghi mã chống trùng: đây là thao tác người dùng tự bấm,
+ * bấm mấy lần cũng phải gửi mấy lần, và nó chỉ gửi cho đúng người đang bấm.
+ */
+export async function sendTomorrowPreview(
+  userId: number
+): Promise<{ sent: boolean; count: number }> {
+  const tomorrowISO = toISODate(addDays(now(), 1));
+  const sessions = listSessionsOn(tomorrowISO);
+  const label = dayLabel(tomorrowISO);
+
+  const body =
+    sessions.length === 0
+      ? `📅 <b>Lịch cả trung tâm ngày mai — ${label}</b>\n\nNgày mai chưa có buổi nào.`
+      : `📅 <b>Lịch cả trung tâm ngày mai — ${label}</b>\n` +
+        sessions
+          .map(
+            (s) =>
+              `• ${timeRange(s)} · ${escapeHtml(s.cls.subject)} — ${studentLabel(s)} ` +
+              `(${s.cls.teacher_name ? escapeHtml(s.cls.teacher_name) : "chưa xếp giáo viên"})` +
+              `${s.moved ? " (học bù)" : ""}`
+          )
+          .join("\n") +
+        `\n\nTổng ${sessions.length} buổi. Tối nay mỗi giáo viên và học viên nhận phần lịch của riêng họ.`;
+
+  return { sent: await sendToUser(userId, body), count: sessions.length };
+}

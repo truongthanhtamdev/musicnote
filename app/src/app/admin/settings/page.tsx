@@ -10,6 +10,7 @@ import ContactForm from "./contact-form";
 import QuotaForm from "./quota-form";
 import BonusForm from "./bonus-form";
 import LeadSourcesForm from "./lead-sources-form";
+import TelegramPreview from "./telegram-preview";
 
 export default async function AdminSettingsPage() {
   await requireRole(["admin"]);
@@ -107,6 +108,7 @@ export default async function AdminSettingsPage() {
                 </Link>{" "}
                 — giáo viên và học viên đều thấy mục này trong menu.
               </p>
+              <TelegramPreview />
             </>
           ) : (
             <>
