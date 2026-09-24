@@ -1,28 +1,16 @@
-import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { db } from "./db";
-import type { Role, UserRow } from "./types";
+import {
+  COOKIE_NAME,
+  sessionCookieOptions,
+  signSession,
+  verifySession,
+  type SessionPayload,
+} from "./session-token";
+import type { UserRow } from "./types";
 
-const SECRET = process.env.AUTH_SECRET || "musicnote-dev-secret-change-me";
-const COOKIE_NAME = "musicnote_session";
-
-export interface SessionPayload {
-  userId: number;
-  role: Role;
-  name: string;
-}
-
-export function signSession(payload: SessionPayload): string {
-  return jwt.sign(payload, SECRET, { expiresIn: "30d" });
-}
-
-export function verifySession(token: string): SessionPayload | null {
-  try {
-    return jwt.verify(token, SECRET) as SessionPayload;
-  } catch {
-    return null;
-  }
-}
+export { signSession, verifySession };
+export type { SessionPayload };
 
 export async function getSession(): Promise<SessionPayload | null> {
   const store = await cookies();
@@ -33,13 +21,7 @@ export async function getSession(): Promise<SessionPayload | null> {
 
 export async function setSessionCookie(payload: SessionPayload) {
   const store = await cookies();
-  store.set(COOKIE_NAME, signSession(payload), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.COOKIE_SECURE === "true",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  store.set(COOKIE_NAME, signSession(payload), sessionCookieOptions());
 }
 
 export async function clearSessionCookie() {
