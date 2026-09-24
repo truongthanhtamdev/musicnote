@@ -1,10 +1,11 @@
 import { requireRole } from "@/lib/guard";
+import { ADMIN_AREA_ROLES } from "@/lib/types";
 import { listCustomerProfiles } from "@/lib/queries";
 import { Card, PageHeader } from "@/components/ui";
 import StudentLookup from "./student-lookup";
 
 export default async function StudentLookupPage() {
-  await requireRole(["admin", "coordinator"]);
+  await requireRole(ADMIN_AREA_ROLES);
   const customers = listCustomerProfiles();
 
   return (

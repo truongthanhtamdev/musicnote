@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
+import { ADMIN_AREA_ROLES } from "@/lib/types";
 import {
   listRatings,
   listTeachers,
@@ -43,7 +44,7 @@ export default async function RatingsPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string; low?: string }>;
 }) {
-  await requireRole(["admin", "coordinator"]);
+  await requireRole(ADMIN_AREA_ROLES);
   const sp = await searchParams;
   const from = sp.from || firstDayOfMonth();
   const to = sp.to || lastDayOfMonth();

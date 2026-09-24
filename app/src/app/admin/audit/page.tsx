@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { listAudit, AUDIT_AREA_LABELS, type AuditArea } from "@/lib/audit";
 import { IconSearch } from "@/components/icons";
 import {
@@ -38,7 +39,7 @@ export default async function AuditPage({
 }: {
   searchParams: Promise<{ area?: string; q?: string }>;
 }) {
-  await requireRole(["admin"]);
+  await requireRole(MANAGE_ROLES);
   const sp = await searchParams;
   const area = (
     Object.keys(AUDIT_AREA_LABELS).includes(sp.area || "") ? sp.area : undefined

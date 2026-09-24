@@ -40,7 +40,7 @@ function migrate() {
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('admin','coordinator','teacher','student')),
+      role TEXT NOT NULL CHECK(role IN ('admin','manager','coordinator','teacher','student')),
       phone TEXT,
       pay_per_session INTEGER,
       languages TEXT NOT NULL DEFAULT 'vi',
@@ -416,6 +416,7 @@ function migrate() {
   backfillClassStages();
   seedDefaultSettings();
   ensureStudentRoleSupported();
+  ensureManagerRoleSupported();
   migratePackagesToTable();
   invertAvailabilityToBusyOnce();
 }
@@ -620,6 +621,64 @@ function ensureStudentRoleSupported() {
   } catch (err) {
     const code = (err as { code?: string }).code;
     if (code !== "SQLITE_BUSY") throw err;
+  }
+}
+
+/*
+ * Thêm vai trò 'manager' (Quản lý) vào ràng buộc CHECK của bảng users.
+ *
+ * SQLite không sửa được CHECK tại chỗ. Cách chính thống là dựng bảng mới rồi
+ * chép dữ liệu sang, nhưng bảng users đang được nhiều bảng khác trỏ khoá
+ * ngoại vào — DROP nó là dữ liệu bị dọn theo, đúng thứ không được phép sai.
+ *
+ * Ở đây ta chỉ NỚI RỘNG ràng buộc (thêm một giá trị được phép), nên mọi dòng
+ * đang có vẫn hợp lệ và không cần đụng tới dữ liệu. Vì vậy sửa thẳng câu lệnh
+ * tạo bảng trong sqlite_master — tài liệu SQLite nêu đây là cách đổi CHECK mà
+ * không phải chép bảng. Không dòng dữ liệu nào bị đọc hay ghi.
+ */
+function ensureManagerRoleSupported() {
+  const current = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'")
+    .get() as { sql: string } | undefined;
+  if (!current || current.sql.includes("'manager'")) return;
+
+  const patched = current.sql.replace(
+    /CHECK\s*\(\s*role\s+IN\s*\([^)]*\)\s*\)/i,
+    "CHECK(role IN ('admin','manager','coordinator','teacher','student'))"
+  );
+  // Không khớp được mẫu thì dừng hẳn. Thà thiếu vai trò Quản lý còn hơn ghi
+  // một câu lệnh tạo bảng méo mó vào sqlite_master — sai ở đây là hỏng database.
+  if (!patched.includes("'manager'")) {
+    console.error("[migrate] không nhận ra ràng buộc role của bảng users — bỏ qua vai trò Quản lý");
+    return;
+  }
+
+  // Kết nối riêng, chỉ sống trong lúc nâng cấp: ghi vào sqlite_master đòi tắt
+  // chế độ phòng vệ của SQLite, mà kết nối chính thì phải giữ chế độ đó bật
+  // suốt đời để một câu lệnh lỗi không phá được cấu trúc database.
+  const migration = new Database(DB_PATH);
+  try {
+    migration.pragma("busy_timeout = 5000");
+    migration.unsafeMode(true);
+    const version = (migration.pragma("schema_version", { simple: true }) as number) + 1;
+    try {
+      migration.pragma("writable_schema = ON");
+      migration
+        .prepare("UPDATE sqlite_master SET sql = ? WHERE type = 'table' AND name = 'users'")
+        .run(patched);
+      // Tăng schema_version để mọi kết nối đọc lại định nghĩa bảng; không tăng
+      // thì kết nối chính vẫn dùng ràng buộc cũ đang nhớ trong bộ nhớ.
+      migration.pragma(`schema_version = ${version}`);
+    } finally {
+      migration.pragma("writable_schema = OFF");
+    }
+    const check = migration.pragma("integrity_check", { simple: true });
+    if (check !== "ok") console.error(`[migrate] database sau khi thêm vai trò Quản lý: ${check}`);
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (code !== "SQLITE_BUSY") throw err;
+  } finally {
+    migration.close();
   }
 }
 

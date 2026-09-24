@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/guard";
+import { ADMIN_AREA_ROLES, MANAGE_ROLES, ROLE_LABELS } from "@/lib/types";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import {
   listClassesByDay,
@@ -44,7 +45,9 @@ function overdueTodayCount(): number {
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await requireRole(["admin", "coordinator"]);
+  const session = await requireRole(ADMIN_AREA_ROLES);
+  const isOwner = session.role === "admin";
+  const canManage = MANAGE_ROLES.includes(session.role);
 
   const newTrialRequests = countNewTrialRequests();
   const dueLeads = countDueLeads();
@@ -59,7 +62,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       label: "Lịch & điểm danh",
       icon: <IconCalendarCheck className={ICON} />,
     },
-    ...(session.role === "admin"
+    ...(canManage
       ? [
           {
             href: "/admin/packages",
@@ -89,7 +92,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/assign", label: "Giao lớp", icon: <IconUsers className={ICON} /> },
     { href: "/admin/teachers", label: "Giáo viên", icon: <IconTeacher className={ICON} /> },
     { href: "/admin/ratings", label: "Khách đánh giá", icon: <IconStar className={ICON} /> },
-    ...(session.role === "admin"
+    ...(isOwner
       ? [
           {
             href: "/admin/payroll",
@@ -105,7 +108,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         ]
       : []),
     { href: "/admin/import", label: "Nhập dữ liệu", icon: <IconUpload className={ICON} /> },
-    ...(session.role === "admin"
+    ...(canManage
       ? [
           {
             href: "/admin/students",
@@ -127,6 +130,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             label: "Nhật ký thay đổi",
             icon: <IconHistory className={ICON} />,
           },
+        ]
+      : []),
+    // Bản sao lưu là toàn bộ database, tải về là đọc được cả doanh thu —
+    // nên nó đứng cùng nhóm tiền bạc chứ không phải nhóm vận hành.
+    ...(isOwner
+      ? [
           {
             href: "/admin/backup",
             label: "Sao lưu dữ liệu",
@@ -140,7 +149,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <AppShell
       brandTitle="Piano Guitar Đệm Hát"
       userName={session.name}
-      roleLabel={session.role === "admin" ? "Quản trị viên" : "Giáo vụ"}
+      roleLabel={ROLE_LABELS[session.role]}
       links={links}
       alertCount={overdueTodayCount()}
     >

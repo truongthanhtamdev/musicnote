@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/guard";
 import { listTeachers } from "@/lib/queries";
 import { filterPackageRows, listPackageRows, type PackageSP } from "./filters";
 import { AutoSubmitSelect } from "./auto-submit-select";
-import { PACKAGE_OPTIONS, SUBJECT_SUGGESTIONS, formatClassSchedule } from "@/lib/types";
+import { PACKAGE_OPTIONS, SUBJECT_SUGGESTIONS, formatClassSchedule, MANAGE_ROLES } from "@/lib/types";
 import { IconDownload, IconPackage, IconSearch, SubjectIcon } from "@/components/icons";
 import {
   Avatar,
@@ -61,7 +61,7 @@ function Chip({
 }
 
 export default async function PackagesPage({ searchParams }: { searchParams: Promise<SP> }) {
-  await requireRole(["admin"]);
+  await requireRole(MANAGE_ROLES);
   const sp = await searchParams;
   const teachers = listTeachers(true);
 

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getTuitionStatusForClasses } from "@/lib/queries";
-import { formatClassSchedule } from "@/lib/types";
+import { formatClassSchedule, MANAGE_ROLES } from "@/lib/types";
 import { todayISO } from "@/lib/format";
 import { filterPackageRows, listPackageRows, type PackageSP } from "../filters";
 
@@ -13,7 +13,7 @@ function cell(value: string | number | null | undefined): string {
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
-  if (!session || session.role !== "admin") {
+  if (!session || !MANAGE_ROLES.includes(session.role)) {
     return new Response("Forbidden", { status: 403 });
   }
 

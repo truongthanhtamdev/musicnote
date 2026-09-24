@@ -7,11 +7,7 @@ import { db } from "@/lib/db";
 import { nowHHMM, todayISO } from "@/lib/format";
 import { assertRole } from "@/lib/guard";
 import { getAttendance, getClass, getPackageProgress } from "@/lib/queries";
-import {
-  ATTENDANCE_STATUS_LABELS,
-  hasRescheduleInfo,
-  type AttendanceStatus,
-} from "@/lib/types";
+import { ATTENDANCE_STATUS_LABELS, hasRescheduleInfo, type AttendanceStatus, ADMIN_AREA_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import { awardTrialBonus } from "@/lib/bonus";
 import type { FormState } from "./teachers";
@@ -177,7 +173,7 @@ export async function correctAttendanceAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
 
   const id = Number(formData.get("id"));
   const status = String(formData.get("status") || "") as AttendanceStatus;

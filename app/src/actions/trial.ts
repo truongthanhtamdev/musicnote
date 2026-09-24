@@ -6,7 +6,7 @@ import { assertRole } from "@/lib/guard";
 import { getUserById, getUserByEmail } from "@/lib/auth";
 import { createStudentAccount } from "@/lib/student-accounts";
 import { normalizeLoginPhone } from "@/lib/queries";
-import { SUBJECT_SUGGESTIONS, type TrialRequestStatus } from "@/lib/types";
+import { SUBJECT_SUGGESTIONS, type TrialRequestStatus, ADMIN_AREA_ROLES } from "@/lib/types";
 import type { FormState } from "./teachers";
 
 export interface TrialFormState extends FormState {
@@ -82,14 +82,14 @@ export async function submitTrialRequestAction(
 }
 
 export async function setTrialRequestStatusAction(id: number, status: TrialRequestStatus) {
-  await assertRole(["admin", "coordinator"]);
+  await assertRole(ADMIN_AREA_ROLES);
   db.prepare("UPDATE trial_requests SET status = ? WHERE id = ?").run(status, id);
   revalidatePath("/admin/trial-requests");
   revalidatePath("/admin");
 }
 
 export async function deleteTrialRequestAction(id: number) {
-  await assertRole(["admin", "coordinator"]);
+  await assertRole(ADMIN_AREA_ROLES);
   db.prepare("DELETE FROM trial_requests WHERE id = ?").run(id);
   revalidatePath("/admin/trial-requests");
   revalidatePath("/admin");

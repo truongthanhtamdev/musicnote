@@ -46,7 +46,7 @@ export function listTeachers(includeInactive = true): UserRow[] {
 
 export function listStaff(): UserRow[] {
   return db
-    .prepare("SELECT * FROM users WHERE role IN ('admin','coordinator') ORDER BY role, name")
+    .prepare("SELECT * FROM users WHERE role IN ('admin','manager','coordinator') ORDER BY role, name")
     .all() as UserRow[];
 }
 

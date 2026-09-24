@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/guard";
+import { ADMIN_AREA_ROLES } from "@/lib/types";
 import { todayISO } from "@/lib/format";
 import {
   LEAD_STAGES,
@@ -27,7 +28,7 @@ export default async function LeadsPage({
 }: {
   searchParams: Promise<{ stage?: string }>;
 }) {
-  await requireRole(["admin", "coordinator"]);
+  await requireRole(ADMIN_AREA_ROLES);
   const sp = await searchParams;
   const stage = (LEAD_STAGES as readonly string[]).includes(sp.stage ?? "")
     ? (sp.stage as LeadStage)

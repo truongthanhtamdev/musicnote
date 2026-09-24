@@ -3,7 +3,8 @@
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { assertRole, assertSession } from "@/lib/guard";
+import { adminGuardError, assertRole, assertSession } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { getUserById } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { normalizeFacebookUrl } from "@/lib/format";
@@ -48,7 +49,7 @@ export async function adminResetPasswordAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
 
   const userId = Number(formData.get("user_id"));
   const newPassword = String(formData.get("new_password") || "");
@@ -58,13 +59,19 @@ export async function adminResetPasswordAction(
     return { error: "Mật khẩu mới cần tối thiểu 6 ký tự" };
   }
 
+  // Phải kiểm TRƯỚC khi ghi: đặt lại mật khẩu của chủ trung tâm là chiếm được
+  // tài khoản đó, nên đây chính là đường leo thang quyền ngắn nhất.
+  const target = getUserById(userId);
+  if (!target) return { error: "Không tìm thấy tài khoản" };
+  const denied = adminGuardError(session, target.role);
+  if (denied) return { error: denied };
+
   db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
     bcrypt.hashSync(newPassword, 10),
     userId
   );
 
-  const target = getUserById(userId);
-  logAudit(session, "tai_khoan", `Đặt lại mật khẩu cho ${target?.name ?? `tài khoản #${userId}`}`);
+  logAudit(session, "tai_khoan", `Đặt lại mật khẩu cho ${target.name}`);
   return { success: true };
 }
 

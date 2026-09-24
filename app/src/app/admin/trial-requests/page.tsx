@@ -1,12 +1,12 @@
 import { requireRole } from "@/lib/guard";
 import { listTrialRequests } from "@/lib/queries";
-import { TRIAL_REQUEST_STATUS_LABELS, type TrialRequestStatus } from "@/lib/types";
+import { TRIAL_REQUEST_STATUS_LABELS, type TrialRequestStatus, ADMIN_AREA_ROLES } from "@/lib/types";
 import { IconBell, IconUser } from "@/components/icons";
 import { Card, EmptyState, MetricCard, PageHeader, TableShell, Th } from "@/components/ui";
 import RequestRow from "./request-row";
 
 export default async function TrialRequestsPage() {
-  await requireRole(["admin", "coordinator"]);
+  await requireRole(ADMIN_AREA_ROLES);
   const requests = listTrialRequests();
   const counts = Object.fromEntries(
     Object.keys(TRIAL_REQUEST_STATUS_LABELS).map((status) => [

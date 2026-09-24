@@ -1,6 +1,36 @@
 import { formatTimeRange } from "./format";
 
-export type Role = "admin" | "coordinator" | "teacher" | "student";
+export type Role = "admin" | "manager" | "coordinator" | "teacher" | "student";
+
+export const ROLE_LABELS: Record<Role, string> = {
+  admin: "Chủ trung tâm",
+  manager: "Quản lý",
+  coordinator: "Giáo vụ",
+  teacher: "Giáo viên",
+  student: "Học viên",
+};
+
+/**
+ * Ba nhóm quyền, đặt tên theo Ý NGHĨA chứ không liệt kê vai trò ở từng chỗ.
+ *
+ * Trước đây mỗi trang tự viết ["admin", "coordinator"], nên thêm một vai trò
+ * là phải sửa sáu chục chỗ và chỉ cần sót một chỗ là thủng quyền. Gom lại ba
+ * hằng số thì lần sau đổi chính sách chỉ sửa đúng ở đây.
+ */
+
+/** Vào được khu quản trị /admin. */
+export const ADMIN_AREA_ROLES: Role[] = ["admin", "manager", "coordinator"];
+
+/**
+ * Toàn quyền vận hành và nhân sự: tạo tài khoản, sửa giáo viên, sửa cài đặt.
+ * KHÔNG gồm sổ sách tiền bạc — doanh thu, lương, thưởng và sao lưu vẫn chỉ
+ * mình chủ trung tâm xem được (bản sao lưu chứa toàn bộ dữ liệu, tải về là
+ * đọc được doanh thu).
+ */
+export const MANAGE_ROLES: Role[] = ["admin", "manager"];
+
+/** Chỉ chủ trung tâm: mọi thứ dính tới tiền. */
+export const MONEY_ROLES: Role[] = ["admin"];
 
 export function roleHomePath(role: Role): string {
   if (role === "teacher") return "/teacher";

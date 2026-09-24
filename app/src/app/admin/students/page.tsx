@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { listAccountCandidates, listClassCodesByStudent, listStudents } from "@/lib/queries";
 import { IconUser, IconUsers } from "@/components/icons";
 import {
@@ -17,7 +18,7 @@ import NewStudentForm from "./new-student-form";
 import ToggleStudentActiveButton from "./toggle-active-button";
 
 export default async function StudentsPage() {
-  await requireRole(["admin"]);
+  await requireRole(MANAGE_ROLES);
   const students = listStudents();
   const candidates = listAccountCandidates();
   const codesByStudent = listClassCodesByStudent();

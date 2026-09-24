@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
+import { ADMIN_AREA_ROLES } from "@/lib/types";
 import { normalizeFacebookUrl } from "@/lib/format";
 import { createLead, deleteLead, getLead, updateLead, type LeadStage } from "@/lib/leads";
 import { logAudit } from "@/lib/audit";
@@ -35,7 +36,7 @@ export async function createLeadAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
   const data = readForm(formData);
   if (!data.name) return { error: "Vui lòng nhập tên khách" };
 
@@ -50,7 +51,7 @@ export async function updateLeadAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
   const id = Number(formData.get("id"));
   const before = getLead(id);
   if (!before) return { error: "Không tìm thấy khách này" };
@@ -67,7 +68,7 @@ export async function updateLeadAction(
 
 /** Đổi nhanh giai đoạn ngay trên danh sách, khỏi mở hộp thoại sửa. */
 export async function setLeadStageAction(id: number, stage: string) {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
   if (!STAGES.includes(stage)) return;
   const before = getLead(id);
   if (!before) return;
@@ -83,7 +84,7 @@ export async function setLeadStageAction(id: number, stage: string) {
  * xong, chọn ngày, xong việc.
  */
 export async function snoozeLeadAction(id: number, date: string) {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
   const before = getLead(id);
   if (!before) return;
 
@@ -101,7 +102,7 @@ export async function snoozeLeadAction(id: number, date: string) {
 }
 
 export async function deleteLeadAction(id: number) {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
   const before = getLead(id);
   if (!before) return;
 
@@ -117,7 +118,7 @@ export async function deleteLeadAction(id: number) {
  * với giai đoạn "Đã đặt học thử", để còn theo dõi xem có tới học thật không.
  */
 export async function leadToTrialRequestAction(id: number) {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
   const lead = getLead(id);
   if (!lead) return;
 

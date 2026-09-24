@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { listAttendance, sessionNumberMap } from "@/lib/queries";
-import { ATTENDANCE_STATUS_LABELS } from "@/lib/types";
+import { ATTENDANCE_STATUS_LABELS, ADMIN_AREA_ROLES } from "@/lib/types";
 
 /** Wraps a value so Excel keeps it as one field even with commas/quotes/newlines inside. */
 function cell(value: string | number | null | undefined): string {
@@ -11,7 +11,7 @@ function cell(value: string | number | null | undefined): string {
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
-  if (!session || (session.role !== "admin" && session.role !== "coordinator")) {
+  if (!session || !ADMIN_AREA_ROLES.includes(session.role)) {
     return new Response("Forbidden", { status: 403 });
   }
 

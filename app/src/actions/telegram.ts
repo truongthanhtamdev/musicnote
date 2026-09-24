@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { assertRole, assertSession } from "@/lib/guard";
+import { ADMIN_AREA_ROLES } from "@/lib/types";
 import { escapeHtml, sendToUser, unlinkUser } from "@/lib/telegram";
 import { sendTomorrowPreview } from "@/lib/telegram-reminders";
 
@@ -39,7 +40,7 @@ export async function testTelegramAction(): Promise<TelegramActionState> {
  * bấm, để kiểm tra bot chạy đúng mà không phải đợi tới 20h.
  */
 export async function previewTomorrowAction(): Promise<TelegramActionState> {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
   const { sent, count } = await sendTomorrowPreview(session.userId);
   if (!sent) {
     return { error: "Tài khoản của bạn chưa nối Telegram — vào mục Nhắc lịch Telegram để nối." };

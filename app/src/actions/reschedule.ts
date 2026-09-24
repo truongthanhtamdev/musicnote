@@ -6,7 +6,7 @@ import { assertRole, assertSession } from "@/lib/guard";
 import { addDays, now, toISODate } from "@/lib/format";
 import { listTeacherFreeSlots, notifyUser } from "@/lib/queries";
 import { logAudit } from "@/lib/audit";
-import { DAY_LABELS, MAKEUP_WINDOW_DAYS, REMINDER_DAYS, type ClassRow } from "@/lib/types";
+import { DAY_LABELS, MAKEUP_WINDOW_DAYS, REMINDER_DAYS, type ClassRow, ADMIN_AREA_ROLES } from "@/lib/types";
 import type { FormState } from "./teachers";
 
 /** Học viên chỉ xin dời được buổi trong tầm nhắc lịch, đúng bằng những buổi đang thấy trên trang. */
@@ -109,7 +109,7 @@ export async function respondRescheduleAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["teacher", "admin", "coordinator"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
 
   const id = Number(formData.get("id"));
   const decision = String(formData.get("decision") || "");
@@ -208,7 +208,7 @@ export async function teacherRescheduleAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["teacher", "admin", "coordinator"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
 
   const classId = Number(formData.get("class_id"));
   const sessionDate = String(formData.get("session_date") || "").trim();

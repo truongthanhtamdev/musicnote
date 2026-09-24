@@ -10,7 +10,7 @@ import {
   getPackageProgressBatch,
   isTeacherAvailable,
 } from "@/lib/queries";
-import { classStage, formatClassSchedule, type ClassRow } from "@/lib/types";
+import { classStage, formatClassSchedule, type ClassRow, ADMIN_AREA_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import type { FormState } from "./teachers";
 
@@ -45,7 +45,7 @@ export async function createClassAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
 
   const studentName = String(formData.get("student_name") || "").trim();
   const studentPhone = String(formData.get("student_phone") || "").trim();
@@ -187,7 +187,7 @@ export async function addWeeklySlotAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
 
   const classId = Number(formData.get("class_id"));
   const dayOfWeek = Number(formData.get("day_of_week"));
@@ -250,7 +250,7 @@ export async function addWeeklySlotAction(
 
 /** Bỏ một buổi/tuần khỏi lớp. Buổi đã có điểm danh thì giữ lại để không mất lịch sử. */
 export async function removeWeeklySlotAction(slotClassId: number) {
-  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
   const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(slotClassId) as
     | ClassRow
     | undefined;
@@ -286,7 +286,7 @@ export async function removeWeeklySlotAction(slotClassId: number) {
  * cũ nguyên vẹn.
  */
 export async function endWeeklySlotAction(slotClassId: number, ended: boolean) {
-  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
   const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(slotClassId) as
     | ClassRow
     | undefined;
@@ -316,7 +316,7 @@ export async function moveWeeklySlotAction(
   startTime: string,
   durationMinutes: number
 ) {
-  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
   const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(slotClassId) as
     | ClassRow
     | undefined;
@@ -349,7 +349,7 @@ export async function updateClassAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
 
   const id = Number(formData.get("id"));
   const studentName = String(formData.get("student_name") || "").trim();
@@ -415,7 +415,7 @@ export async function updateClassAction(
  * computed count (every completed session since the package started).
  */
 export async function adjustPackageUsedAction(packageId: number, used: number | null) {
-  const session = await assertRole(["admin", "coordinator", "teacher"]);
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
   if (session.role === "teacher") {
     const owned = db
       .prepare("SELECT id FROM classes WHERE package_id = ? AND teacher_id = ?")
@@ -448,7 +448,7 @@ export async function saveClassPackageAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
 
   const classId = Number(formData.get("class_id"));
   const totalSessions = Number(formData.get("total_sessions") || 0);
@@ -528,7 +528,7 @@ export async function saveClassPackageAction(
 }
 
 export async function setPackageAction(classId: number, totalSessions: number | null) {
-  await assertRole(["admin", "coordinator"]);
+  await assertRole(ADMIN_AREA_ROLES);
   if (!totalSessions) {
     db.prepare("UPDATE classes SET package_id = NULL WHERE id = ?").run(classId);
   } else {
@@ -543,7 +543,7 @@ export async function setPackageAction(classId: number, totalSessions: number | 
 
 /** Reset the package's counting start date to today — used when a student renews/buys a new round of the same package. Resets for every class sharing this pool. */
 export async function renewPackageAction(packageId: number, totalSessions: number) {
-  await assertRole(["admin", "coordinator"]);
+  await assertRole(ADMIN_AREA_ROLES);
   db.prepare("UPDATE packages SET total_sessions = ?, started_at = ? WHERE id = ?").run(
     totalSessions,
     todayISO(),
@@ -554,7 +554,7 @@ export async function renewPackageAction(packageId: number, totalSessions: numbe
 
 /** Attach this class to another class's existing package pool (student who studies 2-3 buổi/tuần sharing one gói học). */
 export async function sharePackageAction(classId: number, sourceClassId: number) {
-  await assertRole(["admin", "coordinator"]);
+  await assertRole(ADMIN_AREA_ROLES);
   const source = db.prepare("SELECT package_id FROM classes WHERE id = ?").get(sourceClassId) as
     | { package_id: number | null }
     | undefined;
@@ -565,14 +565,14 @@ export async function sharePackageAction(classId: number, sourceClassId: number)
 }
 
 export async function linkStudentAccountAction(classId: number, studentUserId: number | null) {
-  await assertRole(["admin", "coordinator"]);
+  await assertRole(ADMIN_AREA_ROLES);
   db.prepare("UPDATE classes SET student_user_id = ? WHERE id = ?").run(studentUserId, classId);
   revalidatePath("/admin/classes");
   revalidatePath(`/admin/classes/${classId}`);
 }
 
 export async function assignTeacherAction(classId: number, teacherId: number | null) {
-  await assertRole(["admin", "coordinator"]);
+  await assertRole(ADMIN_AREA_ROLES);
   // Only a class that had no teacher yet counts as "được giao lớp mới" — a
   // straight swap to a different teacher on an ongoing class is a routine
   // reassignment, not a new assignment, and shouldn't notify or re-arm the
@@ -613,7 +613,7 @@ export async function setClassStageAction(
   /** Lịch học xếp luôn lúc cho lớp học lại; bỏ trống thì giữ nguyên lịch cũ. */
   schedule?: { dayOfWeek: number; startTime: string } | null
 ) {
-  await assertRole(["admin", "coordinator"]);
+  await assertRole(ADMIN_AREA_ROLES);
   const info = classStage(stage);
   db.prepare("UPDATE classes SET stage = ?, status = ?, paused_until = ? WHERE id = ?").run(
     info.value,

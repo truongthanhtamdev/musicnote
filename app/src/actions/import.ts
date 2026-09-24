@@ -10,7 +10,7 @@ import { getUserByEmail } from "@/lib/auth";
 import { parseCSV, parseDayOfWeek } from "@/lib/csv";
 import { readXlsxRows } from "@/lib/xlsx";
 import { findSlotClashes, normalizeName, parseCenterSheet } from "@/lib/center-sheet";
-import { classStage } from "@/lib/types";
+import { classStage, ADMIN_AREA_ROLES, MANAGE_ROLES } from "@/lib/types";
 import { todayISO } from "@/lib/format";
 
 export interface ImportState {
@@ -32,7 +32,7 @@ export async function importTeachersAction(
   _prev: ImportState,
   formData: FormData
 ): Promise<ImportState> {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -100,7 +100,7 @@ export async function importClassesAction(
   _prev: ImportState,
   formData: FormData
 ): Promise<ImportState> {
-  const session = await assertRole(["admin", "coordinator"]);
+  const session = await assertRole(ADMIN_AREA_ROLES);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -243,7 +243,7 @@ export async function importCenterSheetAction(
   _prev: CenterImportState,
   formData: FormData
 ): Promise<CenterImportState> {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {

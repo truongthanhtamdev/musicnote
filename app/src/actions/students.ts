@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { getUserByEmail } from "@/lib/auth";
 import { listAccountCandidates } from "@/lib/queries";
 import { logAudit } from "@/lib/audit";
@@ -14,7 +15,7 @@ export async function createStudentAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin"]);
+  await assertRole(MANAGE_ROLES);
 
   const name = String(formData.get("name") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
@@ -40,7 +41,7 @@ export async function createStudentAction(
 }
 
 export async function toggleStudentActiveAction(studentId: number, active: boolean) {
-  await assertRole(["admin"]);
+  await assertRole(MANAGE_ROLES);
   db.prepare("UPDATE users SET active = ? WHERE id = ? AND role = 'student'").run(
     active ? 1 : 0,
     studentId
@@ -81,7 +82,7 @@ export async function createStudentAccountsAction(
   _prev: BulkAccountState,
   formData: FormData
 ): Promise<BulkAccountState> {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
 
   const chosen = new Set(formData.getAll("keys").map(String));
   if (chosen.size === 0) return { error: "Bạn chọn ít nhất một khách hàng nhé" };

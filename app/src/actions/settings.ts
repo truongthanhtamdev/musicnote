@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { assertRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { formatVND, normalizeFacebookUrl } from "@/lib/format";
 import { CONTACT_KEYS, LATE_CHECKIN_QUOTA_KEY, setSetting } from "@/lib/queries";
 import { setBonusRates } from "@/lib/bonus";
@@ -23,7 +24,7 @@ export async function saveContactSettingsAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin"]);
+  await assertRole(MANAGE_ROLES);
 
   const facebookRaw = String(formData.get("contact_facebook") || "").trim().slice(0, 300);
   const zaloRaw = String(formData.get("contact_zalo") || "").trim().slice(0, 30);
@@ -51,7 +52,7 @@ export async function saveLateCheckinQuotaAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(["admin"]);
+  await assertRole(MANAGE_ROLES);
 
   const raw = String(formData.get("late_checkin_free_quota") || "").trim();
   const quota = Number(raw);
@@ -105,7 +106,7 @@ export async function saveLeadSourcesAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
   const raw = String(formData.get("lead_sources") || "");
   const list = raw
     .split("\n")
