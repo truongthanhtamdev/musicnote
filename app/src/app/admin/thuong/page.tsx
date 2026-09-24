@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { firstDayOfMonth, formatVND, lastDayOfMonth } from "@/lib/format";
 import { getBonusRates, listBonuses, type BonusRow } from "@/lib/bonus";
 import {
@@ -32,7 +33,7 @@ export default async function BonusPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  await requireRole(["admin"]);
+  await requireRole(MANAGE_ROLES);
   const sp = await searchParams;
   const from = sp.from || firstDayOfMonth();
   const to = sp.to || lastDayOfMonth();

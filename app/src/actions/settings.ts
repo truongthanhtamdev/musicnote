@@ -77,7 +77,7 @@ export async function saveBonusRatesAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
 
   const trial = Number(formData.get("bonus_trial_amount") || 0);
   const conversion = Number(formData.get("bonus_conversion_amount") || 0);

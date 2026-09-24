@@ -92,20 +92,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/assign", label: "Giao lớp", icon: <IconUsers className={ICON} /> },
     { href: "/admin/teachers", label: "Giáo viên", icon: <IconTeacher className={ICON} /> },
     { href: "/admin/ratings", label: "Khách đánh giá", icon: <IconStar className={ICON} /> },
-    ...(isOwner
+    ...(canManage
       ? [
           {
             href: "/admin/payroll",
             label: "Chấm công / Lương",
             icon: <IconWallet className={ICON} />,
           },
-          { href: "/admin/finance", label: "Doanh thu", icon: <IconChart className={ICON} /> },
           {
             href: "/admin/thuong",
             label: "Thưởng giáo vụ",
             icon: <IconWallet className={ICON} />,
           },
         ]
+      : []),
+    // Doanh thu là mục duy nhất của riêng chủ trung tâm.
+    ...(isOwner
+      ? [{ href: "/admin/finance", label: "Doanh thu", icon: <IconChart className={ICON} /> }]
       : []),
     { href: "/admin/import", label: "Nhập dữ liệu", icon: <IconUpload className={ICON} /> },
     ...(canManage
@@ -132,9 +135,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           },
         ]
       : []),
-    // Bản sao lưu là toàn bộ database, tải về là đọc được cả doanh thu —
-    // nên nó đứng cùng nhóm tiền bạc chứ không phải nhóm vận hành.
-    ...(isOwner
+    ...(canManage
       ? [
           {
             href: "/admin/backup",

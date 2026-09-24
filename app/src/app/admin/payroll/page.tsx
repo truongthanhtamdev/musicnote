@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { computePayroll, getLateCheckinQuota, ratingsByTeacher } from "@/lib/queries";
 import { formatVND, firstDayOfMonth, lastDayOfMonth } from "@/lib/format";
-import { TRIAL_SESSION_RATE } from "@/lib/types";
+import { TRIAL_SESSION_RATE, MANAGE_ROLES } from "@/lib/types";
 import { IconAlert, IconCheckCircle, IconDownload, IconFilter, IconWallet } from "@/components/icons";
 import BonusCell from "./bonus-cell";
 import { TeacherStars } from "@/components/teacher-stars";
@@ -24,7 +24,7 @@ export default async function PayrollPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  await requireRole(["admin"]);
+  await requireRole(MANAGE_ROLES);
   const sp = await searchParams;
   const from = sp.from || firstDayOfMonth();
   const to = sp.to || lastDayOfMonth();

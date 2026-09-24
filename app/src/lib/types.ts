@@ -22,14 +22,16 @@ export const ROLE_LABELS: Record<Role, string> = {
 export const ADMIN_AREA_ROLES: Role[] = ["admin", "manager", "coordinator"];
 
 /**
- * Toàn quyền vận hành và nhân sự: tạo tài khoản, sửa giáo viên, sửa cài đặt.
- * KHÔNG gồm sổ sách tiền bạc — doanh thu, lương, thưởng và sao lưu vẫn chỉ
- * mình chủ trung tâm xem được (bản sao lưu chứa toàn bộ dữ liệu, tải về là
- * đọc được doanh thu).
+ * Toàn quyền trừ đúng một mục: tạo tài khoản, sửa giáo viên, chấm lương, ghi
+ * thưởng, sao lưu, đổi cài đặt.
+ *
+ * Lưu ý: bản sao lưu là toàn bộ database, nên ai tải được nó thì về lý thuyết
+ * vẫn đọc ra được doanh thu — đây là lựa chọn có chủ ý của chủ trung tâm, đổi
+ * lại việc Quản lý tự lo được chuyện sao lưu.
  */
 export const MANAGE_ROLES: Role[] = ["admin", "manager"];
 
-/** Chỉ chủ trung tâm: mọi thứ dính tới tiền. */
+/** Chỉ chủ trung tâm: sổ doanh thu và chi phí. */
 export const MONEY_ROLES: Role[] = ["admin"];
 
 export function roleHomePath(role: Role): string {

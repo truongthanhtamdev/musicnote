@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
+import { MANAGE_ROLES } from "@/lib/types";
 import { BACKUP_DIR, backupFileName, writeSnapshot } from "@/lib/backup";
 import { DATA_DIR } from "@/lib/db";
 
@@ -12,7 +13,7 @@ import { DATA_DIR } from "@/lib/db";
  */
 export async function GET(req: NextRequest) {
   const session = await getSession();
-  if (!session || session.role !== "admin") {
+  if (!session || !MANAGE_ROLES.includes(session.role)) {
     return new Response("Forbidden", { status: 403 });
   }
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { assertRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { db } from "@/lib/db";
 import { deleteBonus } from "@/lib/bonus";
 import { logAudit } from "@/lib/audit";
@@ -9,7 +10,7 @@ import { formatVND } from "@/lib/format";
 
 /** Gỡ một khoản thưởng ghi nhầm. Ghi nhật ký vì đây là đụng tới tiền. */
 export async function deleteBonusAction(id: number) {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
   const row = db
     .prepare(
       `SELECT b.amount, b.note, u.name as staff_name

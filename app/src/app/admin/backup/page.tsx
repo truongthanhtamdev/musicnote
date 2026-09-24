@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { listBackups, formatBytes, BACKUP_DIR, KEEP_BACKUPS } from "@/lib/backup";
 import { todayISO } from "@/lib/format";
 import { IconAlert, IconCheckCircle, IconDownload, IconPackage } from "@/components/icons";
@@ -6,7 +7,7 @@ import { Banner, Card, CardHeader, EmptyState, PageHeader, TableShell, Th, btn }
 import RunBackupButton from "./run-backup-button";
 
 export default async function BackupPage() {
-  await requireRole(["admin"]);
+  await requireRole(MANAGE_ROLES);
 
   const backups = listBackups();
   const latest = backups[0];

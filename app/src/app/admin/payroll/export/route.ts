@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
+import { MANAGE_ROLES } from "@/lib/types";
 import { computePayroll } from "@/lib/queries";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
-  if (!session || session.role !== "admin") {
+  if (!session || !MANAGE_ROLES.includes(session.role)) {
     return new Response("Forbidden", { status: 403 });
   }
 

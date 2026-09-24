@@ -14,9 +14,7 @@ import LeadSourcesForm from "./lead-sources-form";
 import TelegramPreview from "./telegram-preview";
 
 export default async function AdminSettingsPage() {
-  const session = await requireRole(MANAGE_ROLES);
-  // Mức thưởng là con số tiền bạc — Quản lý không cần và không nên thấy.
-  const isOwner = session.role === "admin";
+  await requireRole(MANAGE_ROLES);
   const contact = getCenterContact();
   const quota = getLateCheckinQuota();
   const bonus = getBonusRates();
@@ -53,7 +51,6 @@ export default async function AdminSettingsPage() {
         </div>
       </Card>
 
-      {isOwner && (
       <Card padded={false}>
         <CardHeader title="Thưởng giáo vụ" />
         <div className="p-5">
@@ -65,7 +62,6 @@ export default async function AdminSettingsPage() {
           <BonusForm trial={bonus.trial} conversion={bonus.conversion} />
         </div>
       </Card>
-      )}
 
       <Card padded={false}>
         <CardHeader title="Nguồn khách" />
