@@ -39,6 +39,12 @@ export function proxy(req: NextRequest) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
+    // Nói rõ vì sao bị đưa về đây. Hai lý do này cần hai cách sửa khác hẳn
+    // nhau, mà nhìn màn hình đăng nhập thì không tài nào phân biệt được:
+    //   missing  — trình duyệt không gửi cookie (bị xoá, hoặc đang ở tên miền
+    //              khác với lúc đăng nhập)
+    //   invalid  — có cookie nhưng chữ ký sai hoặc đã hết hạn
+    url.searchParams.set("reason", token ? "invalid" : "missing");
     const res = NextResponse.redirect(url);
     // Dọn cookie hỏng, không thì lần vào sau lại đi đúng vòng này.
     if (token) res.cookies.delete(COOKIE_NAME);

@@ -32,13 +32,13 @@ const HIGHLIGHTS = [
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; reason?: string }>;
 }) {
   const session = await getSession();
   if (session) {
     redirect(roleHomePath(session.role));
   }
-  const { next } = await searchParams;
+  const { next, reason } = await searchParams;
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
@@ -107,6 +107,25 @@ export default async function LoginPage({
             <p className="text-sm text-ink-500 mt-1 mb-5">
               Học viên đăng nhập bằng số điện thoại hoặc mã lớp trung tâm đã cấp.
             </p>
+            {/* Vì sao vừa bị đưa về đây. Hai lý do cần hai cách sửa khác hẳn
+                nhau, mà không nói ra thì người dùng chỉ thấy "lại phải đăng
+                nhập" và không ai biết đường mà tìm. */}
+            {reason === "missing" && (
+              <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Trình duyệt không gửi thông tin đăng nhập lên. Thường gặp khi mở web từ link trong
+                Zalo/Facebook, hoặc khi địa chỉ lúc này khác lúc đăng nhập (có <b>www</b> và không
+                có <b>www</b> là hai địa chỉ khác nhau).
+                <br />
+                Thử mở bằng Chrome hoặc Safari rồi gõ thẳng địa chỉ.
+                <span className="block mt-1 text-xs opacity-75">Mã lỗi: missing</span>
+              </p>
+            )}
+            {reason === "invalid" && (
+              <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Phiên đăng nhập đã hết hạn hoặc không còn hợp lệ. Đăng nhập lại là dùng bình thường.
+                <span className="block mt-1 text-xs opacity-75">Mã lỗi: invalid</span>
+              </p>
+            )}
             <LoginForm next={next || ""} />
             <p className="text-center mt-4">
               <Link
