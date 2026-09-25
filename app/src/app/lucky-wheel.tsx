@@ -14,7 +14,7 @@ const SPIN_MS = 4200;
 /** Số vòng quay thêm trước khi dừng, để nhìn ra một cú quay thật. */
 const EXTRA_TURNS = 5;
 
-/** Màu xen kẽ theo bảng màu của trang, ô giải cao nổi hơn. */
+/** Màu xen kẽ theo bảng màu của trang, ô giải cao nhất nổi hơn. */
 const SLICE_FILL = ["#F6EFE3", "#FFFFFF"];
 const BIG_PRIZE_FILL = "#FBE3D6";
 
@@ -72,7 +72,7 @@ export function LuckyWheel() {
     <div className="flex flex-col items-center text-center">
       <h3 className="text-lg font-bold text-ink-900">Vòng quay may mắn</h3>
       <p className="text-sm text-ink-600 mt-1 max-w-xs">
-        Quay một lượt để nhận <span className="font-semibold">1 đến 5 buổi học thử miễn phí</span>,
+        Quay một lượt để nhận <span className="font-semibold">1 đến 3 buổi học thử miễn phí</span>,
         rồi điền thông tin đăng ký để nhận thưởng.
       </p>
 
@@ -110,7 +110,7 @@ export function LuckyWheel() {
               <g key={i}>
                 <path
                   d={slicePath(i)}
-                  fill={sessions >= 4 ? BIG_PRIZE_FILL : SLICE_FILL[i % 2]}
+                  fill={sessions >= 3 ? BIG_PRIZE_FILL : SLICE_FILL[i % 2]}
                   stroke="#1E3A5F"
                   strokeWidth="1.5"
                 />

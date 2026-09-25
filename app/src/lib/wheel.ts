@@ -23,13 +23,15 @@ export const WHEEL_COOKIE_DAYS = 7;
 /**
  * Các ô trên vòng quay, theo chiều kim đồng hồ từ 12 giờ.
  *
- * Tỉ lệ trúng chính là số ô: 1 buổi có 3 ô, 2 buổi có 2 ô, còn 3/4/5 buổi mỗi
- * loại một ô. Trung bình mỗi lượt quay tặng 2,4 buổi. Cố ý lệch về số nhỏ —
- * chia đều 1..5 thì trung bình 3 buổi, gấp ba lần mức học thử bình thường.
+ * Tỉ lệ trúng CHÍNH LÀ số ô, không có bảng xác suất nào riêng: 2 buổi có 4 ô
+ * (50%), 1 buổi có 3 ô (37,5%), 3 buổi có 1 ô (12,5%). Trung bình mỗi lượt
+ * quay tặng 1,75 buổi.
  *
- * Muốn đổi tỉ lệ thì sửa đúng mảng này, phần còn lại tự theo.
+ * Xếp xen kẽ để ô "2 buổi" rải đều quanh vòng, nhìn không bị dồn một cụm.
+ *
+ * Muốn đổi tỉ lệ thì sửa đúng mảng này, hình vẽ và xác suất tự theo.
  */
-export const WHEEL_SEGMENTS = [1, 2, 1, 3, 1, 2, 4, 5] as const;
+export const WHEEL_SEGMENTS = [2, 1, 2, 3, 2, 1, 2, 1] as const;
 
 /** Số buổi học thử mặc định khi khách không quay. */
 export const DEFAULT_TRIAL_SESSIONS = 1;
