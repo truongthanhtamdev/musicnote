@@ -155,6 +155,8 @@ export type TrialRequestStatus = "new" | "contacted" | "done" | "cancelled";
 /** Một lượt khách để lại thông tin xin học thử ở trang chủ. */
 export interface TrialRequestRow {
   id: number;
+  /** Số buổi học thử được tặng — 1 là mức thường, hơn 1 là trúng vòng quay. */
+  trial_sessions: number;
   name: string;
   phone: string;
   /** Facebook/Zalo/email — cách liên hệ phụ khách tự khai. */

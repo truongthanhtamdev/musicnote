@@ -18,6 +18,7 @@ import {
 import { ContactButtons } from "@/components/contact-buttons";
 import { PricingTabs } from "./pricing-tabs";
 import { TrialForm } from "./trial-form";
+import { LuckyWheel } from "./lucky-wheel";
 
 const HOME_TITLE = "Piano Guitar Đệm Hát — Học 1 kèm 1 online";
 const HOME_DESC =
@@ -330,19 +331,26 @@ export default async function HomePage() {
 
         {/* Đăng ký học thử */}
         <section id="hoc-thu" className="scroll-mt-20 bg-ivory-100 border-y border-navy-100">
-          <div className="max-w-3xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
-            <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
-              Đăng ký học thử miễn phí
-            </h2>
-            <p className="text-ink-600 mt-2 flex items-start gap-1.5">
-              <IconClock className="w-4 h-4 mt-1 shrink-0 text-wood-500" />
-              <span>
-                Để lại thông tin, trung tâm liên hệ xếp buổi học thử 60 phút — miễn phí và không
-                ràng buộc.
-              </span>
-            </p>
-            <div className="mt-7">
-              <TrialForm />
+          {/* Vòng quay nằm cạnh form trên màn hình rộng — đúng khoảng trống bỏ
+              phí trước đây. Trên điện thoại thì vòng quay lên trước, vì nó là
+              cái kéo khách chịu điền form. */}
+          <div className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-20 grid gap-10 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
+            <LuckyWheel />
+
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+                Đăng ký học thử miễn phí
+              </h2>
+              <p className="text-ink-600 mt-2 flex items-start gap-1.5">
+                <IconClock className="w-4 h-4 mt-1 shrink-0 text-wood-500" />
+                <span>
+                  Để lại thông tin, trung tâm liên hệ xếp buổi học thử 60 phút — miễn phí và không
+                  ràng buộc.
+                </span>
+              </p>
+              <div className="mt-7">
+                <TrialForm />
+              </div>
             </div>
           </div>
         </section>

@@ -43,7 +43,9 @@ export function TrialForm() {
         <IconCheckCircle className="w-10 h-10 text-mint-600 mx-auto" />
         <h3 className="text-lg font-bold text-ink-900 mt-3">Đã nhận đăng ký của bạn</h3>
         <p className="text-ink-600 mt-1.5">
-          Trung tâm sẽ liên hệ trong thời gian sớm nhất để xếp buổi học thử miễn phí.
+          {state.trialSessions && state.trialSessions > 1
+            ? `Trung tâm sẽ liên hệ sớm nhất để xếp ${state.trialSessions} buổi học thử miễn phí bạn vừa quay trúng.`
+            : "Trung tâm sẽ liên hệ trong thời gian sớm nhất để xếp buổi học thử miễn phí."}
         </p>
 
         {/* Tài khoản hiện ngay ở đây vì trung tâm chưa gửi được email — khách

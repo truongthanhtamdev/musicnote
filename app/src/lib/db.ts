@@ -411,6 +411,9 @@ function migrate() {
   // link_code là mã một lần người dùng gửi cho bot để bot biết đây là ai.
   ensureColumn("users", "telegram_chat_id", "TEXT");
   ensureColumn("users", "telegram_link_code", "TEXT");
+  // Số buổi học thử khách được nhận. Mặc định 1 như mức thường; khách quay
+  // vòng may mắn ở trang chủ thì ghi số trúng được, để giáo vụ biết mà xếp đủ.
+  ensureColumn("trial_requests", "trial_sessions", "INTEGER NOT NULL DEFAULT 1");
   ensureColumn("packages", "bonus_sessions", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("packages", "course_count", "INTEGER NOT NULL DEFAULT 1");
   backfillClassStages();
