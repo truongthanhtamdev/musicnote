@@ -1,4 +1,4 @@
-import { formatTimeRange } from "./format";
+import { formatTimeRange, foldVietnamese } from "./format";
 
 export type Role = "admin" | "manager" | "coordinator" | "teacher" | "student";
 
@@ -610,6 +610,25 @@ export function parseLanguages(csv: string): ClassLanguage[] {
     .split(",")
     .map((s) => s.trim())
     .filter((s): s is ClassLanguage => s === "vi" || s === "en");
+}
+
+/**
+ * Đưa tên môn về đúng cách viết chuẩn trong SUBJECT_SUGGESTIONS.
+ *
+ * Ô nhập môn là ô gõ tự do (có gợi ý nhưng không bắt buộc chọn), nên "piano",
+ * "PIANO ", "Ghi ta" đều lọt vào database thành những môn khác nhau. Mà việc
+ * ghép giáo viên với lớp lại so khớp chuỗi, nên chỉ lệch một chữ hoa là cả
+ * trung tâm thành "chưa dạy môn này".
+ *
+ * Lưu ý: chỉ sửa được sai khác về hoa/thường, dấu và khoảng trắng. Gõ sai
+ * hẳn chính tả ("pinao") thì vẫn lọt — chỗ đó cần lời cảnh báo ở trang Giao
+ * lớp lo tiếp.
+ */
+export function canonicalSubject(raw: string): string {
+  const trimmed = raw.trim().replace(/\s+/g, " ");
+  if (!trimmed) return trimmed;
+  const folded = foldVietnamese(trimmed);
+  return SUBJECT_SUGGESTIONS.find((s) => foldVietnamese(s) === folded) ?? trimmed;
 }
 
 export function parseSubjects(csv: string): string[] {

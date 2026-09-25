@@ -10,7 +10,7 @@ import {
   getPackageProgressBatch,
   isTeacherAvailable,
 } from "@/lib/queries";
-import { classStage, formatClassSchedule, type ClassRow, ADMIN_AREA_ROLES } from "@/lib/types";
+import { classStage, formatClassSchedule, type ClassRow, ADMIN_AREA_ROLES, canonicalSubject } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import type { FormState } from "./teachers";
 
@@ -52,7 +52,7 @@ export async function createClassAction(
   const guardianName = String(formData.get("guardian_name") || "").trim();
   const facebookUrl = normalizeFacebookUrl(String(formData.get("facebook_url") || ""));
   const level = String(formData.get("level") || "").trim();
-  const subject = String(formData.get("subject") || "").trim() || "Guitar";
+  const subject = canonicalSubject(String(formData.get("subject") || "")) || "Guitar";
   const language = String(formData.get("language") || "vi") === "en" ? "en" : "vi";
   const scheduleType = String(formData.get("schedule_type") || "fixed") === "flexible" ? "flexible" : "fixed";
   const notes = String(formData.get("notes") || "").trim();
@@ -357,7 +357,7 @@ export async function updateClassAction(
   const guardianName = String(formData.get("guardian_name") || "").trim();
   const facebookUrl = normalizeFacebookUrl(String(formData.get("facebook_url") || ""));
   const level = String(formData.get("level") || "").trim();
-  const subject = String(formData.get("subject") || "").trim() || "Guitar";
+  const subject = canonicalSubject(String(formData.get("subject") || "")) || "Guitar";
   const language = String(formData.get("language") || "vi") === "en" ? "en" : "vi";
   const scheduleType = String(formData.get("schedule_type") || "fixed") === "flexible" ? "flexible" : "fixed";
   const dayOfWeek = scheduleType === "flexible" ? -1 : Number(formData.get("day_of_week"));

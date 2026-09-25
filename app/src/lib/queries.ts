@@ -1,14 +1,5 @@
 import { db } from "./db";
-import {
-  addDays,
-  endMinutesOfDay,
-  nextOccurrence,
-  mostRecentOccurrence,
-  toISODate,
-  toMinutesOfDay,
-  todayISO,
-  now,
-} from "./format";
+import { addDays, endMinutesOfDay, nextOccurrence, mostRecentOccurrence, toISODate, toMinutesOfDay, todayISO, now, foldVietnamese } from "./format";
 import {
   classStage,
   getSuggestedPackagePrice,
@@ -192,7 +183,11 @@ export function teacherSpeaksLanguage(teacher: UserRow, language: string): boole
 // every pre-existing teacher would suddenly look unfit for every class.
 export function teacherTeachesSubject(teacher: UserRow, subject: string): boolean {
   const subjects = parseSubjects(teacher.subjects);
-  return subjects.length === 0 || subjects.includes(subject);
+  if (subjects.length === 0) return true;
+  // So khớp bỏ qua hoa/thường và dấu: giáo viên khai "piano" mà lớp ghi
+  // "Piano" thì vẫn là một môn, không việc gì phải báo "chưa dạy".
+  const wanted = foldVietnamese(subject);
+  return subjects.some((s) => foldVietnamese(s) === wanted);
 }
 
 export function listStudents(): UserRow[] {

@@ -59,6 +59,11 @@ export default async function AssignPage() {
               speaksLanguage: teacherSpeaksLanguage(t, c.language),
               teachesSubject: teacherTeachesSubject(t, c.subject),
             }));
+            // Không một giáo viên nào khai dạy môn này thì gần như chắc chắn
+            // tên môn bị gõ sai, chứ trung tâm không nhận lớp môn không ai dạy.
+            // Không nói ra thì người xem chỉ thấy cả danh sách đỏ lòm "chưa
+            // dạy ..." mà không hiểu vì sao.
+            const nobodyTeaches = options.length > 0 && options.every((o) => !o.teachesSubject);
             options.sort(
               (a, b) =>
                 Number(b.available && b.speaksLanguage && b.teachesSubject) -
@@ -95,6 +100,14 @@ export default async function AssignPage() {
                     {session?.role === "admin" && <DeleteClassButton classId={c.id} />}
                   </div>
                 </div>
+                {nobodyTeaches && (
+                  <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Không giáo viên nào khai dạy môn{" "}
+                    <span className="font-semibold">{c.subject}</span> — nhiều khả năng tên môn bị
+                    gõ sai. Bấm <span className="font-semibold">Sửa lớp</span> để chọn lại, hoặc bổ
+                    sung môn này cho giáo viên ở trang Giáo viên.
+                  </div>
+                )}
                 <AssignRow
                   classId={c.id}
                   teachers={options}
