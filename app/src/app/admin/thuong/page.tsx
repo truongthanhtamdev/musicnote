@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/guard";
 import { MANAGE_ROLES } from "@/lib/types";
 import { firstDayOfMonth, formatVND, lastDayOfMonth } from "@/lib/format";
+import { MonthNav } from "@/components/month-nav";
 import { getBonusRates, listBonuses, listUnrewardedTrials, type BonusRow } from "@/lib/bonus";
 import {
   Card,
@@ -72,6 +73,9 @@ export default async function BonusPage({
             Xem kỳ này
           </button>
         </form>
+        <div className="mt-3">
+          <MonthNav from={from} />
+        </div>
       </Card>
 
       {/* Buổi học thử bị sót thưởng. Khoản chỉ được ghi đúng lúc điểm danh,

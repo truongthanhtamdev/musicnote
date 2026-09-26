@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/guard";
 import { MANAGE_ROLES } from "@/lib/types";
-import { listBackups, formatBytes, BACKUP_DIR, KEEP_BACKUPS } from "@/lib/backup";
-import { todayISO } from "@/lib/format";
+import { listBackups, formatBytes, BACKUP_DIR, KEEP_BACKUPS, backupFileName } from "@/lib/backup";
+import { } from "@/lib/format";
 import { IconAlert, IconCheckCircle, IconDownload, IconPackage } from "@/components/icons";
 import { Banner, Card, CardHeader, EmptyState, PageHeader, TableShell, Th, btn } from "@/components/ui";
 import RunBackupButton from "./run-backup-button";
@@ -11,7 +11,10 @@ export default async function BackupPage() {
 
   const backups = listBackups();
   const latest = backups[0];
-  const hasToday = latest ? latest.createdAt.toISOString().slice(0, 10) === todayISO() : false;
+  // So theo TÊN TỆP chứ không theo giờ tạo: tên tệp đặt theo ngày giờ Việt
+  // Nam, còn toISOString() trả ngày theo giờ quốc tế — lệch 7 tiếng, nên từ
+  // 0h tới 7h sáng bản sao lưu của hôm nay bị báo nhầm là của hôm qua.
+  const hasToday = backups.some((b) => b.name === backupFileName());
   // Có bản sao lưu rồi vẫn nhắc tải về: bản nằm cùng máy chủ với dữ liệu gốc
   // thì không cứu được trường hợp mất nguyên máy chủ.
   const offsiteWarning = backups.length > 0;

@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { computePayroll, listAttendance, listRecentRatings, ratingsByTeacher } from "@/lib/queries";
 import { firstDayOfMonth, formatVND, lastDayOfMonth } from "@/lib/format";
+import { MonthNav } from "@/components/month-nav";
 import { TRIAL_SESSION_RATE } from "@/lib/types";
 import { IconCheckCircle, IconFilter, IconWallet } from "@/components/icons";
 import { Card, MetricCard, PageHeader, btn, field, label } from "@/components/ui";
@@ -54,6 +55,9 @@ export default async function TeacherEarningsPage({
             Xem
           </button>
         </form>
+        <div className="mt-3">
+          <MonthNav from={from} />
+        </div>
       </Card>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">

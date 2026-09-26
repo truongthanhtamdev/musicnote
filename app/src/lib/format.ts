@@ -100,6 +100,21 @@ export function lastDayOfMonth(): string {
   return toISODate(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
 
+/**
+ * Kỳ trọn tháng chứa ngày `dateISO`, dịch đi `offsetMonths` tháng.
+ * Dùng để dựng link "Tháng trước / Tháng này" trên các trang lọc theo kỳ —
+ * sang tháng mới thì bộ lọc mặc định dời đi, số liệu tháng cũ vẫn còn nguyên
+ * nhưng người xem tưởng bị xoá; có link bấm một phát là hết hiểu nhầm.
+ */
+export function monthRangeOf(dateISO: string, offsetMonths = 0): { from: string; to: string } {
+  const [y, m] = dateISO.split("-").map(Number);
+  const base = new Date(y, m - 1 + offsetMonths, 1);
+  return {
+    from: `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}-01`,
+    to: toISODate(new Date(base.getFullYear(), base.getMonth() + 1, 0)),
+  };
+}
+
 export function addDays(d: Date, days: number): Date {
   const date = new Date(d);
   date.setDate(date.getDate() + days);
