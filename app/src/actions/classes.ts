@@ -10,7 +10,7 @@ import {
   getPackageProgressBatch,
   isTeacherAvailable,
 } from "@/lib/queries";
-import { classStage, formatClassSchedule, type ClassRow, ADMIN_AREA_ROLES, canonicalSubject } from "@/lib/types";
+import { classStage, formatClassSchedule, type ClassRow, ADMIN_AREA_ROLES, MANAGE_ROLES, canonicalSubject } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import type { FormState } from "./teachers";
 
@@ -659,4 +659,36 @@ export async function deleteClassAction(classId: number) {
   revalidatePath("/admin/assign");
   revalidatePath("/teacher/schedule");
   revalidatePath("/teacher");
+}
+
+/**
+ * Gán (hoặc gỡ) giáo vụ phụ trách cho một lớp CÓ SẴN.
+ *
+ * Trước đây giáo vụ chỉ được gán đúng lúc tạo lớp, nên lớp cũ và lớp nhập từ
+ * Excel không bao giờ sinh thưởng. Ai được gán quyết định tiền thưởng chảy về
+ * đâu, nên chỉ Quản lý trở lên được bấm, và lần nào cũng ghi nhật ký.
+ */
+export async function setClassCoordinatorAction(classId: number, coordinatorId: number | null) {
+  const session = await assertRole(MANAGE_ROLES);
+
+  const cls = db.prepare("SELECT id, student_name FROM classes WHERE id = ?").get(classId) as
+    | { id: number; student_name: string }
+    | undefined;
+  if (!cls) throw new ForbiddenError("Không tìm thấy lớp");
+
+  let staffName = "không ai";
+  if (coordinatorId != null) {
+    const staff = db
+      .prepare(
+        "SELECT id, name FROM users WHERE id = ? AND role IN ('admin','manager','coordinator') AND active = 1"
+      )
+      .get(coordinatorId) as { id: number; name: string } | undefined;
+    if (!staff) throw new ForbiddenError("Người được gán không phải nhân sự quản lý");
+    staffName = staff.name;
+  }
+
+  db.prepare("UPDATE classes SET coordinator_id = ? WHERE id = ?").run(coordinatorId, classId);
+  logAudit(session, "luong", `Gán giáo vụ phụ trách lớp ${cls.student_name}: ${staffName}`);
+  revalidatePath(`/admin/classes/${classId}`);
+  revalidatePath("/admin/thuong");
 }

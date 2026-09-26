@@ -12,6 +12,7 @@ import {
   listPackageSlots,
   sessionNumberMap,
   getTuitionStatusForClasses,
+  listStaff,
 } from "@/lib/queries";
 import { LANGUAGE_LABELS, SOURCE_LABELS, formatClassSchedule } from "@/lib/types";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
@@ -30,6 +31,7 @@ import EditClassForm from "./edit-class-form";
 import WeeklySlots from "./weekly-slots";
 import ClassActions from "./class-actions";
 import PackageWidget from "./package-widget";
+import CoordinatorWidget from "./coordinator-widget";
 import StudentLinkWidget from "./student-link-widget";
 import { JoinClassLink } from "@/components/join-class-link";
 
@@ -41,6 +43,8 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
 
   const session = await getSession();
   const isAdmin = session?.role === "admin";
+  const canManage = session?.role === "admin" || session?.role === "manager";
+  const staffList = canManage ? listStaff().filter((u) => u.active) : [];
 
   const teachers = listTeachers(false).map((t) => ({
     ...t,
@@ -136,6 +140,18 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
             currentStudentUserId={cls.student_user_id}
             students={students}
           />
+          {canManage && (
+            <Card padded={false}>
+              <CardHeader title="Giáo vụ phụ trách" />
+              <div className="p-5">
+                <CoordinatorWidget
+                  classId={cls.id}
+                  current={cls.coordinator_id}
+                  staff={staffList.map((u) => ({ id: u.id, name: u.name }))}
+                />
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 

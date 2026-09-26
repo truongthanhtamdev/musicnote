@@ -89,6 +89,8 @@ export interface ClassRow {
   start_time: string; // HH:MM
   duration_minutes: number;
   teacher_id: number | null;
+  /** Giáo vụ phụ trách khách của lớp — gốc để biết khoản thưởng thuộc về ai. */
+  coordinator_id: number | null;
   status: ClassStatus;
   notes: string | null;
   /** 1 while the class is still waiting on its first session, which counts as the trial ("buổi 0"). */

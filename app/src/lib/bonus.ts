@@ -159,6 +159,45 @@ export function awardConversionBonus(paymentId: number) {
   });
 }
 
+/** Một buổi học thử đã dạy xong mà chưa có khoản thưởng nào đi kèm. */
+export interface UnrewardedTrial {
+  attendance_id: number;
+  class_id: number;
+  student_name: string;
+  session_date: string;
+  coordinator_id: number | null;
+  coordinator_name: string | null;
+}
+
+/**
+ * Buổi học thử trong kỳ chưa được ghi thưởng.
+ *
+ * Khoản thưởng chỉ được ghi ĐÚNG LÚC điểm danh, nên có mấy đường rơi rớt:
+ * lớp lúc đó chưa gán giáo vụ, buổi dạy xong trước khi tính năng thưởng ra
+ * đời, hay dữ liệu được sửa tay. Bảng này lôi hết ra ánh sáng kèm lý do,
+ * thay vì để chủ trung tâm ngồi dò "hình như thiếu một lớp".
+ *
+ * Lưu ý: khoản đã Gỡ tay cũng hiện lại ở đây, vì gỡ là xoá hẳn dòng ghi.
+ */
+export function listUnrewardedTrials(from: string, to: string): UnrewardedTrial[] {
+  return db
+    .prepare(
+      `SELECT a.id AS attendance_id, a.class_id, c.student_name, a.session_date,
+              c.coordinator_id, u.name AS coordinator_name
+       FROM attendance a
+       JOIN classes c ON c.id = a.class_id
+       LEFT JOIN users u ON u.id = c.coordinator_id
+       WHERE a.is_trial = 1 AND a.status = 'completed'
+         AND a.session_date >= ? AND a.session_date <= ?
+         AND NOT EXISTS (
+           SELECT 1 FROM staff_bonuses b
+           WHERE b.ref_type = 'attendance' AND b.ref_id = a.id
+         )
+       ORDER BY a.session_date`
+    )
+    .all(from, to) as UnrewardedTrial[];
+}
+
 export interface BonusSummary {
   staff_id: number;
   staff_name: string;

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui";
 import AssignRow from "./assign-row";
 import DeleteClassButton from "../classes/delete-class-button";
+import ToLeadButton from "./to-lead-button";
 
 export default async function AssignPage() {
   const session = await getSession();
@@ -91,6 +92,10 @@ export default async function AssignPage() {
                       vừa nhập, sai giờ hoặc trùng thì phải chỉnh được liền chứ
                       không phải mò sang trang khác. */}
                   <div className="flex items-center gap-2 shrink-0">
+                    {/* Khách nhập vội thành lớp nhưng chưa chốt gì thì trả về
+                        Khách tiềm năng cho có người nhắc chăm — nằm ở đây
+                        không ai hẹn gọi lại cả. */}
+                    <ToLeadButton classId={c.id} />
                     <Link
                       href={`/admin/classes/${c.id}`}
                       className="text-sm font-semibold text-wood-600 hover:text-wood-700 border border-navy-200 rounded-lg px-3 py-1.5"

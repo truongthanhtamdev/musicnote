@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { ADMIN_AREA_ROLES } from "@/lib/types";
+import { formatClassSchedule, type ClassRow } from "@/lib/types";
 import { normalizeFacebookUrl } from "@/lib/format";
 import { createLead, deleteLead, getLead, updateLead, type LeadStage } from "@/lib/leads";
 import { logAudit } from "@/lib/audit";
@@ -141,4 +142,70 @@ export async function leadToTrialRequestAction(id: number) {
   revalidatePath("/admin/tiem-nang");
   revalidatePath("/admin/trial-requests");
   revalidatePath("/admin");
+}
+
+export interface ToLeadState {
+  error?: string;
+  success?: boolean;
+}
+
+/**
+ * Chuyển một lớp CHƯA HỌC BUỔI NÀO về lại danh sách Khách tiềm năng.
+ *
+ * Dành cho khách được nhập vội thành lớp (thường từ quảng cáo) nhưng thật ra
+ * chưa chốt gì — nằm ở trang Giao lớp thì không ai nhắc chăm, về Khách tiềm
+ * năng thì có hẹn liên hệ lại và so sánh nguồn.
+ *
+ * Chỉ cho chuyển khi lớp trắng tinh: đã có điểm danh hay đã thu tiền thì đây
+ * là khách thật, xoá lớp là mất lịch sử — trường hợp đó phải dùng trạng thái
+ * lớp (Tạm OFF/DONE) chứ không phải nút này.
+ */
+export async function convertClassToLeadAction(classId: number): Promise<ToLeadState> {
+  const session = await assertRole(ADMIN_AREA_ROLES);
+
+  const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(classId) as ClassRow | undefined;
+  if (!cls) return { error: "Không tìm thấy lớp" };
+
+  const taught = db
+    .prepare("SELECT COUNT(*) AS c FROM attendance WHERE class_id = ?")
+    .get(classId) as { c: number };
+  if (taught.c > 0) {
+    return { error: "Lớp đã có điểm danh — đổi trạng thái lớp thay vì chuyển về khách tiềm năng" };
+  }
+  const paid = db
+    .prepare("SELECT COUNT(*) AS c FROM payments WHERE class_id = ?")
+    .get(classId) as { c: number };
+  if (paid.c > 0) {
+    return { error: "Lớp đã có khoản thu — không chuyển về khách tiềm năng được" };
+  }
+
+  // Giữ lại lịch hẹn cũ trong ghi chú: đó thường là khung giờ khách rảnh,
+  // thông tin quý nhất khi gọi lại.
+  const noteParts = [
+    cls.schedule_type === "fixed" && cls.start_time
+      ? `Lịch từng hẹn: ${formatClassSchedule(cls)}`
+      : null,
+    cls.level ? `Trình độ: ${cls.level}` : null,
+    cls.notes,
+  ].filter(Boolean);
+
+  db.transaction(() => {
+    createLead({
+      name: cls.guardian_name?.trim() || cls.student_name,
+      phone: cls.student_phone,
+      facebookUrl: cls.facebook_url,
+      subject: cls.subject,
+      stage: "talking",
+      note: noteParts.join(" · ") || null,
+      coordinatorId: cls.coordinator_id,
+    });
+    db.prepare("DELETE FROM classes WHERE id = ?").run(classId);
+  })();
+
+  logAudit(session, "lop_hoc", `Chuyển lớp ${cls.student_name} về Khách tiềm năng`);
+  revalidatePath("/admin/assign");
+  revalidatePath("/admin/classes");
+  revalidatePath("/admin/tiem-nang");
+  revalidatePath("/admin");
+  return { success: true };
 }

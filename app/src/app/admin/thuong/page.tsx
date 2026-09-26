@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/guard";
 import { MANAGE_ROLES } from "@/lib/types";
 import { firstDayOfMonth, formatVND, lastDayOfMonth } from "@/lib/format";
-import { getBonusRates, listBonuses, type BonusRow } from "@/lib/bonus";
+import { getBonusRates, listBonuses, listUnrewardedTrials, type BonusRow } from "@/lib/bonus";
 import {
   Card,
   CardHeader,
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui";
 import { IconWallet } from "@/components/icons";
 import DeleteBonusButton from "./delete-bonus-button";
+import RescanButton from "./rescan-button";
+import Link from "next/link";
 
 const KIND_LABEL: Record<BonusRow["kind"], string> = {
   trial: "Học thử",
@@ -40,6 +42,7 @@ export default async function BonusPage({
 
   const rates = getBonusRates();
   const staff = listBonuses(from, to);
+  const unrewarded = listUnrewardedTrials(from, to);
   const grand = staff.reduce((sum, s) => sum + s.total, 0);
   const trials = staff.reduce((sum, s) => sum + s.trial_count, 0);
   const conversions = staff.reduce((sum, s) => sum + s.conversion_count, 0);
@@ -70,6 +73,46 @@ export default async function BonusPage({
           </button>
         </form>
       </Card>
+
+      {/* Buổi học thử bị sót thưởng. Khoản chỉ được ghi đúng lúc điểm danh,
+          nên lớp gán giáo vụ muộn hay dữ liệu sửa tay là rơi rớt — bảng này
+          lôi hết ra kèm lý do, khỏi phải ngồi dò "hình như thiếu một lớp". */}
+      {unrewarded.length > 0 && (
+        <Card padded={false} className="border-amber-200">
+          <CardHeader title="Buổi học thử chưa có thưởng" count={unrewarded.length} />
+          <div className="p-5 space-y-3">
+            <ul className="space-y-2 text-sm">
+              {unrewarded.map((u) => (
+                <li key={u.attendance_id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-medium text-ink-900">{u.student_name}</span>
+                  <span className="text-ink-500 tabular">{u.session_date}</span>
+                  {u.coordinator_id ? (
+                    <span className="text-mint-700">
+                      → sẽ ghi cho {u.coordinator_name} khi bấm nút dưới
+                    </span>
+                  ) : (
+                    <span className="text-amber-700">
+                      lớp chưa gán giáo vụ —{" "}
+                      <Link
+                        href={`/admin/classes/${u.class_id}`}
+                        className="font-semibold underline hover:text-amber-900"
+                      >
+                        gán ngay
+                      </Link>{" "}
+                      rồi quay lại bấm ghi bổ sung
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {unrewarded.some((u) => u.coordinator_id) && <RescanButton from={from} to={to} />}
+            <p className="text-xs text-ink-500">
+              Bấm nhiều lần vô hại — mỗi buổi chỉ ghi được đúng một khoản. Khoản bạn đã Gỡ tay
+              cũng hiện lại ở đây; không muốn ghi lại thì đừng bấm.
+            </p>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
