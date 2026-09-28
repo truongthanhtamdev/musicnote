@@ -42,8 +42,9 @@ if [ -f "$DATA_DIR/musicnote.db" ]; then
   fi
   gzip -f "$BACKUP_OUT"
   echo "Đã lưu: $BACKUP_OUT.gz"
+  SERVER_IP="$(curl -s --max-time 5 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
   echo "Tải về máy bạn bằng lệnh (chạy trên máy tính, không phải trên VPS):"
-  echo "  scp root@\$(curl -s --max-time 5 ifconfig.me || echo IP-VPS):$BACKUP_OUT.gz ."
+  echo "  scp root@${SERVER_IP:-IP-VPS}:$BACKUP_OUT.gz ."
 else
   echo "Không thấy file dữ liệu, bỏ qua bước sao lưu."
 fi
