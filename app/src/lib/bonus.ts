@@ -301,7 +301,9 @@ export function transferClassBonuses(classId: number, toStaffId: number): { n: n
   const where = `
     staff_id != @to AND (
       (kind = 'trial' AND ref_type = 'attendance'
-        AND ref_id IN (SELECT id FROM attendance WHERE class_id = @cls))
+        AND ref_id IN (SELECT id FROM attendance WHERE class_id IN (
+          SELECT x.id FROM classes x WHERE x.id = @cls OR (@pkg IS NOT NULL AND x.package_id = @pkg)
+        )))
       OR (kind = 'conversion' AND (
         (ref_type = 'package' AND @pkg IS NOT NULL AND ref_id = @pkg)
         OR (ref_type = 'class' AND ref_id IN (
@@ -317,6 +319,101 @@ export function transferClassBonuses(classId: number, toStaffId: number): { n: n
     db.prepare(`UPDATE staff_bonuses SET staff_id = @to WHERE ${where}`).run(params);
   }
   return sum;
+}
+
+/**
+ * Mọi dòng lớp của cùng một khách: chính lớp này và các buổi khác trong tuần
+ * dùng chung gói (khách học T2 + T5 là hai dòng lớp, một gói).
+ */
+export function customerClassIds(classId: number): number[] {
+  const c = db.prepare("SELECT id, package_id FROM classes WHERE id = ?").get(classId) as
+    | { id: number; package_id: number | null }
+    | undefined;
+  if (!c) return [];
+  if (!c.package_id) return [c.id];
+  return (db.prepare("SELECT id FROM classes WHERE package_id = ?").all(c.package_id) as { id: number }[]).map(
+    (r) => r.id
+  );
+}
+
+export interface CustomerBonusStatus {
+  /** Các buổi được điểm danh là học thử và đã dạy xong. */
+  trials: { attendanceId: number; date: string; holder: string | null; amount: number | null }[];
+  /** Khoản chốt lớp đã ghi; null là chưa có. */
+  conversion: { holder: string; amount: number } | null;
+  /** Khách có dấu hiệu đã chốt chưa (đã đóng tiền, hoặc lớp đang ở trạng thái Đang học...). */
+  converted: boolean;
+}
+
+/**
+ * Tình trạng thưởng của MỘT khách, để hiện ngay trên trang lớp.
+ *
+ * Sinh ra vì "sao chưa nhảy tiền" là câu hỏi không trả lời được nếu chỉ nhìn
+ * trang Thưởng: khoản có thể đang nằm ở người khác, có thể chưa ghi vì buổi
+ * học thử không được đánh dấu, hoặc vì khách chưa chốt. Hiện đủ ba thứ đó ở
+ * đúng chỗ người ta đang đứng thì khỏi phải đoán.
+ */
+export function customerBonusStatus(classId: number): CustomerBonusStatus {
+  const ids = customerClassIds(classId);
+  if (ids.length === 0) return { trials: [], conversion: null, converted: false };
+  const ph = ids.map(() => "?").join(",");
+
+  const trials = db
+    .prepare(
+      `SELECT a.id AS attendanceId, a.session_date AS date, u.name AS holder, b.amount AS amount
+       FROM attendance a
+       LEFT JOIN staff_bonuses b ON b.ref_type = 'attendance' AND b.ref_id = a.id AND b.kind = 'trial'
+       LEFT JOIN users u ON u.id = b.staff_id
+       WHERE a.class_id IN (${ph}) AND a.is_trial = 1 AND a.status = 'completed'
+       ORDER BY a.session_date`
+    )
+    .all(...ids) as CustomerBonusStatus["trials"];
+
+  const c = db.prepare("SELECT package_id FROM classes WHERE id = ?").get(classId) as { package_id: number | null };
+  const conversion = db
+    .prepare(
+      `SELECT u.name AS holder, b.amount AS amount
+       FROM staff_bonuses b JOIN users u ON u.id = b.staff_id
+       WHERE b.kind = 'conversion' AND (
+         (b.ref_type = 'package' AND ? IS NOT NULL AND b.ref_id = ?)
+         OR (b.ref_type = 'class' AND b.ref_id IN (${ph}))
+       ) LIMIT 1`
+    )
+    .get(c.package_id, c.package_id, ...ids) as { holder: string; amount: number } | undefined;
+
+  const stages = CONVERTED_STAGES.map((st) => `'${st}'`).join(",");
+  const converted = !!db
+    .prepare(
+      `SELECT 1 FROM classes WHERE id IN (${ph}) AND (
+         stage IN (${stages}) OR EXISTS (SELECT 1 FROM payments p WHERE p.class_id = classes.id)
+       ) LIMIT 1`
+    )
+    .get(...ids);
+
+  return { trials, conversion: conversion ?? null, converted };
+}
+
+/**
+ * Ghi các khoản còn thiếu cho một khách, theo người phụ trách hiện tại.
+ * Người bấm là Quản lý đang nhìn đúng khách này, nên tính "đã chốt" rộng hơn
+ * lúc tự động: có khoản thu HOẶC lớp đang ở trạng thái đã chốt là đủ.
+ */
+export function awardMissingForCustomer(classId: number): { trials: number; conversion: number } {
+  const before = customerBonusStatus(classId);
+  for (const t of before.trials) if (!t.holder) awardTrialBonus(t.attendanceId);
+  if (!before.conversion && before.converted) {
+    const firstPaid = db
+      .prepare(
+        `SELECT MIN(paid_at) AS d FROM payments WHERE class_id IN (${customerClassIds(classId).map(() => "?").join(",")})`
+      )
+      .get(...customerClassIds(classId)) as { d: string | null };
+    awardConversionForClass(classId, firstPaid.d ?? before.trials[0]?.date ?? todayISO());
+  }
+  const after = customerBonusStatus(classId);
+  return {
+    trials: after.trials.filter((t) => t.holder).length - before.trials.filter((t) => t.holder).length,
+    conversion: !before.conversion && after.conversion ? 1 : 0,
+  };
 }
 
 export interface BonusSummary {

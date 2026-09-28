@@ -33,6 +33,7 @@ import WeeklySlots from "./weekly-slots";
 import ClassActions from "./class-actions";
 import PackageWidget from "./package-widget";
 import CoordinatorWidget from "./coordinator-widget";
+import { customerBonusStatus } from "@/lib/bonus";
 import StudentLinkWidget from "./student-link-widget";
 import { JoinClassLink } from "@/components/join-class-link";
 
@@ -153,6 +154,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
                   classId={cls.id}
                   current={cls.coordinator_id}
                   staff={staffList.map((u) => ({ id: u.id, name: u.name }))}
+                  status={customerBonusStatus(cls.id)}
                 />
               </div>
             </Card>

@@ -12,7 +12,13 @@ import {
 } from "@/lib/queries";
 import { classStage, formatClassSchedule, type ClassRow, MANAGE_ROLES, canonicalSubject, ADMIN_AREA_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
-import { awardConversionForClass, CONVERTED_STAGES, transferClassBonuses } from "@/lib/bonus";
+import {
+  awardConversionForClass,
+  awardMissingForCustomer,
+  CONVERTED_STAGES,
+  customerClassIds,
+  transferClassBonuses,
+} from "@/lib/bonus";
 import type { FormState } from "./teachers";
 
 function notifyTeacherOfAssignment(params: {
@@ -730,7 +736,12 @@ export async function setClassCoordinatorAction(
     staffName = staff.name;
   }
 
-  db.prepare("UPDATE classes SET coordinator_id = ? WHERE id = ?").run(coordinatorId, classId);
+  // Khách học nhiều buổi/tuần là nhiều dòng lớp chung một gói — gán cho cả
+  // khách, không phải cho riêng buổi đang mở. Chỉ gán một dòng thì buổi học
+  // thử nằm ở buổi kia vẫn ghi cho người cũ.
+  for (const id of customerClassIds(classId)) {
+    db.prepare("UPDATE classes SET coordinator_id = ? WHERE id = ?").run(coordinatorId, id);
+  }
 
   // Gán lại là để SỬA người nhận thưởng, nên các khoản đã ghi của khách này
   // (học thử của lớp, chốt lớp theo lớp hoặc theo gói) phải đi theo người mới.
@@ -750,4 +761,24 @@ export async function setClassCoordinatorAction(
   revalidatePath(`/admin/classes/${classId}`);
   revalidatePath("/admin/thuong");
   return { movedCount: moved.n, movedTotal: moved.total };
+}
+
+/**
+ * Ghi các khoản thưởng còn thiếu của một khách cho người phụ trách hiện tại —
+ * nút trong khung "Thưởng của khách này" ở trang lớp.
+ */
+export async function awardMissingForClassAction(classId: number): Promise<{ trials: number; conversion: number }> {
+  const session = await assertRole(MANAGE_ROLES);
+  const r = awardMissingForCustomer(classId);
+  const cls = getClass(classId);
+  if (r.trials + r.conversion > 0) {
+    logAudit(
+      session,
+      "luong",
+      `Ghi bù thưởng cho khách ${cls?.student_name ?? `#${classId}`}: ${r.trials} học thử, ${r.conversion} chốt lớp`
+    );
+  }
+  revalidatePath(`/admin/classes/${classId}`);
+  revalidatePath("/admin/thuong");
+  return r;
 }
