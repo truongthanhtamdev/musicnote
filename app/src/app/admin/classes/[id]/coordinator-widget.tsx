@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { setClassCoordinatorAction } from "@/actions/classes";
+import { formatVND } from "@/lib/format";
 
 /**
  * Ô gán giáo vụ phụ trách cho lớp có sẵn. Chọn xong lưu luôn.
@@ -20,6 +21,7 @@ export default function CoordinatorWidget({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   return (
     <div>
@@ -30,8 +32,13 @@ export default function CoordinatorWidget({
           const value = e.target.value ? Number(e.target.value) : null;
           startTransition(async () => {
             try {
-              await setClassCoordinatorAction(classId, value);
+              const r = await setClassCoordinatorAction(classId, value);
               setError(null);
+              setNotice(
+                r.movedCount > 0
+                  ? `Đã chuyển ${r.movedCount} khoản thưởng (${formatVND(r.movedTotal)}) sang người này.`
+                  : "Đã lưu."
+              );
             } catch {
               setError("Không lưu được — bạn cần quyền Quản lý trở lên.");
             }
@@ -47,9 +54,10 @@ export default function CoordinatorWidget({
         ))}
       </select>
       {error && <p className="text-xs text-coral-600 mt-1.5">{error}</p>}
+      {notice && !error && <p className="text-xs text-mint-700 mt-1.5">{notice}</p>}
       <p className="text-xs text-ink-500 mt-2">
-        Thưởng học thử và thưởng chốt lớp của khách này sẽ ghi cho người được gán. Chưa gán thì
-        không khoản nào được ghi.
+        Thưởng học thử và chốt lớp của khách này ghi cho người được gán. Đổi người thì các khoản
+        đã ghi trước đó cũng chuyển theo.
       </p>
     </div>
   );

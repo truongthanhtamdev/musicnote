@@ -285,6 +285,40 @@ export function listUnrewardedConversions(from: string, to: string): UnrewardedC
     .all({ from, to }) as UnrewardedConversion[];
 }
 
+/**
+ * Chuyển mọi khoản thưởng gắn với một khách sang người phụ trách mới.
+ *
+ * "Gắn với khách" gồm: thưởng học thử của các buổi điểm danh thuộc lớp này,
+ * và thưởng chốt lớp ghi theo lớp này, theo lớp cùng gói, hoặc theo gói.
+ * Khoản ghi tay không đụng tới — đó là quyết định riêng của người ghi.
+ */
+export function transferClassBonuses(classId: number, toStaffId: number): { n: number; total: number } {
+  const c = db.prepare("SELECT package_id FROM classes WHERE id = ?").get(classId) as
+    | { package_id: number | null }
+    | undefined;
+  if (!c) return { n: 0, total: 0 };
+
+  const where = `
+    staff_id != @to AND (
+      (kind = 'trial' AND ref_type = 'attendance'
+        AND ref_id IN (SELECT id FROM attendance WHERE class_id = @cls))
+      OR (kind = 'conversion' AND (
+        (ref_type = 'package' AND @pkg IS NOT NULL AND ref_id = @pkg)
+        OR (ref_type = 'class' AND ref_id IN (
+          SELECT x.id FROM classes x WHERE x.id = @cls OR (@pkg IS NOT NULL AND x.package_id = @pkg)
+        ))
+      ))
+    )`;
+  const params = { to: toStaffId, cls: classId, pkg: c.package_id };
+  const sum = db
+    .prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS total FROM staff_bonuses WHERE ${where}`)
+    .get(params) as { n: number; total: number };
+  if (sum.n > 0) {
+    db.prepare(`UPDATE staff_bonuses SET staff_id = @to WHERE ${where}`).run(params);
+  }
+  return sum;
+}
+
 export interface BonusSummary {
   staff_id: number;
   staff_name: string;

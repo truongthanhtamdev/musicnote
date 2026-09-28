@@ -6,6 +6,7 @@ import {
   getPackageProgress,
   annotateSchedule,
   getTuitionStatusForClasses,
+  listStaff,
 } from "@/lib/queries";
 import { CLASS_STAGES, formatClassSchedule, MANAGE_ROLES } from "@/lib/types";
 import { formatVND } from "@/lib/format";
@@ -41,7 +42,14 @@ type SP = {
 
 export default async function ClassesPage({ searchParams }: { searchParams: Promise<SP> }) {
   // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
-  await requireRole(MANAGE_ROLES);
+  const session = await requireRole(MANAGE_ROLES);
+  // Người nhận thưởng mặc định: Quản lý tạo lớp thì là chính họ; chủ trung
+  // tâm tạo thì để trống — chủ trung tâm tự nhận thưởng của mình là vô nghĩa,
+  // và để trống thì trang Thưởng sẽ nhắc gán đúng nhân viên.
+  const staff = listStaff()
+    .filter((u) => u.active)
+    .map((u) => ({ id: u.id, name: u.name }));
+  const defaultCoordinatorId = session.role === "admin" ? null : session.userId;
   const sp = await searchParams;
   const teachers = listTeachers(false);
   const prefill = trialPrefill(sp.trial);
@@ -84,7 +92,12 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Lớp học"
         subtitle="Toàn bộ lớp theo lịch tuần, kèm tiến độ gói học và cảnh báo chưa điểm danh."
-        action={<NewClassForm teachers={teachers} prefill={prefill} />}
+        action={<NewClassForm
+              teachers={teachers}
+              prefill={prefill}
+              staff={staff}
+              defaultCoordinatorId={defaultCoordinatorId}
+            />}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -186,7 +199,12 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
             icon={<IconClasses className="w-6 h-6" />}
             title="Chưa có lớp học nào"
             description="Thêm lớp mới hoặc bỏ bớt điều kiện lọc để xem danh sách."
-            action={<NewClassForm teachers={teachers} prefill={prefill} />}
+            action={<NewClassForm
+              teachers={teachers}
+              prefill={prefill}
+              staff={staff}
+              defaultCoordinatorId={defaultCoordinatorId}
+            />}
           />
         ) : (
           <TableShell>

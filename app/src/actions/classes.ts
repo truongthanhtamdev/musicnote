@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole, ForbiddenError } from "@/lib/guard";
-import { normalizeFacebookUrl, normalizeMeetingUrl, todayISO } from "@/lib/format";
+import { normalizeFacebookUrl, normalizeMeetingUrl, todayISO, formatVND } from "@/lib/format";
 import {
   notifyUser,
   getClass,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/queries";
 import { classStage, formatClassSchedule, type ClassRow, MANAGE_ROLES, canonicalSubject, ADMIN_AREA_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
-import { awardConversionForClass, CONVERTED_STAGES } from "@/lib/bonus";
+import { awardConversionForClass, CONVERTED_STAGES, transferClassBonuses } from "@/lib/bonus";
 import type { FormState } from "./teachers";
 
 function notifyTeacherOfAssignment(params: {
@@ -40,6 +40,13 @@ function notifyTeacherOfAssignment(params: {
       `Lưu ý: buổi đầu tiên tính là buổi học thử (50.000đ/tiết).`,
     params.classId
   );
+}
+
+/** Có phải nhân sự quản lý đang hoạt động không — người duy nhất được nhận thưởng. */
+function isActiveStaff(userId: number): boolean {
+  return !!db
+    .prepare("SELECT 1 FROM users WHERE id = ? AND role IN ('admin','manager','coordinator') AND active = 1")
+    .get(userId);
 }
 
 export async function createClassAction(
@@ -108,13 +115,20 @@ export async function createClassAction(
 
   // Giáo vụ phụ trách: ai tạo lớp thì mặc định người đó, admin chọn lại được.
   // Đây là gốc để tính thưởng nên phải có từ lúc tạo lớp, không để điền sau.
-  const coordinatorRaw = Number(formData.get("coordinator_id") || 0);
-  const coordinatorId =
-    coordinatorRaw > 0
-      ? coordinatorRaw
-      : session.role === "coordinator" || session.role === "admin" || session.role === "manager"
-        ? session.userId
-        : null;
+  // Người nhận thưởng của khách này.
+  //  • Nhân viên đặt hẹn tạo lớp: luôn là chính họ, không tin ô trong form.
+  //  • Quản lý / chủ trung tâm: lấy theo ô "Người đặt hẹn"; để trống là chưa
+  //    chọn ai (trang Thưởng sẽ nhắc gán). Form nào không có ô đó thì giữ cách
+  //    cũ — người tạo là người phụ trách.
+  let coordinatorId: number | null;
+  if (session.role === "coordinator") {
+    coordinatorId = session.userId;
+  } else if (formData.has("coordinator_id")) {
+    const picked = Number(formData.get("coordinator_id") || 0);
+    coordinatorId = picked > 0 && isActiveStaff(picked) ? picked : null;
+  } else {
+    coordinatorId = session.role === "admin" || session.role === "manager" ? session.userId : null;
+  }
 
   const insert = db.prepare(
     `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, status)
@@ -694,7 +708,10 @@ export async function deleteClassAction(classId: number) {
  * Excel không bao giờ sinh thưởng. Ai được gán quyết định tiền thưởng chảy về
  * đâu, nên chỉ Quản lý trở lên được bấm, và lần nào cũng ghi nhật ký.
  */
-export async function setClassCoordinatorAction(classId: number, coordinatorId: number | null) {
+export async function setClassCoordinatorAction(
+  classId: number,
+  coordinatorId: number | null
+): Promise<{ movedCount: number; movedTotal: number }> {
   const session = await assertRole(MANAGE_ROLES);
 
   const cls = db.prepare("SELECT id, student_name FROM classes WHERE id = ?").get(classId) as
@@ -714,7 +731,23 @@ export async function setClassCoordinatorAction(classId: number, coordinatorId: 
   }
 
   db.prepare("UPDATE classes SET coordinator_id = ? WHERE id = ?").run(coordinatorId, classId);
-  logAudit(session, "luong", `Gán giáo vụ phụ trách lớp ${cls.student_name}: ${staffName}`);
+
+  // Gán lại là để SỬA người nhận thưởng, nên các khoản đã ghi của khách này
+  // (học thử của lớp, chốt lớp theo lớp hoặc theo gói) phải đi theo người mới.
+  // Không chuyển thì chủ trung tâm tạo lớp, khách chốt, rồi mới gán nhân viên
+  // → tiền vẫn nằm ở tài khoản chủ trung tâm, còn trang Thưởng không báo sót
+  // vì "đã có khoản rồi".
+  let moved = { n: 0, total: 0 };
+  if (coordinatorId != null) {
+    moved = transferClassBonuses(classId, coordinatorId);
+  }
+  logAudit(
+    session,
+    "luong",
+    `Gán giáo vụ phụ trách lớp ${cls.student_name}: ${staffName}` +
+      (moved.n > 0 ? ` — chuyển ${moved.n} khoản thưởng (${formatVND(moved.total)}) sang người này` : "")
+  );
   revalidatePath(`/admin/classes/${classId}`);
   revalidatePath("/admin/thuong");
+  return { movedCount: moved.n, movedTotal: moved.total };
 }

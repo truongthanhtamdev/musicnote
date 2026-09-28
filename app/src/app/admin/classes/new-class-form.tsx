@@ -31,9 +31,17 @@ export interface ClassPrefill {
 export default function NewClassForm({
   teachers,
   prefill,
+  staff,
+  defaultCoordinatorId,
 }: {
   teachers: UserRow[];
   prefill?: ClassPrefill;
+  /**
+   * Danh sách người có thể nhận thưởng của khách này. Chỉ truyền cho Quản lý
+   * / chủ trung tâm; nhân viên đặt hẹn tạo lớp thì tự là người phụ trách.
+   */
+  staff?: { id: number; name: string }[];
+  defaultCoordinatorId?: number | null;
 }) {
   // Vào trang từ nút "Tạo lớp" của một đăng ký học thử thì mở sẵn biểu mẫu:
   // giáo vụ đang muốn tạo lớp cho đúng người đó, bắt bấm thêm một nút nữa
@@ -217,6 +225,29 @@ export default function NewClassForm({
                   ))}
                 </select>
               </div>
+              {staff && (
+                <div className="sm:col-span-2">
+                  <label className={label} htmlFor="a-coordinator">
+                    Người đặt hẹn (nhận thưởng)
+                  </label>
+                  <select
+                    id="a-coordinator"
+                    name="coordinator_id"
+                    defaultValue={defaultCoordinatorId ?? ""}
+                    className={field}
+                  >
+                    <option value="">— Chưa chọn —</option>
+                    {staff.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-ink-500 mt-1">
+                    Thưởng học thử và chốt lớp của khách này ghi cho người được chọn ở đây.
+                  </p>
+                </div>
+              )}
               <div className="sm:col-span-2">
                 <label className={label} htmlFor="a-teacher">
                   Giáo viên phụ trách
