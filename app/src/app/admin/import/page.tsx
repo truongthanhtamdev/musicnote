@@ -9,7 +9,7 @@ export default async function ImportPage() {
   // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
   await requireRole(MANAGE_ROLES);
   const session = await getSession();
-  const isAdmin = session?.role === "admin";
+  const isAdmin = session?.role === "admin" || session?.role === "manager";
 
   return (
     <div className="space-y-6">

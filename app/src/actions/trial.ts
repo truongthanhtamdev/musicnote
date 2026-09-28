@@ -2,12 +2,13 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { logAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { getUserById, getUserByEmail } from "@/lib/auth";
 import { createStudentAccount } from "@/lib/student-accounts";
 import { normalizeLoginPhone } from "@/lib/queries";
-import { SUBJECT_SUGGESTIONS, type TrialRequestStatus, ADMIN_AREA_ROLES } from "@/lib/types";
+import { SUBJECT_SUGGESTIONS, type TrialRequestStatus, ADMIN_AREA_ROLES, canonicalSubject, DAY_LABELS } from "@/lib/types";
 import { DEFAULT_TRIAL_SESSIONS, readPrize, WHEEL_COOKIE } from "@/lib/wheel";
 import type { FormState } from "./teachers";
 
@@ -156,5 +157,94 @@ export async function requestExtraTrialAction(
   revalidatePath("/admin/trial-requests");
   revalidatePath("/admin");
   revalidatePath("/student");
+  return { success: true };
+}
+
+export interface BookTrialState {
+  error?: string;
+  success?: boolean;
+}
+
+/**
+ * Nhân viên đặt hẹn chốt lịch học thử cho một đăng ký.
+ *
+ * Việc của họ dừng ở đúng chỗ này: hẹn khách ngày giờ nào. Còn chọn giáo viên
+ * là việc của Quản lý — buổi hẹn tạo ra một lớp CHƯA có giáo viên, nằm sẵn
+ * trong trang Giao lớp chờ Quản lý giao. Nhờ vậy nhân viên đặt hẹn không cần
+ * (và không được) nhìn thấy danh sách lớp đang học.
+ *
+ * Người bấm được ghi làm người phụ trách lớp, nên khi buổi học thử diễn ra
+ * thưởng học thử tự ghi đúng cho họ — không phải nhờ ai chọn hộ.
+ */
+export async function bookTrialAction(
+  _prev: BookTrialState,
+  formData: FormData
+): Promise<BookTrialState> {
+  const session = await assertRole(ADMIN_AREA_ROLES);
+
+  const requestId = Number(formData.get("trial_request_id") || 0);
+  const dayOfWeek = Number(formData.get("day_of_week"));
+  const startTime = String(formData.get("start_time") || "");
+  const subject = canonicalSubject(String(formData.get("subject") || ""));
+  const note = String(formData.get("note") || "").trim().slice(0, 500);
+
+  if (!requestId) return { error: "Thiếu đăng ký học thử" };
+  if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6 || !/^\d{2}:\d{2}$/.test(startTime)) {
+    return { error: "Chọn thứ và giờ học thử" };
+  }
+
+  const req = db.prepare("SELECT * FROM trial_requests WHERE id = ?").get(requestId) as
+    | (import("@/lib/types").TrialRequestRow & { contact: string | null; note: string | null })
+    | undefined;
+  if (!req) return { error: "Không tìm thấy đăng ký này" };
+  // Chặn đặt hẹn hai lần: bấm đúp hay hai người cùng xử lý một khách là ra
+  // hai lớp học thử trùng nhau trong trang Giao lớp.
+  if (req.status === "done") return { error: "Khách này đã được đặt hẹn rồi" };
+
+  // Khách đăng ký ở trang chủ đã có sẵn tài khoản theo số điện thoại — nối
+  // luôn để khách thấy buổi hẹn trong trang của mình và nhận nhắc lịch.
+  const login = normalizeLoginPhone(req.phone);
+  const studentUser = login
+    ? (db.prepare("SELECT id FROM users WHERE email = ? AND role = 'student'").get(login) as
+        | { id: number }
+        | undefined)
+    : undefined;
+
+  const noteParts = [
+    req.trial_sessions > 1 ? `🎁 Trúng ${req.trial_sessions} buổi học thử` : null,
+    note || null,
+    req.note ? `Khách ghi: ${req.note}` : null,
+    req.contact ? `Liên hệ: ${req.contact}` : null,
+    `Đặt hẹn bởi ${session.name}`,
+  ].filter(Boolean);
+
+  db.transaction(() => {
+    db.prepare(
+      `INSERT INTO classes (student_name, student_phone, student_user_id, subject, language, source,
+         schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id,
+         status, stage, trial_pending)
+       VALUES (?, ?, ?, ?, ?, 'center', 'fixed', ?, ?, 60, NULL, ?, ?, 'active', 'trial', 1)`
+    ).run(
+      req.name,
+      req.phone,
+      studentUser?.id ?? null,
+      subject || req.subject,
+      req.language,
+      dayOfWeek,
+      startTime,
+      noteParts.join(" · "),
+      session.userId
+    );
+    db.prepare("UPDATE trial_requests SET status = 'done' WHERE id = ?").run(requestId);
+  })();
+
+  logAudit(
+    session,
+    "lop_hoc",
+    `Đặt hẹn học thử ${req.name}: ${DAY_LABELS[dayOfWeek]} ${startTime}, ${subject || req.subject}`
+  );
+  revalidatePath("/admin/trial-requests");
+  revalidatePath("/admin/assign");
+  revalidatePath("/admin");
   return { success: true };
 }

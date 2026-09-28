@@ -476,7 +476,7 @@ export async function saveClassPackageAction(
   }
   if (amount < 0 || Number.isNaN(amount)) return { error: "Số tiền không hợp lệ" };
   if (amount > 0) {
-    if (session.role !== "admin") return { error: "Chỉ admin mới ghi nhận được học phí" };
+    if (!MANAGE_ROLES.includes(session.role)) return { error: "Chỉ Quản lý trở lên mới ghi nhận được học phí" };
     if (!paidAt) return { error: "Vui lòng chọn ngày đóng học phí" };
   }
 
@@ -638,7 +638,7 @@ export async function setClassStageAction(
 }
 
 export async function deleteClassAction(classId: number) {
-  const session = await assertRole(["admin", "teacher"]);
+  const session = await assertRole([...MANAGE_ROLES, "teacher"]);
   const doomed = getClass(classId);
   const result = db
     .prepare(

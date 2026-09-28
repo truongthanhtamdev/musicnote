@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import { awardConversionBonus } from "@/lib/bonus";
 import { accountTargetForClass, createStudentAccount } from "@/lib/student-accounts";
@@ -28,7 +29,7 @@ export async function recordPaymentAction(
   _prev: PaymentState,
   formData: FormData
 ): Promise<PaymentState> {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
 
   const classId = formData.get("class_id") ? Number(formData.get("class_id")) : null;
   const amount = Number(formData.get("amount") || 0);
@@ -203,7 +204,7 @@ export async function addPayrollAdjustmentAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
 
   const teacherId = Number(formData.get("teacher_id"));
   const amount = Math.round(Number(formData.get("amount") || 0));
@@ -234,7 +235,7 @@ export async function addPayrollAdjustmentAction(
 }
 
 export async function deletePayrollAdjustmentAction(id: number) {
-  const session = await assertRole(["admin"]);
+  const session = await assertRole(MANAGE_ROLES);
   const row = db
     .prepare(
       `SELECT a.amount, u.name FROM payroll_adjustments a

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { deleteTrialRequestAction, setTrialRequestStatusAction } from "@/actions/trial";
+import BookTrialButton from "./book-trial-button";
 import {
   LANGUAGE_LABELS,
   TRIAL_REQUEST_STATUS_LABELS,
@@ -62,6 +63,16 @@ export default function RequestRow({
       </td>
       <td className="px-4 py-3 text-right">
         <div className="inline-flex items-center gap-2">
+          {/* Ai cũng đặt hẹn được; riêng "Tạo lớp" đầy đủ (chọn giáo viên, gói
+              học) là việc của Quản lý. */}
+          {request.status !== "cancelled" && (
+            <BookTrialButton
+              requestId={request.id}
+              customerName={request.name}
+              subject={request.subject}
+              booked={request.status === "done"}
+            />
+          )}
           {canCreateClass && request.status !== "done" && (
             <Link
               href={`/admin/classes?trial=${request.id}`}

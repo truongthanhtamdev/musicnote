@@ -45,7 +45,9 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   if (!cls) notFound();
 
   const session = await getSession();
-  const isAdmin = session?.role === "admin";
+  // Quản lý làm được mọi việc trên lớp, kể cả thu học phí và xoá lớp —
+  // chỉ sổ doanh thu và chi phí tổng là của riêng chủ trung tâm.
+  const isAdmin = session?.role === "admin" || session?.role === "manager";
   const canManage = session?.role === "admin" || session?.role === "manager";
   const staffList = canManage ? listStaff().filter((u) => u.active) : [];
 

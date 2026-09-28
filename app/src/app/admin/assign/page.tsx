@@ -105,7 +105,7 @@ export default async function AssignPage() {
                     >
                       Sửa lớp
                     </Link>
-                    {session?.role === "admin" && <DeleteClassButton classId={c.id} />}
+                    {(session?.role === "admin" || session?.role === "manager") && <DeleteClassButton classId={c.id} />}
                   </div>
                 </div>
                 {nobodyTeaches && (
