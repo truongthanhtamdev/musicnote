@@ -12,7 +12,7 @@ import {
 } from "@/lib/queries";
 import { classStage, formatClassSchedule, type ClassRow, MANAGE_ROLES, canonicalSubject, ADMIN_AREA_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
-import { awardConversionForClass } from "@/lib/bonus";
+import { awardConversionForClass, CONVERTED_STAGES } from "@/lib/bonus";
 import type { FormState } from "./teachers";
 
 function notifyTeacherOfAssignment(params: {
@@ -614,8 +614,6 @@ export async function assignTeacherAction(classId: number, teacherId: number | n
  */
 /** Hai bước "đang thử" của một khách mới. */
 const TRIAL_STAGES = ["trial", "trial_awaiting_fee"];
-/** Các bước coi là đã chốt: khách vào học chính thức. */
-const CONVERTED_STAGES = ["studying", "studying_unpaid", "studying_partial", "new_course_paid"];
 
 export async function setClassStageAction(
   classId: number,
@@ -639,8 +637,15 @@ export async function setClassStageAction(
   // tắc thưởng là chốt lớp HOẶC đóng tiền, nên đổi trạng thái thôi cũng đủ —
   // khách đóng tiền sau thì cùng khoá chống trùng, không ghi lần hai. Chỉ tính
   // khi đi ra từ bước học thử, để việc sửa nhãn cho lớp cũ không sinh thưởng.
-  if (before && TRIAL_STAGES.includes(before.stage) && CONVERTED_STAGES.includes(info.value)) {
-    awardConversionForClass(classId, todayISO());
+  // Cũng tính khi lớp đã có buổi học thử dạy xong, dù bước trước không phải
+  // "Học thử" (VD Học thử → Tạm OFF → Đang học): khách vẫn là khách mới chốt.
+  if (before && CONVERTED_STAGES.includes(info.value)) {
+    const hadTrial =
+      TRIAL_STAGES.includes(before.stage) ||
+      !!db
+        .prepare("SELECT 1 FROM attendance WHERE class_id = ? AND is_trial = 1 AND status = 'completed' LIMIT 1")
+        .get(classId);
+    if (hadTrial) awardConversionForClass(classId, todayISO());
   }
   // Lớp Tạm OFF nhập từ Excel không có ngày/giờ. Chỉ bật lại trạng thái thôi
   // thì lớp "đang học" mà không nằm trong lịch tuần nào — giáo viên không thấy,

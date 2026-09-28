@@ -127,6 +127,31 @@ export function awardTrialBonus(attendanceId: number) {
 }
 
 /**
+ * Khách này đã có thưởng chốt lớp chưa — xét CẢ HAI khoá.
+ *
+ * Khoá chống trùng của bảng thưởng là (loại, mã), mà cùng một lần chốt có
+ * thể được ghi theo lớp (lúc lớp chưa có gói) rồi sau đó theo gói (khi ghi
+ * học phí thì gói mới được tạo). Chỉ dựa vào ràng buộc UNIQUE thì hai khoá
+ * khác nhau lọt qua và nhân viên được cộng 75k hai lần. Nên trước khi ghi phải
+ * dò cả khoản theo lớp (của lớp này hoặc lớp cùng gói) lẫn khoản theo gói.
+ */
+const CONVERSION_EXISTS_SQL = `
+  SELECT 1 FROM staff_bonuses b
+  WHERE b.kind = 'conversion' AND (
+    (b.ref_type = 'package' AND @pkg IS NOT NULL AND b.ref_id = @pkg)
+    OR (b.ref_type = 'class' AND b.ref_id IN (
+      SELECT x.id FROM classes x WHERE x.id = @cls OR (@pkg IS NOT NULL AND x.package_id = @pkg)
+    ))
+  ) LIMIT 1`;
+
+function hasConversionBonus(classId: number, packageId: number | null): boolean {
+  return !!db.prepare(CONVERSION_EXISTS_SQL).get({ cls: classId, pkg: packageId });
+}
+
+/** Các bước coi là đã chốt: khách vào học chính thức. */
+export const CONVERTED_STAGES = ["studying", "studying_unpaid", "studying_partial", "new_course_paid"];
+
+/**
  * Ghi thưởng chốt lớp cho một lớp.
  *
  * Thưởng theo GÓI chứ không theo lớp và cũng không theo từng khoản thu: một
@@ -141,6 +166,7 @@ export function awardConversionForClass(classId: number, earnedAt: string) {
     .prepare("SELECT id, package_id, student_name FROM classes WHERE id = ?")
     .get(classId) as { id: number; package_id: number | null; student_name: string } | undefined;
   if (!c) return;
+  if (hasConversionBonus(c.id, c.package_id)) return;
 
   const staffId = coordinatorOfClass(c.id);
   if (!staffId) return;
@@ -204,38 +230,59 @@ export function listUnrewardedTrials(from: string, to: string): UnrewardedTrial[
     .all(from, to) as UnrewardedTrial[];
 }
 
-/** Một lớp đã đóng tiền mà chưa có thưởng chốt lớp. */
+/** Một khách đã chốt mà chưa có thưởng chốt lớp. */
 export interface UnrewardedConversion {
   class_id: number;
   student_name: string;
+  /** Ngày dùng để ghi thưởng: ngày đóng tiền, hoặc ngày học thử nếu chốt bằng đổi trạng thái. */
   paid_at: string;
   coordinator_id: number | null;
   coordinator_name: string | null;
 }
 
 /**
- * Khoản thu trong kỳ mà chưa sinh thưởng chốt lớp — để truy lại các khoản đã
- * lỡ trước khi sửa lỗi "ghi học phí ở trang lớp không cộng thưởng". Mỗi gói
- * (hoặc lớp không gói) chỉ hiện một lần, lấy ngày đóng tiền sớm nhất.
+ * Khách đã chốt trong kỳ mà chưa có thưởng chốt lớp. "Đã chốt" là một trong
+ * hai dấu hiệu:
+ *   • có khoản thu trong kỳ, hoặc
+ *   • đã học thử trong kỳ VÀ lớp đang ở trạng thái đã chốt (Đang học...)
+ * Dấu hiệu thứ hai để bắt những lần chốt bằng đổi trạng thái mà không ghi
+ * tiền — trước đây không để lại dấu vết gì, nên không truy lại được.
+ * Mỗi gói (hoặc lớp không gói) chỉ hiện một lần.
  */
 export function listUnrewardedConversions(from: string, to: string): UnrewardedConversion[] {
+  const stages = CONVERTED_STAGES.map((s) => `'${s}'`).join(",");
   return db
     .prepare(
-      `SELECT c.id AS class_id, c.student_name, MIN(p.paid_at) AS paid_at,
+      `WITH cand AS (
+         SELECT p.class_id AS class_id, p.paid_at AS at
+         FROM payments p
+         WHERE p.class_id IS NOT NULL AND p.paid_at >= @from AND p.paid_at <= @to
+         UNION ALL
+         SELECT a.class_id, a.session_date
+         FROM attendance a JOIN classes c2 ON c2.id = a.class_id
+         WHERE a.is_trial = 1 AND a.status = 'completed'
+           AND a.session_date >= @from AND a.session_date <= @to
+           AND c2.stage IN (${stages})
+       )
+       SELECT c.id AS class_id, c.student_name, MIN(cand.at) AS paid_at,
               c.coordinator_id, u.name AS coordinator_name
-       FROM payments p
-       JOIN classes c ON c.id = p.class_id
+       FROM cand
+       JOIN classes c ON c.id = cand.class_id
        LEFT JOIN users u ON u.id = c.coordinator_id
-       WHERE p.paid_at >= ? AND p.paid_at <= ?
-         AND NOT EXISTS (
-           SELECT 1 FROM staff_bonuses b
-           WHERE (b.ref_type = 'package' AND c.package_id IS NOT NULL AND b.ref_id = c.package_id)
-              OR (b.ref_type = 'class' AND c.package_id IS NULL AND b.ref_id = c.id)
+       WHERE NOT EXISTS (
+         SELECT 1 FROM staff_bonuses b
+         WHERE b.kind = 'conversion' AND (
+           (b.ref_type = 'package' AND c.package_id IS NOT NULL AND b.ref_id = c.package_id)
+           OR (b.ref_type = 'class' AND b.ref_id IN (
+             SELECT x.id FROM classes x
+             WHERE x.id = c.id OR (c.package_id IS NOT NULL AND x.package_id = c.package_id)
+           ))
          )
+       )
        GROUP BY COALESCE('p' || c.package_id, 'c' || c.id)
        ORDER BY paid_at`
     )
-    .all(from, to) as UnrewardedConversion[];
+    .all({ from, to }) as UnrewardedConversion[];
 }
 
 export interface BonusSummary {

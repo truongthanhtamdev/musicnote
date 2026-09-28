@@ -97,7 +97,7 @@ export default async function BonusPage({
           <div className="p-5 space-y-3">
             {missedConversions.length > 0 && (
               <>
-                <p className="text-sm font-semibold text-ink-700">Chốt lớp (khách đã đóng tiền)</p>
+                <p className="text-sm font-semibold text-ink-700">Chốt lớp (đã đóng tiền hoặc đã chuyển sang Đang học)</p>
                 <ul className="space-y-2 text-sm">
                   {missedConversions.map((u) => (
                     <li key={`c${u.class_id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1">
