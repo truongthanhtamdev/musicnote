@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireRole } from "@/lib/guard";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import {
@@ -14,7 +15,7 @@ import {
   getTuitionStatusForClasses,
   listStaff,
 } from "@/lib/queries";
-import { LANGUAGE_LABELS, SOURCE_LABELS, formatClassSchedule } from "@/lib/types";
+import { LANGUAGE_LABELS, SOURCE_LABELS, formatClassSchedule, MANAGE_ROLES } from "@/lib/types";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 import { IconCalendarCheck, IconChevronLeft, SubjectIcon } from "@/components/icons";
 import {
@@ -36,6 +37,8 @@ import StudentLinkWidget from "./student-link-widget";
 import { JoinClassLink } from "@/components/join-class-link";
 
 export default async function ClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
+  await requireRole(MANAGE_ROLES);
   const { id } = await params;
   const classId = Number(id);
   const cls = getClass(classId);

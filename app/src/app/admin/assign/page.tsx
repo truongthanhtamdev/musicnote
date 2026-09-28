@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireRole } from "@/lib/guard";
 import { getSession } from "@/lib/auth";
 import {
   listClasses,
@@ -7,7 +8,7 @@ import {
   teacherSpeaksLanguage,
   teacherTeachesSubject,
 } from "@/lib/queries";
-import { formatClassSchedule, LANGUAGE_LABELS } from "@/lib/types";
+import { formatClassSchedule, LANGUAGE_LABELS, MANAGE_ROLES } from "@/lib/types";
 import { IconCheckCircle, SubjectIcon } from "@/components/icons";
 import {
   Avatar,
@@ -22,6 +23,8 @@ import DeleteClassButton from "../classes/delete-class-button";
 import ToLeadButton from "./to-lead-button";
 
 export default async function AssignPage() {
+  // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
+  await requireRole(MANAGE_ROLES);
   const session = await getSession();
   const unassigned = listClasses({ unassignedOnly: true, status: "active" });
   const teachers = listTeachers(false);

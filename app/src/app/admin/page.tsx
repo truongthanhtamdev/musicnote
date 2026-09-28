@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireRole } from "@/lib/guard";
 import { db } from "@/lib/db";
 import {
   listClassesByDay,
@@ -10,7 +11,7 @@ import {
   listPackagesNearingCompletion,
 } from "@/lib/queries";
 import { formatTimeRange, todayISO, toISODate, addDays, now } from "@/lib/format";
-import { DAY_LABELS } from "@/lib/types";
+import { DAY_LABELS, MANAGE_ROLES } from "@/lib/types";
 import {
   IconAlert,
   IconCalendarCheck,
@@ -76,6 +77,8 @@ function weeklyStats() {
 }
 
 export default async function AdminDashboard() {
+  // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
+  await requireRole(MANAGE_ROLES);
   const teacherCount = (
     db.prepare("SELECT COUNT(*) as c FROM users WHERE role='teacher' AND active=1").get() as {
       c: number;

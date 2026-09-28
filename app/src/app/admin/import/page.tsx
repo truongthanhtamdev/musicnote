@@ -1,9 +1,13 @@
 import { getSession } from "@/lib/auth";
+import { requireRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import TeachersImportForm from "./teachers-import-form";
 import ClassesImportForm from "./classes-import-form";
 import CenterSheetImportForm from "./center-sheet-form";
 
 export default async function ImportPage() {
+  // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
+  await requireRole(MANAGE_ROLES);
   const session = await getSession();
   const isAdmin = session?.role === "admin";
 

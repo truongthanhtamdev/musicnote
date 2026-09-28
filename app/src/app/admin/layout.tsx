@@ -146,13 +146,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       : []),
   ];
 
+  // Nhân viên đặt hẹn chỉ làm việc với khách chưa học: đúng hai mục này.
+  // Lọc từ danh sách đầy đủ thay vì dựng danh sách riêng, để thêm mục mới
+  // cho Quản lý không bao giờ vô tình lọt sang phía nhân viên đặt hẹn.
+  const COORDINATOR_PAGES = ["/admin/tiem-nang", "/admin/trial-requests"];
+  const visibleLinks = canManage ? links : links.filter((l) => COORDINATOR_PAGES.includes(l.href));
+
   return (
     <AppShell
       brandTitle="Piano Guitar Đệm Hát"
       userName={session.name}
       roleLabel={ROLE_LABELS[session.role]}
-      links={links}
-      alertCount={overdueTodayCount()}
+      links={visibleLinks}
+      // Chuông đếm lớp quá giờ chưa điểm danh — việc của Quản lý; nhân viên
+      // đặt hẹn thì chuông đếm khách tới hạn gọi lại.
+      alertCount={canManage ? overdueTodayCount() : dueLeads}
     >
       {children}
     </AppShell>

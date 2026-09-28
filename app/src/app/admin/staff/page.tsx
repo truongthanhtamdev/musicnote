@@ -30,7 +30,7 @@ export default async function StaffPage() {
     <div className="space-y-5">
       <PageHeader
         title="Nhân sự quản lý"
-        subtitle="Chủ trung tâm có toàn quyền. Quản lý làm được mọi thứ trừ sổ sách tiền bạc. Giáo vụ chỉ xếp lớp và chăm khách."
+        subtitle="Chủ trung tâm có toàn quyền. Quản lý làm được mọi thứ trừ xem doanh thu. Nhân viên đặt hẹn chỉ thấy Khách tiềm năng và Đăng ký học thử. Tài khoản giáo viên tạo ở trang Giáo viên."
       />
 
       <Card padded={false}>

@@ -1,12 +1,13 @@
 import { requireRole } from "@/lib/guard";
 import { listTrialRequests } from "@/lib/queries";
-import { TRIAL_REQUEST_STATUS_LABELS, type TrialRequestStatus, ADMIN_AREA_ROLES } from "@/lib/types";
+import { TRIAL_REQUEST_STATUS_LABELS, type TrialRequestStatus, ADMIN_AREA_ROLES, MANAGE_ROLES } from "@/lib/types";
 import { IconBell, IconUser } from "@/components/icons";
 import { Card, EmptyState, MetricCard, PageHeader, TableShell, Th } from "@/components/ui";
 import RequestRow from "./request-row";
 
 export default async function TrialRequestsPage() {
-  await requireRole(ADMIN_AREA_ROLES);
+  const session = await requireRole(ADMIN_AREA_ROLES);
+  const canManage = MANAGE_ROLES.includes(session.role);
   const requests = listTrialRequests();
   const counts = Object.fromEntries(
     Object.keys(TRIAL_REQUEST_STATUS_LABELS).map((status) => [
@@ -56,7 +57,7 @@ export default async function TrialRequestsPage() {
             </thead>
             <tbody className="divide-y divide-navy-100">
               {requests.map((r) => (
-                <RequestRow key={r.id} request={r} />
+                <RequestRow key={r.id} request={r} canCreateClass={canManage} />
               ))}
             </tbody>
           </TableShell>

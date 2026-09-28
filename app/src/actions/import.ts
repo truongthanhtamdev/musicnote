@@ -10,7 +10,7 @@ import { getUserByEmail } from "@/lib/auth";
 import { parseCSV, parseDayOfWeek } from "@/lib/csv";
 import { readXlsxRows } from "@/lib/xlsx";
 import { findSlotClashes, normalizeName, parseCenterSheet } from "@/lib/center-sheet";
-import { classStage, ADMIN_AREA_ROLES, MANAGE_ROLES } from "@/lib/types";
+import { classStage, MANAGE_ROLES } from "@/lib/types";
 import { todayISO } from "@/lib/format";
 
 export interface ImportState {
@@ -100,7 +100,7 @@ export async function importClassesAction(
   _prev: ImportState,
   formData: FormData
 ): Promise<ImportState> {
-  const session = await assertRole(ADMIN_AREA_ROLES);
+  const session = await assertRole(MANAGE_ROLES);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {

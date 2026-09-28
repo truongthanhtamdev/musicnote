@@ -35,7 +35,7 @@ export default function RoleSelect({
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
         className="rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 text-sm text-ink-900 disabled:opacity-60"
       >
-        <option value="coordinator">Giáo vụ</option>
+        <option value="coordinator">Nhân viên đặt hẹn</option>
         <option value="manager">Quản lý</option>
         {canSetAdmin && <option value="admin">Chủ trung tâm</option>}
       </select>

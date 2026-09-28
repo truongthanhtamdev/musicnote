@@ -5,7 +5,7 @@ export type Role = "admin" | "manager" | "coordinator" | "teacher" | "student";
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "Chủ trung tâm",
   manager: "Quản lý",
-  coordinator: "Giáo vụ",
+  coordinator: "Nhân viên đặt hẹn",
   teacher: "Giáo viên",
   student: "Học viên",
 };
@@ -18,7 +18,12 @@ export const ROLE_LABELS: Record<Role, string> = {
  * hằng số thì lần sau đổi chính sách chỉ sửa đúng ở đây.
  */
 
-/** Vào được khu quản trị /admin. */
+/**
+ * Vào được khu quản trị /admin. Riêng nhân viên đặt hẹn (role "coordinator")
+ * chỉ được đúng hai trang khách: Khách tiềm năng và Đăng ký học thử — họ hẹn
+ * khách chứ không vận hành lớp, nên không thấy lớp học, điểm danh hay giáo
+ * viên. Mọi thứ đụng tới lớp học dùng MANAGE_ROLES.
+ */
 export const ADMIN_AREA_ROLES: Role[] = ["admin", "manager", "coordinator"];
 
 /**
@@ -37,6 +42,9 @@ export const MONEY_ROLES: Role[] = ["admin"];
 export function roleHomePath(role: Role): string {
   if (role === "teacher") return "/teacher";
   if (role === "student") return "/student";
+  // Nhân viên đặt hẹn chỉ làm việc với khách chưa học — trang Tổng quan toàn
+  // số liệu lớp học nên đưa thẳng vào danh sách khách.
+  if (role === "coordinator") return "/admin/tiem-nang";
   return "/admin";
 }
 

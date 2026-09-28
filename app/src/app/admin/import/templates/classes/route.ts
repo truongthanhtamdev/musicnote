@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { MANAGE_ROLES } from "@/lib/types";
 
 const SAMPLE = `TenHocSinh,SDT,PhuHuynh,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
 Be Minh Khang,0912000111,Chi Lan (me be Khang),Co ban,Guitar,vi,T3,19:00,60,long.guitar@musicnote.local,
@@ -8,7 +9,7 @@ Ms. Sarah,0912000444,,Co ban,Guitar,en,T4,18:00,60,,Hoc vien noi tieng Anh
 
 export async function GET() {
   const session = await getSession();
-  if (!session || (session.role !== "admin" && session.role !== "coordinator")) {
+  if (!session || !MANAGE_ROLES.includes(session.role)) {
     return new Response("Forbidden", { status: 403 });
   }
   return new Response("﻿" + SAMPLE, {

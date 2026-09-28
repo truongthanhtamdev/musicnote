@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { MANAGE_ROLES } from "@/lib/types";
 
 const SAMPLE = `Ten,Email,SDT,LuongMoiBuoi,NgonNgu,MatKhau
 Nguyen Van A,vana.guitar@musicnote.local,0901111111,125000,vi,
@@ -7,7 +8,7 @@ Tran Thi B,thib.guitar@musicnote.local,0902222222,150000,"vi,en",
 
 export async function GET() {
   const session = await getSession();
-  if (!session || session.role !== "admin") {
+  if (!session || !MANAGE_ROLES.includes(session.role)) {
     return new Response("Forbidden", { status: 403 });
   }
   return new Response("﻿" + SAMPLE, {

@@ -18,7 +18,14 @@ const TONE: Record<TrialRequestStatus, "coral" | "amber" | "mint" | "neutral"> =
   cancelled: "neutral",
 };
 
-export default function RequestRow({ request }: { request: TrialRequestRow }) {
+export default function RequestRow({
+  request,
+  canCreateClass,
+}: {
+  request: TrialRequestRow;
+  /** Tạo lớp là việc của Quản lý; nhân viên đặt hẹn chỉ cập nhật trạng thái. */
+  canCreateClass: boolean;
+}) {
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -55,7 +62,7 @@ export default function RequestRow({ request }: { request: TrialRequestRow }) {
       </td>
       <td className="px-4 py-3 text-right">
         <div className="inline-flex items-center gap-2">
-          {request.status !== "done" && (
+          {canCreateClass && request.status !== "done" && (
             <Link
               href={`/admin/classes?trial=${request.id}`}
               className="text-sm font-semibold text-wood-600 hover:text-wood-700 whitespace-nowrap"

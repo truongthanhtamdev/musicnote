@@ -1,12 +1,9 @@
 import Link from "next/link";
+import { requireRole } from "@/lib/guard";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getTeacher, listBusySlots, listClassesForTeacher, listAttendance } from "@/lib/queries";
-import {
-  LANGUAGE_LABELS,
-  parseLanguages,
-  parseSubjects,
-} from "@/lib/types";
+import { LANGUAGE_LABELS, parseLanguages, parseSubjects, MANAGE_ROLES } from "@/lib/types";
 import { TeacherScheduleGrid } from "@/components/teacher-schedule-grid";
 import TeacherClassList from "./class-list";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
@@ -24,13 +21,17 @@ import ToggleActiveButton from "./toggle-active-button";
 import ResetPasswordButton from "@/components/reset-password-button";
 
 export default async function TeacherDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
+  await requireRole(MANAGE_ROLES);
   const { id } = await params;
   const teacherId = Number(id);
   const teacher = getTeacher(teacherId);
   if (!teacher) notFound();
 
   const session = await getSession();
-  const isAdmin = session?.role === "admin";
+  // Quản lý được tạo tài khoản giáo viên và xem mức lương/buổi — chỉ sổ
+  // doanh thu là của riêng chủ trung tâm.
+  const isAdmin = session?.role === "admin" || session?.role === "manager";
 
   const busySlots = listBusySlots(teacherId);
   const classes = listClassesForTeacher(teacherId);

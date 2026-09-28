@@ -1,14 +1,19 @@
 import { getSession } from "@/lib/auth";
+import { requireRole } from "@/lib/guard";
 import { listTeachers, listClasses } from "@/lib/queries";
-import { parseLanguages, parseSubjects } from "@/lib/types";
+import { parseLanguages, parseSubjects, MANAGE_ROLES } from "@/lib/types";
 import { IconTeacher } from "@/components/icons";
 import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import NewTeacherForm from "./new-teacher-form";
 import TeacherTable, { type TeacherLine } from "./teacher-table";
 
 export default async function TeachersPage() {
+  // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
+  await requireRole(MANAGE_ROLES);
   const session = await getSession();
-  const isAdmin = session?.role === "admin";
+  // Quản lý được tạo tài khoản giáo viên và xem mức lương/buổi — chỉ sổ
+  // doanh thu là của riêng chủ trung tâm.
+  const isAdmin = session?.role === "admin" || session?.role === "manager";
   const teachers = listTeachers(true);
   const activeClasses = listClasses({ status: "active" });
   const lines: TeacherLine[] = teachers.map((t) => ({

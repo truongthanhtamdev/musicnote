@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { requireRole } from "@/lib/guard";
+import { MANAGE_ROLES } from "@/lib/types";
 import { listAttendance, listTeachers, sessionNumberMap } from "@/lib/queries";
 import { todayISO, addDays, toISODate, now } from "@/lib/format";
 import {
@@ -26,6 +28,8 @@ export default async function AttendancePage({
 }: {
   searchParams: Promise<{ teacherId?: string; from?: string; to?: string; status?: string }>;
 }) {
+  // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
+  await requireRole(MANAGE_ROLES);
   const sp = await searchParams;
   const teachers = listTeachers(true);
 

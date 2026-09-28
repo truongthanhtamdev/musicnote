@@ -54,8 +54,8 @@ export default function NewStaffForm({ canCreateAdmin }: { canCreateAdmin: boole
           Vai trò
         </label>
         <select id="staff-role" name="role" defaultValue="coordinator" className={field}>
-          <option value="coordinator">Giáo vụ — xếp lớp, chăm khách</option>
-          <option value="manager">Quản lý — thêm quyền nhân sự và cài đặt</option>
+          <option value="coordinator">Nhân viên đặt hẹn — chăm khách, hẹn học thử</option>
+          <option value="manager">Quản lý — vận hành lớp học, tạo tài khoản</option>
           {/* Chỉ chủ trung tâm mới thấy lựa chọn này; máy chủ cũng chặn lại
               lần nữa, vì ai cũng sửa được HTML trong trình duyệt. */}
           {canCreateAdmin && <option value="admin">Chủ trung tâm — toàn quyền</option>}

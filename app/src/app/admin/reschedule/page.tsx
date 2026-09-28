@@ -1,12 +1,12 @@
 import { requireRole } from "@/lib/guard";
-import { ADMIN_AREA_ROLES } from "@/lib/types";
+import { MANAGE_ROLES } from "@/lib/types";
 import { listRescheduleRequests } from "@/lib/queries";
 import { IconCalendarCheck } from "@/components/icons";
 import { Card, EmptyState, PageHeader, TableShell, Th } from "@/components/ui";
 import RescheduleRow from "@/components/reschedule-row";
 
 export default async function AdminReschedulePage() {
-  await requireRole(ADMIN_AREA_ROLES);
+  await requireRole(MANAGE_ROLES);
   const requests = listRescheduleRequests({ limit: 200 });
 
   return (
