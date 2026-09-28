@@ -137,6 +137,48 @@ chung một VPS là hợp lý và tiết kiệm.
 **Lưu ý khi build:** lệnh cập nhật có bước build khá ngốn RAM, chạy lúc ít
 người dùng, và nên tạo sẵn swap (xem bảng lỗi ở trên) nếu VPS chỉ 1GB.
 
+## Xem cái gì đang ăn RAM
+
+```bash
+echo "=== TỔNG RAM ==="; free -h
+echo; echo "=== 10 TIẾN TRÌNH NGỐN RAM NHẤT ==="
+ps -eo rss,pmem,pid,comm --sort=-rss | head -11 | awk 'NR==1{printf "%8s %6s %7s  %s\n","RAM(MB)","%MEM","PID","TIẾN TRÌNH"} NR>1{printf "%8.0f %5s%% %7s  %s\n",$1/1024,$2,$3,$4}'
+echo; echo "=== RAM THEO DỊCH VỤ ==="; systemd-cgtop -b -n1 --order=memory 2>/dev/null | head -12
+echo; echo "=== ỨNG DỤNG CHẠY BẰNG PM2 ==="; pm2 list 2>/dev/null || echo "(không dùng pm2)"
+```
+
+Mức bình thường: mỗi ứng dụng Next.js khoảng **150–250MB**, Caddy khoảng 20MB,
+MySQL 300–600MB. Nếu cột *available* trong `free -h` còn trên 200MB thì máy vẫn
+thở được, chưa cần gỡ gì.
+
+## Gỡ hệ thống khỏi VPS
+
+Script tự sao lưu database ra `/root` trước khi gỡ.
+
+```bash
+# Gỡ nhưng GIỮ dữ liệu (cài lại là dùng tiếp được)
+curl -fsSL https://raw.githubusercontent.com/truongthanhtamdev/musicnote/claude/facebook-customer-management-nd4rys/deploy/uninstall.sh -o /tmp/uninstall.sh
+sudo APP_NAME=clienthub bash /tmp/uninstall.sh
+
+# Gỡ và xoá sạch cả dữ liệu lẫn tài khoản dịch vụ
+sudo APP_NAME=clienthub PURGE=1 bash /tmp/uninstall.sh
+```
+
+**Nhớ tải bản sao lưu về máy** trước khi xoá VPS hoặc xoá dữ liệu — chạy lệnh
+này trên máy tính của bạn, không phải trên VPS:
+
+```
+scp root@IP-VPS:/root/clienthub-truoc-khi-go-*.db.gz .
+```
+
+Chỉ muốn tạm tắt cho nhẹ máy, không gỡ:
+
+```bash
+sudo systemctl stop clienthub      # tắt, RAM trả lại ngay
+sudo systemctl disable clienthub   # không tự chạy khi khởi động lại máy
+sudo systemctl start clienthub     # bật lại khi cần
+```
+
 ## Bảo mật tối thiểu nên làm
 
 1. Đổi mật khẩu admin ngay lần đăng nhập đầu.
