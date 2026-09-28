@@ -127,36 +127,42 @@ export function awardTrialBonus(attendanceId: number) {
 }
 
 /**
- * Khách vừa đóng tiền.
+ * Ghi thưởng chốt lớp cho một lớp.
  *
  * Thưởng theo GÓI chứ không theo lớp và cũng không theo từng khoản thu: một
  * khách học thứ 2 và thứ 5 là hai dòng lớp nhưng chỉ là một lần chốt, và đóng
  * tiền làm ba đợt cũng vẫn là một lần chốt. Lớp không có gói thì neo vào chính
- * lớp đó.
+ * lớp đó. Có ba đường dẫn tới đây (ghi tiền ở trang Doanh thu, ghi tiền khi
+ * lưu gói ở trang lớp, đổi trạng thái lớp sang Đang học) — cùng một khoá chống
+ * trùng nên đi đường nào, bao nhiêu lần, cũng chỉ ghi một khoản.
  */
-export function awardConversionBonus(paymentId: number) {
-  const p = db
-    .prepare(
-      `SELECT p.id, p.class_id, p.paid_at, p.recorded_by, c.package_id, c.student_name
-       FROM payments p LEFT JOIN classes c ON c.id = p.class_id WHERE p.id = ?`
-    )
-    .get(paymentId) as
-    | { id: number; class_id: number | null; paid_at: string; recorded_by: number | null; package_id: number | null; student_name: string | null }
-    | undefined;
-  if (!p || !p.class_id) return;
+export function awardConversionForClass(classId: number, earnedAt: string) {
+  const c = db
+    .prepare("SELECT id, package_id, student_name FROM classes WHERE id = ?")
+    .get(classId) as { id: number; package_id: number | null; student_name: string } | undefined;
+  if (!c) return;
 
-  const staffId = coordinatorOfClass(p.class_id);
+  const staffId = coordinatorOfClass(c.id);
   if (!staffId) return;
 
   award({
     staffId,
     kind: "conversion",
     amount: getBonusRates().conversion,
-    refType: p.package_id ? "package" : "class",
-    refId: p.package_id ?? p.class_id,
-    note: `Chốt lớp ${p.student_name ?? ""}`.trim(),
-    earnedAt: p.paid_at,
+    refType: c.package_id ? "package" : "class",
+    refId: c.package_id ?? c.id,
+    note: `Chốt lớp ${c.student_name}`.trim(),
+    earnedAt,
   });
+}
+
+/** Khách vừa đóng tiền (một dòng trong bảng payments). */
+export function awardConversionBonus(paymentId: number) {
+  const p = db.prepare("SELECT class_id, paid_at FROM payments WHERE id = ?").get(paymentId) as
+    | { class_id: number | null; paid_at: string }
+    | undefined;
+  if (!p || !p.class_id) return;
+  awardConversionForClass(p.class_id, p.paid_at);
 }
 
 /** Một buổi học thử đã dạy xong mà chưa có khoản thưởng nào đi kèm. */
@@ -196,6 +202,40 @@ export function listUnrewardedTrials(from: string, to: string): UnrewardedTrial[
        ORDER BY a.session_date`
     )
     .all(from, to) as UnrewardedTrial[];
+}
+
+/** Một lớp đã đóng tiền mà chưa có thưởng chốt lớp. */
+export interface UnrewardedConversion {
+  class_id: number;
+  student_name: string;
+  paid_at: string;
+  coordinator_id: number | null;
+  coordinator_name: string | null;
+}
+
+/**
+ * Khoản thu trong kỳ mà chưa sinh thưởng chốt lớp — để truy lại các khoản đã
+ * lỡ trước khi sửa lỗi "ghi học phí ở trang lớp không cộng thưởng". Mỗi gói
+ * (hoặc lớp không gói) chỉ hiện một lần, lấy ngày đóng tiền sớm nhất.
+ */
+export function listUnrewardedConversions(from: string, to: string): UnrewardedConversion[] {
+  return db
+    .prepare(
+      `SELECT c.id AS class_id, c.student_name, MIN(p.paid_at) AS paid_at,
+              c.coordinator_id, u.name AS coordinator_name
+       FROM payments p
+       JOIN classes c ON c.id = p.class_id
+       LEFT JOIN users u ON u.id = c.coordinator_id
+       WHERE p.paid_at >= ? AND p.paid_at <= ?
+         AND NOT EXISTS (
+           SELECT 1 FROM staff_bonuses b
+           WHERE (b.ref_type = 'package' AND c.package_id IS NOT NULL AND b.ref_id = c.package_id)
+              OR (b.ref_type = 'class' AND c.package_id IS NULL AND b.ref_id = c.id)
+         )
+       GROUP BY COALESCE('p' || c.package_id, 'c' || c.id)
+       ORDER BY paid_at`
+    )
+    .all(from, to) as UnrewardedConversion[];
 }
 
 export interface BonusSummary {

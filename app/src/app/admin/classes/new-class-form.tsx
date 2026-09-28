@@ -64,6 +64,11 @@ export default function NewClassForm({
         <IconPlus className="w-4 h-4" />
         Thêm lớp
       </button>
+      {/* Hộp thoại đóng lại khi lưu xong; với nhân viên đặt hẹn (không có danh
+          sách lớp để nhìn) thì dòng này là bằng chứng duy nhất là đã lưu. */}
+      {state.success && !open && (
+        <p className="text-sm text-mint-700 mt-2">Đã tạo lớp.</p>
+      )}
 
       <Modal
         open={open}

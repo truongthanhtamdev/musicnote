@@ -219,6 +219,10 @@ export async function correctAttendanceAction(
     applyStatedSessionNumber(existing.class_id, statedSessionNumber);
   }
 
+  // Sửa thành buổi học thử đã dạy xong thì cũng phải ghi thưởng — trước đây
+  // chỉ lúc giáo viên tự điểm danh mới ghi, Quản lý sửa lại thì mất.
+  awardTrialBonus(id);
+
   // Sửa điểm danh là sửa cả tiền công giáo viên lẫn số tiết còn lại của
   // khách, nên phải ghi lại ai sửa.
   const cls = getClass(existing.class_id);

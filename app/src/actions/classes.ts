@@ -10,8 +10,9 @@ import {
   getPackageProgressBatch,
   isTeacherAvailable,
 } from "@/lib/queries";
-import { classStage, formatClassSchedule, type ClassRow, MANAGE_ROLES, canonicalSubject } from "@/lib/types";
+import { classStage, formatClassSchedule, type ClassRow, MANAGE_ROLES, canonicalSubject, ADMIN_AREA_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
+import { awardConversionForClass } from "@/lib/bonus";
 import type { FormState } from "./teachers";
 
 function notifyTeacherOfAssignment(params: {
@@ -45,7 +46,9 @@ export async function createClassAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const session = await assertRole([...MANAGE_ROLES, "teacher"]);
+  // Nhân viên đặt hẹn được tạo lớp (trang /admin/tao-lop) nhưng không sửa,
+  // xoá hay xem danh sách lớp — mọi hành động khác trên lớp vẫn là của Quản lý.
+  const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
 
   const studentName = String(formData.get("student_name") || "").trim();
   const studentPhone = String(formData.get("student_phone") || "").trim();
@@ -170,6 +173,7 @@ export async function createClassAction(
 
   revalidatePath("/admin/classes");
   revalidatePath("/admin/assign");
+  revalidatePath("/admin/tao-lop");
   revalidatePath("/teacher/schedule");
   revalidatePath("/teacher");
   return { success: true };
@@ -511,14 +515,16 @@ export async function saveClassPackageAction(
       ).run(used, packageId);
     }
     if (amount > 0) {
-      db.prepare("INSERT INTO payments (class_id, amount, paid_at, note) VALUES (?, ?, ?, ?)").run(
-        classId,
-        amount,
-        paidAt,
-        note || null
-      );
+      db.prepare(
+        "INSERT INTO payments (class_id, amount, paid_at, note, recorded_by) VALUES (?, ?, ?, ?, ?)"
+      ).run(classId, amount, paidAt, note || null, session.userId);
     }
   })();
+
+  // Khách đóng tiền = chốt lớp. Trước đây chỉ đường ghi tiền ở trang Doanh thu
+  // mới cộng thưởng, còn ghi ngay ở đây (đường hay dùng nhất) thì nhân viên
+  // đặt hẹn mất trắng khoản thưởng.
+  if (amount > 0) awardConversionForClass(classId, paidAt);
 
   revalidatePath("/admin/classes");
   revalidatePath(`/admin/classes/${classId}`);
@@ -606,6 +612,11 @@ export async function assignTeacherAction(classId: number, teacherId: number | n
  * Ngày học lại chỉ giữ khi stage đúng là một trạng thái Tạm OFF — chuyển sang
  * trạng thái khác thì xoá luôn, khỏi còn cảnh báo mồ côi.
  */
+/** Hai bước "đang thử" của một khách mới. */
+const TRIAL_STAGES = ["trial", "trial_awaiting_fee"];
+/** Các bước coi là đã chốt: khách vào học chính thức. */
+const CONVERTED_STAGES = ["studying", "studying_unpaid", "studying_partial", "new_course_paid"];
+
 export async function setClassStageAction(
   classId: number,
   stage: string,
@@ -615,12 +626,22 @@ export async function setClassStageAction(
 ) {
   await assertRole(MANAGE_ROLES);
   const info = classStage(stage);
+  const before = db.prepare("SELECT stage FROM classes WHERE id = ?").get(classId) as
+    | { stage: string }
+    | undefined;
   db.prepare("UPDATE classes SET stage = ?, status = ?, paused_until = ? WHERE id = ?").run(
     info.value,
     info.status,
     info.paused ? pausedUntil || null : null,
     classId
   );
+  // "Chốt lớp": khách đang ở bước học thử chuyển sang đi học chính thức. Quy
+  // tắc thưởng là chốt lớp HOẶC đóng tiền, nên đổi trạng thái thôi cũng đủ —
+  // khách đóng tiền sau thì cùng khoá chống trùng, không ghi lần hai. Chỉ tính
+  // khi đi ra từ bước học thử, để việc sửa nhãn cho lớp cũ không sinh thưởng.
+  if (before && TRIAL_STAGES.includes(before.stage) && CONVERTED_STAGES.includes(info.value)) {
+    awardConversionForClass(classId, todayISO());
+  }
   // Lớp Tạm OFF nhập từ Excel không có ngày/giờ. Chỉ bật lại trạng thái thôi
   // thì lớp "đang học" mà không nằm trong lịch tuần nào — giáo viên không thấy,
   // không ai điểm danh, lớp thành vô hình. Nên lúc cho học lại thì xếp lịch luôn.

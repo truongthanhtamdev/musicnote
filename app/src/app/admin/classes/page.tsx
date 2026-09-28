@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import {
-  getTrialRequest,
   listClasses,
   listTeachers,
   getPackageProgress,
@@ -27,7 +26,8 @@ import {
   field,
   packageTone,
 } from "@/components/ui";
-import NewClassForm, { type ClassPrefill } from "./new-class-form";
+import NewClassForm from "./new-class-form";
+import { trialPrefill } from "./trial-prefill";
 import ClassStatusBadge from "./status-badge";
 
 type SP = {
@@ -44,17 +44,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
   await requireRole(MANAGE_ROLES);
   const sp = await searchParams;
   const teachers = listTeachers(false);
-  const trialRequest = sp.trial ? getTrialRequest(Number(sp.trial)) : undefined;
-  const prefill: ClassPrefill | undefined = trialRequest && {
-    trialRequestId: trialRequest.id,
-    studentName: trialRequest.name,
-    phone: trialRequest.phone,
-    subject: trialRequest.subject,
-    language: trialRequest.language,
-    // Ghi chú của khách và kênh liên hệ đi theo lớp luôn — giáo viên nhận lớp
-    // biết khách ở múi giờ nào, đã học tới đâu.
-    note: [trialRequest.note, trialRequest.contact].filter(Boolean).join(" · "),
-  };
+  const prefill = trialPrefill(sp.trial);
   const all = annotateSchedule(listClasses());
   const tuition = getTuitionStatusForClasses(all);
 

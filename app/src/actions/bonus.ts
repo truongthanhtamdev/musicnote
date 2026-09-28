@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { assertRole } from "@/lib/guard";
 import { MANAGE_ROLES } from "@/lib/types";
 import { db } from "@/lib/db";
-import { awardTrialBonus, deleteBonus, listUnrewardedTrials } from "@/lib/bonus";
+import {
+  awardConversionForClass,
+  awardTrialBonus,
+  deleteBonus,
+  listUnrewardedConversions,
+  listUnrewardedTrials,
+} from "@/lib/bonus";
 import { logAudit } from "@/lib/audit";
 import { formatVND } from "@/lib/format";
 
@@ -38,16 +44,25 @@ export async function deleteBonusAction(id: number) {
 export async function rescanTrialBonusesAction(from: string, to: string) {
   const session = await assertRole(MANAGE_ROLES);
 
-  const missing = listUnrewardedTrials(from, to);
-  let awarded = 0;
-  for (const m of missing) {
+  let trials = 0;
+  for (const m of listUnrewardedTrials(from, to)) {
     if (!m.coordinator_id) continue;
     awardTrialBonus(m.attendance_id);
-    awarded++;
+    trials++;
+  }
+  let conversions = 0;
+  for (const m of listUnrewardedConversions(from, to)) {
+    if (!m.coordinator_id) continue;
+    awardConversionForClass(m.class_id, m.paid_at);
+    conversions++;
   }
 
-  if (awarded > 0) {
-    logAudit(session, "luong", `Quét bổ sung thưởng học thử: ghi thêm ${awarded} khoản (${from} → ${to})`);
+  if (trials + conversions > 0) {
+    logAudit(
+      session,
+      "luong",
+      `Quét bổ sung thưởng: ${trials} buổi học thử, ${conversions} lần chốt lớp (${from} → ${to})`
+    );
   }
   revalidatePath("/admin/thuong");
 }

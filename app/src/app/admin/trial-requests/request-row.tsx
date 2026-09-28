@@ -24,7 +24,7 @@ export default function RequestRow({
   canCreateClass,
 }: {
   request: TrialRequestRow;
-  /** Tạo lớp là việc của Quản lý; nhân viên đặt hẹn chỉ cập nhật trạng thái. */
+  /** Quản lý tạo lớp ở trang Lớp học; nhân viên đặt hẹn ở trang Tạo lớp riêng. */
   canCreateClass: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -73,9 +73,9 @@ export default function RequestRow({
               booked={request.status === "done"}
             />
           )}
-          {canCreateClass && request.status !== "done" && (
+          {request.status !== "done" && (
             <Link
-              href={`/admin/classes?trial=${request.id}`}
+              href={canCreateClass ? `/admin/classes?trial=${request.id}` : `/admin/tao-lop?trial=${request.id}`}
               className="text-sm font-semibold text-wood-600 hover:text-wood-700 whitespace-nowrap"
             >
               Tạo lớp
