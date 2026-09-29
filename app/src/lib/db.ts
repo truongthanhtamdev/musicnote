@@ -341,6 +341,22 @@ function migrate() {
 
     CREATE INDEX IF NOT EXISTS idx_telegram_log_sent ON telegram_log(sent_at);
 
+    -- Clip học viên hiện ở trang chủ. Chỉ lưu link (YouTube/TikTok/Facebook),
+    -- không lưu file video: máy chủ nhỏ, và clip đăng lên kênh còn kéo thêm
+    -- lượt xem cho kênh của trung tâm.
+    CREATE TABLE IF NOT EXISTS clips (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      url TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      video_id TEXT NOT NULL,
+      vertical INTEGER NOT NULL DEFAULT 0,
+      title TEXT,
+      subject TEXT,
+      is_public INTEGER NOT NULL DEFAULT 0,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
     CREATE INDEX IF NOT EXISTS idx_classes_student_user ON classes(student_user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);

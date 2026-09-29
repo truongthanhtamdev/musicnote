@@ -26,6 +26,7 @@ import {
   IconUpload,
   IconUser,
   IconUsers,
+  IconVideo,
   IconWallet,
 } from "@/components/icons";
 
@@ -93,6 +94,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/tao-lop", label: "Tạo lớp học", icon: <IconClasses className={ICON} /> },
     { href: "/admin/teachers", label: "Giáo viên", icon: <IconTeacher className={ICON} /> },
     { href: "/admin/ratings", label: "Khách đánh giá", icon: <IconStar className={ICON} /> },
+    { href: "/admin/clip", label: "Clip học viên", icon: <IconVideo className={ICON} /> },
     ...(canManage
       ? [
           {
@@ -150,7 +152,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Nhân viên đặt hẹn chỉ làm việc với khách chưa học: đúng hai mục này.
   // Lọc từ danh sách đầy đủ thay vì dựng danh sách riêng, để thêm mục mới
   // cho Quản lý không bao giờ vô tình lọt sang phía nhân viên đặt hẹn.
-  const COORDINATOR_PAGES = ["/admin/tiem-nang", "/admin/trial-requests", "/admin/tao-lop"];
+  const COORDINATOR_PAGES = ["/admin/tiem-nang", "/admin/trial-requests", "/admin/tao-lop", "/admin/clip"];
   const visibleLinks = canManage
     ? links.filter((l) => l.href !== "/admin/tao-lop") // Quản lý tạo lớp ngay ở trang Lớp học
     : links.filter((l) => COORDINATOR_PAGES.includes(l.href));

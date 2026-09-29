@@ -12,6 +12,7 @@ import {
   IconClock,
   IconGuitar,
   IconPiano,
+  IconPlay,
   IconUsers,
   SubjectIcon,
 } from "@/components/icons";
@@ -19,6 +20,8 @@ import { ContactButtons } from "@/components/contact-buttons";
 import { PricingTabs } from "./pricing-tabs";
 import { TrialForm } from "./trial-form";
 import { LuckyWheel } from "./lucky-wheel";
+import { ClipShowcase } from "./clip-showcase";
+import { listClips } from "@/lib/clips";
 
 const HOME_TITLE = "Piano Guitar Đệm Hát — Học 1 kèm 1 online";
 const HOME_DESC =
@@ -93,6 +96,7 @@ export default async function HomePage() {
   const session = await getSession();
   const contact = getCenterContact();
   const subjects = SUBJECT_GROUPS.flatMap((g) => g.items);
+  const clips = listClips({ publicOnly: true, limit: 6 });
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -120,6 +124,14 @@ export default async function HomePage() {
             >
               Bộ môn
             </a>
+            {clips.length > 0 && (
+              <a
+                href="#clip"
+                className="hidden lg:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
+              >
+                Clip học viên
+              </a>
+            )}
             <Link
               href="/guitar"
               className="hidden md:block text-sm font-medium text-ink-600 hover:text-ink-900 px-2 py-2"
@@ -189,6 +201,15 @@ export default async function HomePage() {
             >
               Xem học phí
             </a>
+            {clips.length > 0 && (
+              <a
+                href="#clip"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-navy-200 bg-white hover:bg-ivory-100 text-ink-700 px-6 py-3 font-semibold transition"
+              >
+                <IconPlay className="w-4 h-4 text-coral-600" />
+                Xem clip học viên
+              </a>
+            )}
           </div>
 
           <ul className="flex flex-wrap gap-x-6 gap-y-2 mt-8 text-sm text-ink-600">
@@ -241,6 +262,8 @@ export default async function HomePage() {
             </div>
           ))}
         </section>
+
+        <ClipShowcase clips={clips} />
 
         {/* Thư viện guitar miễn phí — vừa hữu ích cho học viên, vừa là cửa
             vào cho người lạ tìm "hợp âm guitar" trên mạng. */}
