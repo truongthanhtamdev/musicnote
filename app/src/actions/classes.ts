@@ -394,14 +394,18 @@ export async function updateClassAction(
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
   }
 
+  // Trung tâm quản lý bằng tên thật, nên giáo viên sửa tên chỉ đổi tên riêng
+  // giáo viên thấy (teacher_label) — student_name giữ nguyên.
+  const isTeacher = session.role === "teacher";
+  if (isTeacher) setTeacherLabel(id, session.userId, studentName);
   const result = db
     .prepare(
-      `UPDATE classes SET student_name=?, student_phone=?, guardian_name=?, facebook_url=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?, meeting_url=?
-       WHERE id = ? ${session.role === "teacher" ? "AND teacher_id = ?" : ""}`
+      `UPDATE classes SET ${isTeacher ? "" : "student_name=?, "}student_phone=?, guardian_name=?, facebook_url=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?, meeting_url=?
+       WHERE id = ? ${isTeacher ? "AND teacher_id = ?" : ""}`
     )
     .run(
       ...([
-        studentName,
+        ...(isTeacher ? [] : [studentName]),
         studentPhone || null,
         guardianName || null,
         facebookUrl,
@@ -415,7 +419,7 @@ export async function updateClassAction(
         notes || null,
         meetingUrl,
         id,
-        ...(session.role === "teacher" ? [session.userId] : []),
+        ...(isTeacher ? [session.userId] : []),
       ] as (string | number | null)[])
     );
 
@@ -428,6 +432,33 @@ export async function updateClassAction(
   revalidatePath("/teacher/schedule");
   revalidatePath("/teacher");
   return { success: true };
+}
+
+/**
+ * Đặt tên giáo viên tự gọi học viên cho mọi buổi trong tuần của khách mà giáo
+ * viên này dạy. Trùng tên thật hoặc để trống thì xoá, quay về tên thật.
+ */
+function setTeacherLabel(classId: number, teacherId: number, label: string): number {
+  const cls = db.prepare("SELECT student_name FROM classes WHERE id = ? AND teacher_id = ?").get(classId, teacherId) as
+    | { student_name: string }
+    | undefined;
+  if (!cls) return 0;
+  const clean = label.trim().slice(0, 80);
+  const value = !clean || clean === cls.student_name ? null : clean;
+  const stmt = db.prepare("UPDATE classes SET teacher_label = ? WHERE id = ? AND teacher_id = ?");
+  let changed = 0;
+  for (const id of customerClassIds(classId)) changed += stmt.run(value, id, teacherId).changes;
+  return changed;
+}
+
+/** Giáo viên đổi tên hiển thị của học viên ngay trên lưới "Lịch tuần". */
+export async function setTeacherLabelAction(classId: number, label: string): Promise<{ error?: string }> {
+  const session = await assertRole(["teacher"]);
+  if (setTeacherLabel(classId, session.userId, label) === 0) {
+    return { error: "Không tìm thấy lớp của bạn" };
+  }
+  revalidatePath("/teacher", "layout");
+  return {};
 }
 
 /**

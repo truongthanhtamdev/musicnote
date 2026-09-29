@@ -231,7 +231,7 @@ export interface PackageProgress {
    * same student's other weekly slots, or a sibling the customer enrolled on
    * the one package.
    */
-  sharedWith: { id: number; day_of_week: number; start_time: string; student_name: string }[];
+  sharedWith: { id: number; day_of_week: number; start_time: string; student_name: string; teacher_label: string | null }[];
 }
 
 export function getPackage(id: number): PackageRow | undefined {
@@ -315,7 +315,7 @@ export function getPackageProgress(cls: ClassRow): PackageProgress | null {
 
   const sharedWith = db
     .prepare(
-      "SELECT id, day_of_week, start_time, student_name FROM classes WHERE package_id = ? AND id != ?"
+      "SELECT id, day_of_week, start_time, student_name, teacher_label FROM classes WHERE package_id = ? AND id != ?"
     )
     .all(cls.package_id, cls.id) as PackageProgress["sharedWith"];
 
@@ -794,6 +794,7 @@ export function getAttendance(classId: number, sessionDate: string): AttendanceR
 
 export interface AttendanceWithContext extends AttendanceRow {
   student_name: string;
+  teacher_label: string | null;
   teacher_name: string;
   /** Số sao khách đã chấm cho buổi này, null nếu chưa chấm. */
   rating_stars: number | null;
@@ -826,7 +827,7 @@ export function listAttendance(filter?: {
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   return db
     .prepare(
-      `SELECT a.*, c.student_name as student_name, u.name as teacher_name,
+      `SELECT a.*, c.student_name as student_name, c.teacher_label, u.name as teacher_name,
               r.stars as rating_stars
        FROM attendance a
        JOIN classes c ON c.id = a.class_id
@@ -1213,6 +1214,7 @@ export function listUpcomingSessionsForStudent(
 
 export interface RescheduleRequestWithContext extends RescheduleRequestRow {
   student_name: string;
+  teacher_label: string | null;
   guardian_name: string | null;
   subject: string;
   teacher_id: number | null;
@@ -1245,7 +1247,7 @@ export function listRescheduleRequests(filter?: {
   const limit = filter?.limit ? `LIMIT ${Number(filter.limit)}` : "";
   return db
     .prepare(
-      `SELECT r.*, c.student_name, c.guardian_name, c.subject, c.teacher_id, c.duration_minutes,
+      `SELECT r.*, c.student_name, c.teacher_label, c.guardian_name, c.subject, c.teacher_id, c.duration_minutes,
               t.name as teacher_name, u.name as requester_name
        FROM reschedule_requests r
        JOIN classes c ON c.id = r.class_id
@@ -1724,6 +1726,7 @@ export function ratingsByTeacher(from?: string, to?: string): Map<number, Teache
 
 export interface RatingWithContext extends SessionRatingRow {
   student_name: string;
+  teacher_label: string | null;
   teacher_name: string | null;
   subject: string;
 }
@@ -1732,7 +1735,7 @@ export interface RatingWithContext extends SessionRatingRow {
 export function listRecentRatings(limit = 30, teacherId?: number): RatingWithContext[] {
   return db
     .prepare(
-      `SELECT r.*, c.student_name, c.subject, u.name as teacher_name
+      `SELECT r.*, c.student_name, c.teacher_label, c.subject, u.name as teacher_name
        FROM session_ratings r
        JOIN classes c ON c.id = r.class_id
        LEFT JOIN users u ON u.id = r.teacher_id
@@ -1791,7 +1794,7 @@ export function listRatings(opts: {
   if (opts.teacherId) clauses.push("r.teacher_id = @teacherId");
   return db
     .prepare(
-      `SELECT r.*, c.student_name, c.subject, u.name as teacher_name
+      `SELECT r.*, c.student_name, c.teacher_label, c.subject, u.name as teacher_name
          FROM session_ratings r
          JOIN classes c ON c.id = r.class_id
          LEFT JOIN users u ON u.id = r.teacher_id

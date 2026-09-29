@@ -43,6 +43,11 @@ function studentLabel(s: ScheduledSession): string {
   return escapeHtml(s.cls.student_name);
 }
 
+/** Tin gửi giáo viên thì dùng tên giáo viên tự đặt cho học viên, nếu có. */
+function teacherStudentLabel(s: ScheduledSession): string {
+  return escapeHtml(s.cls.teacher_label || s.cls.student_name);
+}
+
 function meetingLine(s: ScheduledSession): string {
   return s.cls.meeting_url ? `\n🔗 <a href="${escapeHtml(s.cls.meeting_url)}">Vào phòng học</a>` : "";
 }
@@ -83,7 +88,7 @@ async function remindBeforeLessons(current: Date) {
         s.cls.teacher_id,
         `⏰ <b>Sắp tới giờ dạy</b>\n` +
           `${timeRange(s)} · ${subject}\n` +
-          `Học viên: ${studentLabel(s)}` +
+          `Học viên: ${teacherStudentLabel(s)}` +
           movedNote(s) +
           meetingLine(s),
         `${key}|gv${s.cls.teacher_id}`
@@ -126,7 +131,7 @@ async function sendTomorrowDigest(tomorrowISO: string) {
     const subject = escapeHtml(s.cls.subject);
     const moved = s.moved ? " (học bù)" : "";
     if (s.cls.teacher_id) {
-      push(forTeacher, s.cls.teacher_id, `• ${timeRange(s)} · ${subject} — ${studentLabel(s)}${moved}`);
+      push(forTeacher, s.cls.teacher_id, `• ${timeRange(s)} · ${subject} — ${teacherStudentLabel(s)}${moved}`);
     }
     if (s.cls.student_user_id) {
       const teacher = s.cls.teacher_name ? ` với ${escapeHtml(s.cls.teacher_name)}` : "";

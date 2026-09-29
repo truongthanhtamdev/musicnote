@@ -75,7 +75,7 @@ function scheduleText(user: UserRow): string {
       const range = formatTimeRange(s.time, s.cls.duration_minutes);
       const who =
         s.cls.teacher_id === user.id
-          ? escapeHtml(s.cls.student_name)
+          ? escapeHtml(s.cls.teacher_label || s.cls.student_name)
           : escapeHtml(s.cls.teacher_name ?? "chưa xếp giáo viên");
       lines.push(`• ${range} · ${escapeHtml(s.cls.subject)} — ${who}${s.moved ? " (học bù)" : ""}`);
     }

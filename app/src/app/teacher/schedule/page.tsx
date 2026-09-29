@@ -6,7 +6,7 @@ import {
   listTeacherFreeSlots,
   listUpcomingSessionsForTeacher,
 } from "@/lib/queries";
-import { DAY_LABELS, DAY_ORDER, MAKEUP_WINDOW_DAYS } from "@/lib/types";
+import { DAY_LABELS, DAY_ORDER, MAKEUP_WINDOW_DAYS, teacherSees } from "@/lib/types";
 import { IconClasses, IconClock } from "@/components/icons";
 import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import NewClassForm from "./new-class-form";
@@ -15,7 +15,9 @@ import ReschedulePanel from "../reschedule-panel";
 
 export default async function TeacherSchedulePage() {
   const session = await getSession();
-  const activeClasses = listClassesForTeacher(session!.userId).filter((c) => c.status === "active");
+  const activeClasses = listClassesForTeacher(session!.userId)
+    .filter((c) => c.status === "active")
+    .map(teacherSees);
   const progressByPackage = getPackageProgressForClasses(activeClasses);
   const classes = activeClasses.map((c) => ({
     ...c,
@@ -25,7 +27,11 @@ export default async function TeacherSchedulePage() {
   const todayDow = now().getDay();
 
   // Buổi sắp tới + khung còn trống, để giáo viên dời giúp khách ngay tại đây.
-  const upcoming = listUpcomingSessionsForTeacher(session!.userId);
+  const upcoming = listUpcomingSessionsForTeacher(session!.userId).map((g) => ({
+    ...g,
+    customer: g.sessions[0]?.cls.teacher_label || g.customer,
+    sessions: g.sessions.map((s) => ({ ...s, cls: teacherSees(s.cls) })),
+  }));
   const freeSlots = listTeacherFreeSlots({
     teacherId: session!.userId,
     durationMinutes: 60,

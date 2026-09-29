@@ -113,6 +113,9 @@ export default function TeacherClassRow({
           placeholder="Tên học viên"
           aria-label="Tên học viên"
         />
+        <p className="-mt-2 text-xs text-ink-400">
+          Tên này chỉ bạn thấy cho dễ nhìn lịch — trung tâm vẫn giữ tên khách hàng gốc.
+        </p>
 
         <div className="grid grid-cols-2 gap-2">
           {(Object.entries(SCHEDULE_TYPE_LABELS) as [ClassScheduleType, string][]).map(

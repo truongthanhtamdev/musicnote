@@ -8,7 +8,7 @@ import {
   getLateCheckinQuota,
 } from "@/lib/queries";
 import { addDays, toISODate, todayISO, now } from "@/lib/format";
-import { formatClassSchedule, CLASS_STATUS_LABELS } from "@/lib/types";
+import { formatClassSchedule, CLASS_STATUS_LABELS, teacherSees } from "@/lib/types";
 import { IconCalendarCheck, IconCheckCircle, IconFilter } from "@/components/icons";
 import {
   Card,
@@ -41,11 +41,11 @@ export default async function TeacherAttendanceHistoryPage({
   const from = sp.from || (classId ? undefined : toISODate(addDays(now(), -30)));
   const to = sp.to || todayISO();
 
-  const rows = listAttendance({ teacherId: session!.userId, from, to, classId });
+  const rows = listAttendance({ teacherId: session!.userId, from, to, classId }).map(teacherSees);
   const sessionNumbers = sessionNumberMap([...new Set(rows.map((r) => r.class_id))]);
   // Not filtered to active classes — a teacher may still need to add or
   // correct attendance for a class that has since paused or ended.
-  const myClasses = listClassesForTeacher(session!.userId).map((c) => ({
+  const myClasses = listClassesForTeacher(session!.userId).map(teacherSees).map((c) => ({
     id: c.id,
     label: `${c.student_name} · ${formatClassSchedule(c)}${
       c.status === "active" ? "" : ` (${CLASS_STATUS_LABELS[c.status]})`
@@ -53,8 +53,9 @@ export default async function TeacherAttendanceHistoryPage({
   }));
   // The filtered rows already carry the student's name; only fall back to
   // a lookup when there's no attendance yet to read it from.
+  const filteredClass = classId && !rows[0] ? getClass(classId) : undefined;
   const filteredStudentName = classId
-    ? (rows[0]?.student_name ?? getClass(classId)?.student_name)
+    ? (rows[0]?.student_name ?? (filteredClass && teacherSees(filteredClass).student_name))
     : null;
 
   const missedRows = missedRowsForTeacher(session!.userId);

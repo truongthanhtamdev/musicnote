@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth";
 import { computePayroll, listAttendance, listRecentRatings, ratingsByTeacher } from "@/lib/queries";
 import { firstDayOfMonth, formatVND, lastDayOfMonth } from "@/lib/format";
 import { MonthNav } from "@/components/month-nav";
-import { TRIAL_SESSION_RATE } from "@/lib/types";
+import { TRIAL_SESSION_RATE, teacherSees } from "@/lib/types";
 import { IconCheckCircle, IconFilter, IconWallet } from "@/components/icons";
 import { Card, MetricCard, PageHeader, btn, field, label } from "@/components/ui";
 
@@ -18,10 +18,10 @@ export default async function TeacherEarningsPage({
 
   const mine = computePayroll(from, to).find((r) => r.teacher_id === session!.userId);
   const rating = ratingsByTeacher(from, to).get(session!.userId);
-  const comments = listRecentRatings(10, session!.userId).filter((r) => r.comment);
-  const rows = listAttendance({ teacherId: session!.userId, from, to }).filter(
-    (a) => a.status === "completed"
-  );
+  const comments = listRecentRatings(10, session!.userId).filter((r) => r.comment).map(teacherSees);
+  const rows = listAttendance({ teacherId: session!.userId, from, to })
+    .filter((a) => a.status === "completed")
+    .map(teacherSees);
 
   return (
     <div className="space-y-5">

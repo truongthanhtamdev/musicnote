@@ -9,7 +9,7 @@ import {
   getLateCheckinQuota,
 } from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
-import { DAY_LABELS } from "@/lib/types";
+import { DAY_LABELS, teacherSees } from "@/lib/types";
 import { IconCalendarCheck, IconCheckCircle, IconClock, IconMusic } from "@/components/icons";
 import { Card, CardHeader, EmptyState, TableShell, Th, btn } from "@/components/ui";
 import RescheduleRow from "@/components/reschedule-row";
@@ -37,13 +37,13 @@ export default async function TeacherTodayPage() {
   const classes = listClassesForTeacher(teacherId)
     .filter((c) => c.day_of_week === dow && c.status === "active")
     .sort((a, b) => a.start_time.localeCompare(b.start_time))
-    .map((c) => ({ ...c, existing: attendanceByClassId.get(c.id) }));
+    .map((c) => ({ ...teacherSees(c), existing: attendanceByClassId.get(c.id) }));
   // Already-checked-in classes drop off "Hôm nay" — the teacher has
   // finished that session; corrections go through "Lịch sử điểm danh".
   const pendingClasses = classes.filter((c) => !c.existing);
   const doneCount = classes.length - pendingClasses.length;
   const firstName = session!.name.split(" ").pop();
-  const pendingReschedules = listRescheduleRequests({ teacherId, status: "pending" });
+  const pendingReschedules = listRescheduleRequests({ teacherId, status: "pending" }).map(teacherSees);
   const confirmedToday = listConfirmedClassIdsOn(todayStr);
   const missedRows = missedRowsForTeacher(teacherId);
 

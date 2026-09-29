@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useActionState } from "react";
-import { createClassAction } from "@/actions/classes";
+import { createClassAction, setTeacherLabelAction } from "@/actions/classes";
 import { toggleBusySlotAction, clearDayBusyAction } from "@/actions/availability";
 import type { FormState } from "@/actions/teachers";
 import {
@@ -206,6 +206,19 @@ export function TeacherScheduleGrid({
     (c) => c.status === "active" && c.schedule_type === "flexible"
   );
 
+  // Tên chỉ giáo viên thấy — trung tâm vẫn thấy tên thật của khách.
+  function renameStudent(cls: ClassRow) {
+    const name = window.prompt(
+      "Tên bạn muốn thấy cho học viên này (chỉ bạn thấy, để trống để dùng lại tên gốc):",
+      cls.student_name
+    );
+    if (name === null) return;
+    startTransition(async () => {
+      const res = await setTeacherLabelAction(cls.id, name);
+      if (res.error) window.alert(res.error);
+    });
+  }
+
   return (
     <div>
       {/* Chú giải */}
@@ -294,9 +307,15 @@ export function TeacherScheduleGrid({
                               {content}
                             </Link>
                           ) : (
-                            <div className="block h-full rounded-md bg-wood-100 border border-wood-300 px-1.5 py-1 text-wood-900 leading-tight">
+                            <button
+                              type="button"
+                              title="Bấm để đổi tên học viên cho dễ nhìn lịch"
+                              disabled={isPending}
+                              onClick={() => renameStudent(cell.cls)}
+                              className="block w-full h-full text-left rounded-md bg-wood-100 hover:bg-wood-200 border border-wood-300 px-1.5 py-1 text-wood-900 leading-tight transition"
+                            >
                               {content}
-                            </div>
+                            </button>
                           )}
                         </td>
                       );

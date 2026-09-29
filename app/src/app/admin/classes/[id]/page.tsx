@@ -87,6 +87,9 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
           <Avatar name={cls.student_name} className="w-12 h-12 text-sm" />
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-ink-900 tracking-tight">{cls.student_name}</h1>
+            {cls.teacher_label && (
+              <p className="text-ink-500 text-sm">Giáo viên ghi là: {cls.teacher_label}</p>
+            )}
             {(cls.guardian_name || cls.facebook_url) && (
               <p className="text-ink-500 text-sm flex flex-wrap items-center gap-1.5">
                 Khách hàng:

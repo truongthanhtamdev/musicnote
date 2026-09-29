@@ -15,7 +15,7 @@ export function missedRowsForTeacher(teacherId: number): MissedRow[] {
     const used = m.cls.package_id ? progressByPackage.get(m.cls.package_id)?.used : undefined;
     return {
       classId: m.cls.id,
-      studentName: m.cls.student_name,
+      studentName: m.cls.teacher_label || m.cls.student_name,
       subject: m.cls.subject,
       date: m.date,
       dayLabel: `${DAY_LABELS[new Date(`${m.date}T00:00:00`).getDay()]} ${day}/${month}`,

@@ -402,6 +402,9 @@ function migrate() {
   // Link phòng học online (Google Meet / Zoom / Zalo) dùng chung cho mọi buổi
   // của lớp — trung tâm dạy 1 kèm 1 nên mỗi lớp một phòng cố định là đủ.
   ensureColumn("classes", "meeting_url", "TEXT");
+  // Tên giáo viên tự đặt cho học viên để dễ nhìn lịch — chỉ giáo viên đó thấy,
+  // trung tâm vẫn quản lý bằng student_name.
+  ensureColumn("classes", "teacher_label", "TEXT");
   // Index phải tạo SAU ensureColumn: `code` là cột thêm sau, database mới toanh
   // chưa có nó lúc chạy khối CREATE TABLE ở trên.
   db.exec("CREATE INDEX IF NOT EXISTS idx_classes_code ON classes(code)");

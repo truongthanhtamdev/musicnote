@@ -49,7 +49,7 @@ export default function TodayClassCard({
   const sharedStudents = [
     ...new Set(
       (progress?.sharedWith ?? [])
-        .map((s) => s.student_name)
+        .map((s) => s.teacher_label || s.student_name)
         .filter((name) => name !== cls.student_name)
     ),
   ];

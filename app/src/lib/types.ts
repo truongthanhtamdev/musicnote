@@ -99,6 +99,8 @@ export interface ClassRow {
   teacher_id: number | null;
   /** Giáo vụ phụ trách khách của lớp — gốc để biết khoản thưởng thuộc về ai. */
   coordinator_id: number | null;
+  /** Tên giáo viên tự đặt cho học viên, chỉ giáo viên thấy; null thì dùng student_name. */
+  teacher_label: string | null;
   status: ClassStatus;
   notes: string | null;
   /** 1 while the class is still waiting on its first session, which counts as the trial ("buổi 0"). */
@@ -636,6 +638,14 @@ export function parseLanguages(csv: string): ClassLanguage[] {
  * hẳn chính tả ("pinao") thì vẫn lọt — chỗ đó cần lời cảnh báo ở trang Giao
  * lớp lo tiếp.
  */
+/**
+ * Bản nhìn của giáo viên: thay tên học viên bằng tên giáo viên tự đặt (nếu có).
+ * Chỉ dùng ở trang giáo viên — trung tâm luôn thấy tên thật.
+ */
+export function teacherSees<T extends { student_name: string; teacher_label?: string | null }>(row: T): T {
+  return row.teacher_label ? { ...row, student_name: row.teacher_label } : row;
+}
+
 export function canonicalSubject(raw: string): string {
   const trimmed = raw.trim().replace(/\s+/g, " ");
   if (!trimmed) return trimmed;
