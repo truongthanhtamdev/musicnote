@@ -11,6 +11,8 @@ import { IconChevronRight, IconFacebook, IconPlay, IconVideo } from "@/component
  */
 export function ClipShowcase({ clips }: { clips: ClipRow[] }) {
   if (clips.length === 0) return null;
+  const wide = clips.filter((c) => !c.vertical);
+  const tall = clips.filter((c) => c.vertical);
   const channels = getCenterChannels();
   const { facebook } = getCenterContact();
   const channelLinks = [
@@ -26,21 +28,22 @@ export function ClipShowcase({ clips }: { clips: ClipRow[] }) {
       </h2>
       <p className="text-ink-500 mt-2">Clip thật của học viên sau một thời gian học 1 kèm 1.</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 [&>*]:min-w-0 gap-3 sm:gap-5 mt-7 items-start">
-        {clips.map((c) => (
-          <figure key={c.id}>
-            <ClipPlayer clip={c} />
-            {(c.title || c.subject) && (
-              <figcaption className="mt-2 text-sm leading-snug">
-                {c.title && <span className="font-medium text-ink-900">{c.title}</span>}
-                {c.subject && (
-                  <span className="block text-xs text-wood-600 font-semibold mt-0.5">{c.subject}</span>
-                )}
-              </figcaption>
-            )}
-          </figure>
-        ))}
-      </div>
+      {/* Video ngang và Shorts dọc để hai lưới riêng — trộn chung thì ô cao ô
+          thấp, hàng nào cũng lệch. */}
+      {wide.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0 gap-4 sm:gap-5 mt-7">
+          {wide.map((c) => (
+            <ClipFigure key={c.id} clip={c} />
+          ))}
+        </div>
+      )}
+      {tall.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 [&>*]:min-w-0 gap-3 sm:gap-4 mt-7">
+          {tall.map((c) => (
+            <ClipFigure key={c.id} clip={c} />
+          ))}
+        </div>
+      )}
 
       <div className="mt-8 rounded-2xl border border-navy-100 bg-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
@@ -71,5 +74,21 @@ export function ClipShowcase({ clips }: { clips: ClipRow[] }) {
         </a>
       </div>
     </section>
+  );
+}
+
+function ClipFigure({ clip }: { clip: ClipRow }) {
+  return (
+    <figure>
+      <ClipPlayer clip={clip} />
+      {(clip.title || clip.subject) && (
+        <figcaption className="mt-2 text-sm leading-snug">
+          {clip.title && <span className="font-medium text-ink-900">{clip.title}</span>}
+          {clip.subject && (
+            <span className="block text-xs text-wood-600 font-semibold mt-0.5">{clip.subject}</span>
+          )}
+        </figcaption>
+      )}
+    </figure>
   );
 }

@@ -64,6 +64,12 @@ export async function setClipPublicAction(id: number, isPublic: boolean) {
   refresh();
 }
 
+export async function setClipTitleAction(id: number, title: string) {
+  await assertRole(ADMIN_AREA_ROLES);
+  db.prepare("UPDATE clips SET title = ? WHERE id = ?").run(title.trim().slice(0, 120) || null, id);
+  refresh();
+}
+
 export async function deleteClipAction(id: number) {
   const session = await assertRole(ADMIN_AREA_ROLES);
   db.prepare("DELETE FROM clips WHERE id = ?").run(id);

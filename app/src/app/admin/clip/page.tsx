@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/guard";
 import { ADMIN_AREA_ROLES, MANAGE_ROLES } from "@/lib/types";
-import { getCenterChannels, listClips } from "@/lib/clips";
+import { HOME_CLIP_LIMIT, getCenterChannels, listClips } from "@/lib/clips";
 import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import { IconVideo } from "@/components/icons";
 import AddClipForm from "./add-clip-form";
@@ -37,7 +37,7 @@ export default async function ClipAdminPage() {
         ) : (
           <div className="p-4 sm:p-5">
             <p className="text-sm text-ink-500 mb-4">
-              Trang chủ hiện <b>6 clip mới nhất</b> đang bật &quot;Hiện trên trang chủ&quot; (đang bật: {shown}).
+              Trang chủ hiện <b>{HOME_CLIP_LIMIT} clip mới nhất</b> đang bật &quot;Hiện trên trang chủ&quot; (đang bật: {shown}).
             </p>
             <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 [&>*]:min-w-0 gap-4 items-start">
               {clips.map((c) => (

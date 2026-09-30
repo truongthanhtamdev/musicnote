@@ -39,13 +39,11 @@ export function ClipPlayer({ clip }: { clip: Pick<ClipRow, "platform" | "video_i
     >
       <span className="absolute inset-0 bg-gradient-to-br from-navy-800 to-navy-950" />
       {thumb && (
-        // eslint-disable-next-line @next/next/no-img-element -- ảnh bìa từ YouTube, không qua bộ tối ưu ảnh
-        <img
-          src={thumb}
-          alt=""
-          loading="lazy"
-          onError={(e) => (e.currentTarget.style.display = "none")}
-          className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition"
+        // Ảnh nền thay vì <img>: ảnh bìa lỗi thì chỉ còn nền tối, không hiện
+        // biểu tượng ảnh vỡ.
+        <span
+          className="absolute inset-0 bg-cover bg-center opacity-90 group-hover:opacity-100 transition"
+          style={{ backgroundImage: `url(${thumb})` }}
         />
       )}
       <span className="absolute inset-0 flex items-center justify-center">

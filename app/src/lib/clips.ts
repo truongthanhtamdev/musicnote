@@ -4,6 +4,9 @@ import type { ClipRow } from "./clip-url";
 
 export * from "./clip-url";
 
+/** Số clip mới nhất hiện ở trang chủ. */
+export const HOME_CLIP_LIMIT = 12;
+
 export function listClips(opts?: { publicOnly?: boolean; limit?: number }): ClipRow[] {
   return db
     .prepare(

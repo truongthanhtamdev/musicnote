@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { deleteClipAction, setClipPublicAction } from "@/actions/clips";
+import { deleteClipAction, setClipPublicAction, setClipTitleAction } from "@/actions/clips";
 import { ClipPlayer } from "@/components/clip-player";
 import type { ClipRow } from "@/lib/clip-url";
 import { inlineAction } from "@/components/ui";
@@ -28,6 +28,17 @@ export default function ClipItem({ clip }: { clip: ClipRow }) {
         <a href={clip.url} target="_blank" rel="noopener noreferrer" className={`${inlineAction} font-semibold text-ink-500 hover:text-ink-900`}>
           Mở link gốc
         </a>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            const title = window.prompt("Mô tả hiện dưới clip (VD: Bé An — 3 tháng học Piano):", clip.title ?? "");
+            if (title !== null) startTransition(() => setClipTitleAction(clip.id, title));
+          }}
+          className={`${inlineAction} font-semibold text-wood-600 hover:text-wood-700`}
+        >
+          Sửa mô tả
+        </button>
         <button
           type="button"
           disabled={pending}

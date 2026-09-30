@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
+import { parseClipUrl } from "./clip-url";
 import crypto from "crypto";
 import { DAY_ORDER, TIME_SLOTS } from "./types";
 import { addMinutesToTime } from "./format";
@@ -441,6 +442,38 @@ function migrate() {
   ensureManagerRoleSupported();
   migratePackagesToTable();
   invertAvailabilityToBusyOnce();
+  seedStarterClipsOnce();
+}
+
+// Clip đầu tiên chủ trung tâm gửi — cài sẵn để cập nhật xong là trang chủ có
+// clip ngay. Chạy đúng một lần (đánh dấu trong settings): xoá bớt sau này thì
+// lần khởi động sau không tự thêm lại.
+function seedStarterClipsOnce() {
+  const flag = "clips_seeded";
+  if (db.prepare("SELECT 1 FROM settings WHERE key = ?").get(flag)) return;
+  const links = [
+    "https://www.youtube.com/watch?v=luxhmBNRPw4",
+    "https://www.youtube.com/watch?v=4dMB9dFnUJk",
+    "https://www.youtube.com/shorts/56UGDIYwEYg",
+    "https://www.youtube.com/shorts/FtrXcHHs27c",
+    "https://www.youtube.com/shorts/Iyw9bSIuAek",
+    "https://www.youtube.com/shorts/gGVE0vYqpeU",
+    "https://www.youtube.com/watch?v=Fih-VV-uPrE",
+    "https://www.youtube.com/shorts/jsR9UmnhLJo",
+  ];
+  const exists = db.prepare("SELECT 1 FROM clips WHERE platform = ? AND video_id = ?");
+  const insert = db.prepare(
+    "INSERT INTO clips (url, platform, video_id, vertical, is_public) VALUES (?, ?, ?, ?, 1)"
+  );
+  db.transaction(() => {
+    // Trang chủ xếp clip mới nhất lên trước, nên thêm ngược để hiện đúng thứ tự gửi.
+    for (const link of [...links].reverse()) {
+      const c = parseClipUrl(link);
+      if (!c || exists.get(c.platform, c.videoId)) continue;
+      insert.run(c.url, c.platform, c.videoId, c.vertical ? 1 : 0);
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES (?, '1')").run(flag);
+  })();
 }
 
 // Thông tin liên hệ mặc định của trung tâm. INSERT OR IGNORE nên chỉ điền khi

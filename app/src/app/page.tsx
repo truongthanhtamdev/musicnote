@@ -21,7 +21,7 @@ import { PricingTabs } from "./pricing-tabs";
 import { TrialForm } from "./trial-form";
 import { LuckyWheel } from "./lucky-wheel";
 import { ClipShowcase } from "./clip-showcase";
-import { listClips } from "@/lib/clips";
+import { listClips, HOME_CLIP_LIMIT } from "@/lib/clips";
 
 const HOME_TITLE = "Piano Guitar Đệm Hát — Học 1 kèm 1 online";
 const HOME_DESC =
@@ -96,7 +96,7 @@ export default async function HomePage() {
   const session = await getSession();
   const contact = getCenterContact();
   const subjects = SUBJECT_GROUPS.flatMap((g) => g.items);
-  const clips = listClips({ publicOnly: true, limit: 6 });
+  const clips = listClips({ publicOnly: true, limit: HOME_CLIP_LIMIT });
 
   return (
     <div className="min-h-screen flex flex-col">
