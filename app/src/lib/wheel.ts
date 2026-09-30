@@ -3,19 +3,21 @@ import jwt from "jsonwebtoken";
 /**
  * Vòng quay may mắn tặng buổi học thử.
  *
- * Kết quả do MÁY CHỦ quyết định và ký, không phải trình duyệt. Nếu để trình
- * duyệt tự random thì khách chỉ cần tải lại trang và quay tới khi ra 5 buổi —
- * phần thưởng mất hết ý nghĩa, mà trung tâm vẫn phải trả.
+ * Khách phải GỬI ĐĂNG KÝ TRƯỚC rồi mới được quay: trung tâm có số điện thoại
+ * trước đã, và kết quả quay ghi thẳng vào đúng đăng ký đó (xem wheel-state.ts).
  *
- * Phần thưởng đã quay được cất trong cookie httpOnly: JavaScript của trang
- * không đọc hay sửa được, và lúc khách gửi form thì máy chủ đọc lại chính
- * cookie đó để ghi vào đăng ký — nên số hiện trên vòng quay luôn khớp số
- * trung tâm nhận.
+ * Kết quả do MÁY CHỦ quyết định, không phải trình duyệt. Nếu để trình duyệt tự
+ * random thì khách chỉ cần tải lại trang và quay tới khi ra 3 buổi — phần
+ * thưởng mất hết ý nghĩa, mà trung tâm vẫn phải trả.
  */
 
 const SECRET = process.env.AUTH_SECRET || "musicnote-dev-secret-change-me";
 
+/** Cookie kiểu cũ: quay trước, gửi form sau. Chỉ còn đọc để khách đã quay trước khi đổi luật không mất thưởng. */
 export const WHEEL_COOKIE = "musicnote_wheel";
+
+/** Cookie ghi đăng ký học thử vừa gửi từ máy này — mở khoá vòng quay cho đúng đăng ký đó. */
+export const WHEEL_REQUEST_COOKIE = "musicnote_wheel_req";
 
 /** Cookie sống 7 ngày: khách xem rồi vài hôm sau quay lại đăng ký vẫn còn thưởng. */
 export const WHEEL_COOKIE_DAYS = 7;
@@ -48,9 +50,33 @@ export function spinWheel(): WheelPrize {
   return { index, sessions: WHEEL_SEGMENTS[index] };
 }
 
-export function signPrize(prize: WheelPrize): string {
-  return jwt.sign(prize, SECRET, { expiresIn: `${WHEEL_COOKIE_DAYS}d` });
+/** Một ô bất kỳ có đúng số buổi này — để vòng quay dừng đúng chỗ khi hiện lại kết quả cũ. */
+export function segmentIndexFor(sessions: number): number {
+  const matches = WHEEL_SEGMENTS.flatMap((s, i) => (s === sessions ? [i] : []));
+  return matches.length ? matches[Math.floor(Math.random() * matches.length)] : 0;
 }
+
+export function signRequest(requestId: number): string {
+  return jwt.sign({ rid: requestId }, SECRET, { expiresIn: `${WHEEL_COOKIE_DAYS}d` });
+}
+
+export function readRequest(token: string | undefined): number | null {
+  if (!token) return null;
+  try {
+    const id = Number((jwt.verify(token, SECRET) as { rid?: unknown }).rid);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+export const wheelCookieOptions = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.COOKIE_SECURE === "true",
+  path: "/",
+  maxAge: WHEEL_COOKIE_DAYS * 24 * 60 * 60,
+};
 
 /**
  * Đọc phần thưởng từ cookie. Trả null khi chưa quay, cookie hỏng, hoặc ai đó

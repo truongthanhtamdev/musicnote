@@ -5,6 +5,7 @@ import "./globals.css";
 import { SITE_URL } from "@/lib/seo";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { AnalyticsPageView } from "@/components/analytics";
+import { OaiPixel } from "@/components/oai-pixel";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -70,6 +71,7 @@ export default function RootLayout({
             <AnalyticsPageView />
           </>
         )}
+        <OaiPixel />
       </body>
     </html>
   );

@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { readRequest, WHEEL_REQUEST_COOKIE } from "@/lib/wheel";
+import { wheelStateFor } from "@/lib/wheel-state";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { getCenterContact } from "@/lib/queries";
@@ -9,7 +12,6 @@ import { Logo } from "@/components/logo";
 import {
   IconCheck,
   IconChevronRight,
-  IconClock,
   IconGuitar,
   IconPiano,
   IconPlay,
@@ -18,8 +20,7 @@ import {
 } from "@/components/icons";
 import { ContactButtons } from "@/components/contact-buttons";
 import { PricingTabs } from "./pricing-tabs";
-import { TrialForm } from "./trial-form";
-import { LuckyWheel } from "./lucky-wheel";
+import { TrialSection } from "./trial-section";
 import { ClipShowcase } from "./clip-showcase";
 import { listClips, HOME_CLIP_LIMIT } from "@/lib/clips";
 
@@ -97,6 +98,7 @@ export default async function HomePage() {
   const contact = getCenterContact();
   const subjects = SUBJECT_GROUPS.flatMap((g) => g.items);
   const clips = listClips({ publicOnly: true, limit: HOME_CLIP_LIMIT });
+  const wheel = wheelStateFor(readRequest((await cookies()).get(WHEEL_REQUEST_COOKIE)?.value));
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -354,28 +356,10 @@ export default async function HomePage() {
 
         {/* Đăng ký học thử */}
         <section id="hoc-thu" className="scroll-mt-20 bg-ivory-100 border-y border-navy-100">
-          {/* Vòng quay nằm cạnh form trên màn hình rộng — đúng khoảng trống bỏ
-              phí trước đây. Trên điện thoại thì vòng quay lên trước, vì nó là
-              cái kéo khách chịu điền form. */}
-          <div className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-20 grid gap-10 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
-            <LuckyWheel />
-
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
-                Đăng ký học thử miễn phí
-              </h2>
-              <p className="text-ink-600 mt-2 flex items-start gap-1.5">
-                <IconClock className="w-4 h-4 mt-1 shrink-0 text-wood-500" />
-                <span>
-                  Để lại thông tin, trung tâm liên hệ xếp buổi học thử 60 phút — miễn phí và không
-                  ràng buộc.
-                </span>
-              </p>
-              <div className="mt-7">
-                <TrialForm />
-              </div>
-            </div>
-          </div>
+          {/* Vòng quay nằm cạnh form trên màn hình rộng; trên điện thoại vòng
+              quay lên trước vì nó là cái kéo khách chịu điền form — nhưng phải
+              gửi form rồi mới quay được. */}
+          <TrialSection initialWheel={wheel} />
         </section>
       </main>
 

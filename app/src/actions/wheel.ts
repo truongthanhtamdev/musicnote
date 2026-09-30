@@ -1,41 +1,22 @@
 "use server";
 
 import { cookies } from "next/headers";
-import {
-  readPrize,
-  signPrize,
-  spinWheel,
-  WHEEL_COOKIE,
-  WHEEL_COOKIE_DAYS,
-  type WheelPrize,
-} from "@/lib/wheel";
+import { revalidatePath } from "next/cache";
+import { readRequest, WHEEL_REQUEST_COOKIE } from "@/lib/wheel";
+import { spinForRequest, type SpinOutcome } from "@/lib/wheel-state";
 
-export interface SpinResult extends WheelPrize {
-  /** Đã quay từ trước rồi: trả lại đúng kết quả cũ, không quay lại. */
-  alreadySpun: boolean;
-}
+export type SpinResult = SpinOutcome | { error: string };
 
 /**
- * Quay một lượt. Mỗi máy một lượt: đã có kết quả thì trả lại đúng kết quả đó
- * thay vì quay lại, nếu không thì bấm đi bấm lại là ra 5 buổi.
- *
- * Xoá cookie trình duyệt thì quay lại được — chấp nhận, vì đây là trò khuyến
- * mại chứ không phải cổng thanh toán, và giáo vụ vẫn nhìn thấy số buổi trên
- * từng đăng ký để đối chiếu.
+ * Quay một lượt cho đăng ký học thử vừa gửi từ máy này. Chưa gửi đăng ký thì
+ * không quay được — mã đăng ký nằm trong cookie httpOnly do máy chủ ký, trang
+ * web không tự chế ra được.
  */
 export async function spinWheelAction(): Promise<SpinResult> {
   const store = await cookies();
-
-  const existing = readPrize(store.get(WHEEL_COOKIE)?.value);
-  if (existing) return { ...existing, alreadySpun: true };
-
-  const prize = spinWheel();
-  store.set(WHEEL_COOKIE, signPrize(prize), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.COOKIE_SECURE === "true",
-    path: "/",
-    maxAge: WHEEL_COOKIE_DAYS * 24 * 60 * 60,
-  });
-  return { ...prize, alreadySpun: false };
+  const requestId = readRequest(store.get(WHEEL_REQUEST_COOKIE)?.value);
+  const result = requestId ? spinForRequest(requestId) : null;
+  if (!result) return { error: "Bạn điền thông tin đăng ký học thử trước rồi mới quay được nhé." };
+  revalidatePath("/admin/trial-requests");
+  return result;
 }

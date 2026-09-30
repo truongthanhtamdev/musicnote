@@ -434,6 +434,9 @@ function migrate() {
   // Số buổi học thử khách được nhận. Mặc định 1 như mức thường; khách quay
   // vòng may mắn ở trang chủ thì ghi số trúng được, để giáo vụ biết mà xếp đủ.
   ensureColumn("trial_requests", "trial_sessions", "INTEGER NOT NULL DEFAULT 1");
+  // Số buổi quay trúng ở vòng quay may mắn; NULL là khách chưa quay. Khách
+  // phải gửi đăng ký trước rồi mới được quay, nên kết quả gắn thẳng vào đây.
+  ensureColumn("trial_requests", "wheel_prize", "INTEGER");
   ensureColumn("packages", "bonus_sessions", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("packages", "course_count", "INTEGER NOT NULL DEFAULT 1");
   backfillClassStages();

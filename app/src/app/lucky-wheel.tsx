@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { spinWheelAction } from "@/actions/wheel";
 import { WHEEL_SEGMENTS } from "@/lib/wheel";
 import { trackEvent } from "@/lib/analytics";
@@ -31,22 +31,37 @@ function slicePath(index: number) {
 }
 
 /**
- * Vòng quay may mắn ở trang chủ: quay ra 1–5 buổi học thử miễn phí.
+ * Vòng quay may mắn ở trang chủ: quay ra 1–3 buổi học thử miễn phí.
  *
- * Kết quả do máy chủ quyết định và ký vào cookie httpOnly — ở đây chỉ lo phần
- * hoạt ảnh dừng đúng ô. Nhờ vậy số hiện trên màn hình luôn khớp số trung tâm
- * nhận được khi khách gửi form.
+ * Khoá cho tới khi khách gửi form đăng ký học thử. Kết quả do máy chủ quyết
+ * định và ghi thẳng vào đăng ký vừa gửi — ở đây chỉ lo phần hoạt ảnh dừng
+ * đúng ô, nên số hiện trên màn hình luôn khớp số trung tâm nhận được.
  */
-export function LuckyWheel() {
+export function LuckyWheel({
+  unlocked,
+  initialPrize,
+  anchorRef,
+}: {
+  unlocked: boolean;
+  initialPrize: number | null;
+  anchorRef?: RefObject<HTMLDivElement | null>;
+}) {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
-  const [prize, setPrize] = useState<number | null>(null);
+  const [prize, setPrize] = useState<number | null>(initialPrize);
+  const [error, setError] = useState<string | null>(null);
 
   async function spin() {
-    if (spinning || prize !== null) return;
+    if (!unlocked || spinning || prize !== null) return;
     setSpinning(true);
+    setError(null);
     try {
       const result = await spinWheelAction();
+      if ("error" in result) {
+        setError(result.error);
+        setSpinning(false);
+        return;
+      }
 
       // Đưa tâm ô trúng lên đúng vị trí mũi tên ở 12 giờ.
       const target = EXTRA_TURNS * 360 - (result.index * SLICE + SLICE / 2);
@@ -69,11 +84,11 @@ export function LuckyWheel() {
   }
 
   return (
-    <div className="flex flex-col items-center text-center">
+    <div ref={anchorRef} className="scroll-mt-24 flex flex-col items-center text-center">
       <h3 className="text-lg font-bold text-ink-900">Vòng quay may mắn</h3>
       <p className="text-sm text-ink-600 mt-1 max-w-xs">
-        Quay một lượt để nhận <span className="font-semibold">1 đến 3 buổi học thử miễn phí</span>,
-        rồi điền thông tin đăng ký để nhận thưởng.
+        Điền thông tin đăng ký học thử, gửi xong là được quay một lượt nhận{" "}
+        <span className="font-semibold">1 đến 3 buổi học thử miễn phí</span>.
       </p>
 
       <div className="relative mt-5" style={{ width: SIZE, height: SIZE + 18 }}>
@@ -144,15 +159,32 @@ export function LuckyWheel() {
         </svg>
       </div>
 
-      {prize === null ? (
-        <button
-          type="button"
-          onClick={spin}
-          disabled={spinning}
-          className="mt-5 rounded-xl bg-coral-600 hover:bg-coral-700 disabled:opacity-60 text-white px-6 py-3 text-sm font-semibold transition"
-        >
-          {spinning ? "Đang quay…" : "Quay ngay"}
-        </button>
+      {prize === null && !unlocked ? (
+        <div className="mt-5 max-w-xs">
+          <button
+            type="button"
+            disabled
+            className="rounded-xl bg-navy-200 text-ink-500 px-6 py-3 text-sm font-semibold cursor-not-allowed"
+          >
+            🔒 Điền thông tin để quay
+          </button>
+          <p className="text-xs text-ink-500 mt-2">
+            <span className="lg:hidden">Điền form đăng ký bên dưới</span>
+            <span className="hidden lg:inline">Điền form đăng ký bên cạnh</span> — gửi xong vòng quay mở ngay.
+          </p>
+        </div>
+      ) : prize === null ? (
+        <div className="mt-5">
+          <button
+            type="button"
+            onClick={spin}
+            disabled={spinning}
+            className="rounded-xl bg-coral-600 hover:bg-coral-700 disabled:opacity-60 text-white px-6 py-3 text-sm font-semibold transition"
+          >
+            {spinning ? "Đang quay…" : "Quay ngay"}
+          </button>
+          {error && <p className="text-sm text-coral-600 mt-2 max-w-xs">{error}</p>}
+        </div>
       ) : (
         <div className="mt-5 rounded-2xl border border-mint-200 bg-mint-50 px-5 py-4 max-w-xs">
           <IconCheckCircle className="w-7 h-7 text-mint-600 mx-auto" />
@@ -160,8 +192,8 @@ export function LuckyWheel() {
             Bạn nhận được {prize} buổi học thử miễn phí!
           </p>
           <p className="text-sm text-ink-600 mt-1">
-            Điền thông tin đăng ký để trung tâm liên hệ xếp lịch. Phần thưởng đã được ghi nhận —
-            mỗi người một lượt quay.
+            Đã ghi vào đăng ký của bạn — trung tâm sẽ liên hệ xếp lịch. Mỗi số điện thoại một lượt
+            quay.
           </p>
         </div>
       )}

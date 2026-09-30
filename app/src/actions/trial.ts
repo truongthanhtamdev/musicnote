@@ -9,7 +9,7 @@ import { getUserById, getUserByEmail } from "@/lib/auth";
 import { createStudentAccount } from "@/lib/student-accounts";
 import { normalizeLoginPhone } from "@/lib/queries";
 import { SUBJECT_SUGGESTIONS, type TrialRequestStatus, ADMIN_AREA_ROLES, canonicalSubject, DAY_LABELS } from "@/lib/types";
-import { DEFAULT_TRIAL_SESSIONS, readPrize, WHEEL_COOKIE } from "@/lib/wheel";
+import { DEFAULT_TRIAL_SESSIONS, readPrize, signRequest, WHEEL_COOKIE, WHEEL_REQUEST_COOKIE, wheelCookieOptions } from "@/lib/wheel";
 import type { FormState } from "./teachers";
 
 export interface TrialFormState extends FormState {
@@ -19,6 +19,8 @@ export interface TrialFormState extends FormState {
   accountExists?: boolean;
   /** Số buổi học thử khách được nhận, để báo lại ngay sau khi gửi. */
   trialSessions?: number;
+  /** Vòng quay vừa mở khoá cho đăng ký này (false khi đã có thưởng từ lượt quay kiểu cũ). */
+  wheelOpen?: boolean;
 }
 
 /** Giới hạn độ dài từng ô. Form này ai vào trang chủ cũng gửi được nên phải tự cắt, không tin dữ liệu gửi lên. */
@@ -52,14 +54,22 @@ export async function submitTrialRequestAction(
     return { error: "Số điện thoại chưa hợp lệ" };
   }
 
-  // Phần thưởng lấy từ cookie do máy chủ ký, không lấy từ ô nào trong form —
-  // ô nào trong form thì khách cũng sửa được trước khi bấm gửi.
+  // Khách quay theo luật cũ (quay trước, gửi form sau) vẫn giữ được thưởng:
+  // kết quả đó nằm trong cookie do máy chủ ký, ghi luôn vào đăng ký này.
   const store = await cookies();
-  const trialSessions = readPrize(store.get(WHEEL_COOKIE)?.value)?.sessions ?? DEFAULT_TRIAL_SESSIONS;
+  const oldPrize = readPrize(store.get(WHEEL_COOKIE)?.value)?.sessions ?? null;
+  const trialSessions = oldPrize ?? DEFAULT_TRIAL_SESSIONS;
 
-  db.prepare(
-    "INSERT INTO trial_requests (name, phone, contact, subject, language, note, trial_sessions) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).run(name, phone, contact || null, subject, language, note || null, trialSessions);
+  const requestId = Number(
+    db
+      .prepare(
+        "INSERT INTO trial_requests (name, phone, contact, subject, language, note, trial_sessions, wheel_prize) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      )
+      .run(name, phone, contact || null, subject, language, note || null, trialSessions, oldPrize).lastInsertRowid
+  );
+  if (oldPrize) store.delete(WHEEL_COOKIE);
+  // Mở khoá vòng quay cho đúng đăng ký vừa gửi.
+  store.set(WHEEL_REQUEST_COOKIE, signRequest(requestId), wheelCookieOptions);
 
   revalidatePath("/admin/trial-requests");
   revalidatePath("/admin");
@@ -68,12 +78,12 @@ export async function submitTrialRequestAction(
   // giáo vụ. Chỉ cần tên và số điện thoại — mấy ô còn lại khách tự bổ sung
   // trong trang hồ sơ sau khi đăng nhập.
   const login = normalizeLoginPhone(phone);
-  if (!login) return { success: true, trialSessions };
+  if (!login) return { success: true, trialSessions, wheelOpen: !oldPrize };
 
   // Số đã có tài khoản thì KHÔNG tạo và KHÔNG sinh mật khẩu mới: form này ai
   // trên mạng cũng gửi được, làm thế là người lạ gõ số của khách rồi chiếm
   // luôn tài khoản của họ.
-  if (getUserByEmail(login)) return { success: true, accountExists: true, trialSessions };
+  if (getUserByEmail(login)) return { success: true, accountExists: true, trialSessions, wheelOpen: !oldPrize };
 
   try {
     const account = createStudentAccount({ name, login, classIds: [] });
@@ -86,12 +96,13 @@ export async function submitTrialRequestAction(
     return {
       success: true,
       trialSessions,
+      wheelOpen: !oldPrize,
       account: { login: account.login, password: account.password },
     };
   } catch (e) {
     // Đăng ký đã ghi nhận rồi, tài khoản hỏng thì thôi — giáo vụ tạo tay sau.
     console.error("[dang-ky-hoc-thu-tao-tk]", e);
-    return { success: true, trialSessions };
+    return { success: true, trialSessions, wheelOpen: !oldPrize };
   }
 }
 

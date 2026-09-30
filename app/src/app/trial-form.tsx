@@ -13,7 +13,14 @@ const inputClass =
   "w-full rounded-xl border border-navy-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-400 focus:border-wood-400 focus:ring-2 focus:ring-wood-500/20 focus:outline-none transition";
 const labelClass = "block text-sm font-medium text-ink-700 mb-1.5";
 
-export function TrialForm() {
+export function TrialForm({
+  onSubmitted,
+  onSpinClick,
+}: {
+  /** Gửi thành công — `wheelOpen` báo vòng quay vừa được mở cho đăng ký này. */
+  onSubmitted?: (wheelOpen: boolean) => void;
+  onSpinClick?: () => void;
+} = {}) {
   const [state, formAction, pending] = useActionState(submitTrialRequestAction, initialState);
   const [formKey, setFormKey] = useState(0);
   const [dismissed, setDismissed] = useState(false);
@@ -34,7 +41,10 @@ export function TrialForm() {
   // "trang nào kéo ra khách đăng ký học thử". Chạy trong useEffect vì mỗi
   // lượt gửi thành công tạo một đối tượng state mới, nên đếm đúng một lần.
   useEffect(() => {
-    if (state.success) trackEvent("dang_ky_hoc_thu");
+    if (!state.success) return;
+    trackEvent("dang_ky_hoc_thu");
+    onSubmitted?.(!!state.wheelOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy một lần cho mỗi lượt gửi
   }, [state]);
 
   if (state.success && !dismissed) {
@@ -47,6 +57,15 @@ export function TrialForm() {
             ? `Trung tâm sẽ liên hệ sớm nhất để xếp ${state.trialSessions} buổi học thử miễn phí bạn vừa quay trúng.`
             : "Trung tâm sẽ liên hệ trong thời gian sớm nhất để xếp buổi học thử miễn phí."}
         </p>
+        {state.wheelOpen && (
+          <button
+            type="button"
+            onClick={onSpinClick}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-coral-600 hover:bg-coral-700 text-white px-5 py-2.5 text-sm font-semibold transition"
+          >
+            🎁 Quay vòng quay may mắn — nhận tới 3 buổi học thử
+          </button>
+        )}
 
         {/* Tài khoản hiện ngay ở đây vì trung tâm chưa gửi được email — khách
             không chụp lại bây giờ thì phải nhắn Zalo xin lại. */}
