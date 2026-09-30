@@ -1,5 +1,6 @@
 import { getTrialRequest } from "@/lib/queries";
 import type { ClassPrefill } from "./new-class-form";
+import { wheelPrizeNote } from "@/lib/types";
 
 /**
  * Điền sẵn form tạo lớp từ một đăng ký học thử. Dùng chung cho trang Lớp học
@@ -17,7 +18,7 @@ export function trialPrefill(trialId: string | undefined): ClassPrefill | undefi
     // Ghi chú của khách và kênh liên hệ đi theo lớp luôn — giáo viên nhận lớp
     // biết khách ở múi giờ nào, đã học tới đâu.
     note: [
-      req.trial_sessions > 1 ? `🎁 Trúng ${req.trial_sessions} buổi học thử` : null,
+      wheelPrizeNote(req),
       req.note,
       req.contact,
     ]

@@ -167,8 +167,10 @@ export type TrialRequestStatus = "new" | "contacted" | "done" | "cancelled";
 /** Một lượt khách để lại thông tin xin học thử ở trang chủ. */
 export interface TrialRequestRow {
   id: number;
-  /** Số buổi học thử được tặng — 1 là mức thường, hơn 1 là trúng vòng quay. */
+  /** Số buổi học thử — 1 là mức thường; hơn 1 là khách trúng vòng quay theo luật cũ. */
   trial_sessions: number;
+  /** Số buổi tặng thêm khi đăng ký khóa, quay trúng ở vòng quay; null là chưa quay. */
+  wheel_prize: number | null;
   name: string;
   phone: string;
   /** Facebook/Zalo/email — cách liên hệ phụ khách tự khai. */
@@ -670,4 +672,12 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
 /** Any status but "completed" can carry an agreed makeup date/time (a miss still needs one). */
 export function hasRescheduleInfo(status: AttendanceStatus): boolean {
   return status !== "completed";
+}
+
+/** Ghi chú phần thưởng vòng quay đi theo đăng ký học thử sang lớp. */
+export function wheelPrizeNote(req: Pick<TrialRequestRow, "trial_sessions" | "wheel_prize">): string | null {
+  // Luật cũ: khách quay trước khi gửi form, thưởng là buổi học thử.
+  if (req.trial_sessions > 1) return `🎁 Trúng ${req.trial_sessions} buổi học thử`;
+  if (req.wheel_prize) return `🎁 Quay trúng +${req.wheel_prize} buổi tặng khi đăng ký khóa`;
+  return null;
 }

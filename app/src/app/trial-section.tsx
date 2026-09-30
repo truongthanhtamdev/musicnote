@@ -41,7 +41,7 @@ export function TrialSection({ initialWheel }: { initialWheel: WheelState }) {
           <IconClock className="w-4 h-4 mt-1 shrink-0 text-wood-500" />
           <span>
             Để lại thông tin, trung tâm liên hệ xếp buổi học thử 60 phút — miễn phí và không ràng
-            buộc. Gửi xong bạn được quay vòng quay may mắn nhận tới 3 buổi.
+            buộc. Gửi xong bạn được quay vòng quay may mắn, trúng tới 3 buổi tặng thêm khi đăng ký khóa học.
           </span>
         </p>
         <div className="mt-7">

@@ -4,6 +4,10 @@ import { segmentIndexFor, spinWheel } from "./wheel";
 /**
  * Trạng thái vòng quay của một đăng ký học thử, và lượt quay gắn vào nó.
  *
+ * Phần thưởng là số BUỔI TẶNG THÊM khi khách đăng ký khóa học (học thử vẫn
+ * là 1 buổi). Lúc ghi gói cho lớp, ô "Số buổi tặng" tự điền số này — xem
+ * `wheelBonusForPhone`.
+ *
  * Luật: gửi đăng ký xong mới được quay, mỗi số điện thoại một lượt. Gửi lại
  * lần nữa bằng cùng số thì đăng ký mới nhận lại đúng số buổi đã trúng lần
  * trước, không được quay thêm — không thì cứ gửi form lại tới khi ra 3 buổi.
@@ -71,12 +75,25 @@ export function spinForRequest(requestId: number): SpinOutcome | null {
   // Điều kiện wheel_prize IS NULL: hai lần bấm dồn dập thì chỉ lần đầu được ghi.
   const changed = db
     .prepare(
-      "UPDATE trial_requests SET wheel_prize = ?, trial_sessions = ? WHERE id = ? AND wheel_prize IS NULL"
+      "UPDATE trial_requests SET wheel_prize = ? WHERE id = ? AND wheel_prize IS NULL"
     )
-    .run(outcome.sessions, outcome.sessions, req.id).changes;
+    .run(outcome.sessions, req.id).changes;
   if (changed === 0) {
     const now = getRequest(req.id)?.wheel_prize;
     if (now) return { index: segmentIndexFor(now), sessions: now, alreadySpun: true };
   }
   return outcome;
+}
+
+/**
+ * Số buổi tặng khách đã quay trúng, tìm theo số điện thoại của lớp — lớp tạo
+ * bằng nút Đặt hẹn, từ form Tạo lớp hay gõ tay đều khớp được, miễn cùng số.
+ */
+export function wheelBonusForPhone(phone: string | null): number | null {
+  const key = phone ? phoneKey(phone) : "";
+  if (key.length < 8) return null;
+  const rows = db
+    .prepare("SELECT phone, wheel_prize FROM trial_requests WHERE wheel_prize IS NOT NULL ORDER BY id DESC")
+    .all() as { phone: string; wheel_prize: number }[];
+  return rows.find((r) => phoneKey(r.phone) === key)?.wheel_prize ?? null;
 }

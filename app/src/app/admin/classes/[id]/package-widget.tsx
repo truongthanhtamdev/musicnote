@@ -23,6 +23,7 @@ export default function PackageWidget({
   siblingsWithPackage,
   tuition,
   canRecordPayment,
+  wheelBonus = null,
 }: {
   classId: number;
   subject: string;
@@ -30,6 +31,8 @@ export default function PackageWidget({
   siblingsWithPackage: { id: number; label: string; progress: PackageProgress }[];
   tuition: TuitionStatus | null;
   canRecordPayment: boolean;
+  /** Số buổi tặng khách quay trúng ở vòng quay may mắn (tìm theo số điện thoại). */
+  wheelBonus?: number | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const [state, formAction, saving] = useActionState(saveClassPackageAction, initialState);
@@ -37,7 +40,8 @@ export default function PackageWidget({
   // Ô này là số buổi khách TRẢ TIỀN, không gồm buổi tặng — nên đọc `registered`
   // chứ không phải `total` (total = registered + bonus).
   const [total, setTotal] = useState(progress ? String(progress.registered) : "");
-  const [bonus, setBonus] = useState(progress ? String(progress.bonus) : "0");
+  // Chưa có gói mà khách từng quay trúng vòng quay: điền sẵn số buổi tặng đã hứa.
+  const [bonus, setBonus] = useState(progress ? String(progress.bonus) : String(wheelBonus ?? 0));
   const [courseCount, setCourseCount] = useState(progress ? String(progress.courseCount) : "1");
   const [used, setUsed] = useState(progress ? String(progress.used) : "0");
   const [amount, setAmount] = useState("");
@@ -185,6 +189,13 @@ export default function PackageWidget({
             />
           </div>
         </div>
+
+        {wheelBonus ? (
+          <p className="text-xs text-wood-700 bg-wood-50 border border-wood-100 rounded-lg px-2.5 py-1.5">
+            🎁 Khách quay trúng <b>+{wheelBonus} buổi tặng</b> khi đăng ký khóa ở vòng quay may mắn
+            {progress ? " — nhớ cộng vào ô Số buổi tặng nếu chưa cộng." : " — đã điền sẵn vào ô Số buổi tặng."}
+          </p>
+        ) : null}
 
         {Number(bonus) > 0 && (
           <p className="text-xs text-ink-500">

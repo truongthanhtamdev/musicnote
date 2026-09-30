@@ -32,6 +32,7 @@ import EditClassForm from "./edit-class-form";
 import WeeklySlots from "./weekly-slots";
 import ClassActions from "./class-actions";
 import PackageWidget from "./package-widget";
+import { wheelBonusForPhone } from "@/lib/wheel-state";
 import CoordinatorWidget from "./coordinator-widget";
 import { customerBonusStatus } from "@/lib/bonus";
 import StudentLinkWidget from "./student-link-widget";
@@ -143,6 +144,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
             siblingsWithPackage={siblings}
             tuition={tuition}
             canRecordPayment={isAdmin}
+            wheelBonus={wheelBonusForPhone(cls.student_phone)}
           />
           <StudentLinkWidget
             classId={cls.id}

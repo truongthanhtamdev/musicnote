@@ -49,11 +49,15 @@ export default function RequestRow({
         <span className="block text-xs text-ink-400">{LANGUAGE_LABELS[request.language]}</span>
         {/* Khách trúng vòng quay ở trang chủ thì phải xếp đủ số buổi đã hứa,
             nên nói rõ ở đây thay vì để giáo vụ mặc định xếp một buổi. */}
-        {request.trial_sessions > 1 && (
+        {request.trial_sessions > 1 ? (
           <StatusChip tone="wood" className="mt-1">
             🎁 {request.trial_sessions} buổi học thử
           </StatusChip>
-        )}
+        ) : request.wheel_prize ? (
+          <StatusChip tone="wood" className="mt-1">
+            🎁 +{request.wheel_prize} buổi khi đăng ký khóa
+          </StatusChip>
+        ) : null}
       </td>
       <td className="px-4 py-3 text-ink-600 text-sm max-w-[280px]">{request.note || "–"}</td>
       <td className="px-4 py-3">

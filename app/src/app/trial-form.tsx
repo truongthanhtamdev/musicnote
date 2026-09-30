@@ -63,7 +63,7 @@ export function TrialForm({
             onClick={onSpinClick}
             className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-coral-600 hover:bg-coral-700 text-white px-5 py-2.5 text-sm font-semibold transition"
           >
-            🎁 Quay vòng quay may mắn — nhận tới 3 buổi học thử
+            🎁 Quay vòng quay may mắn — tặng tới 3 buổi khi đăng ký khóa
           </button>
         )}
 

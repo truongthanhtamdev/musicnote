@@ -31,7 +31,7 @@ function slicePath(index: number) {
 }
 
 /**
- * Vòng quay may mắn ở trang chủ: quay ra 1–3 buổi học thử miễn phí.
+ * Vòng quay may mắn ở trang chủ: quay ra 1–3 buổi tặng thêm khi đăng ký khóa học.
  *
  * Khoá cho tới khi khách gửi form đăng ký học thử. Kết quả do máy chủ quyết
  * định và ghi thẳng vào đăng ký vừa gửi — ở đây chỉ lo phần hoạt ảnh dừng
@@ -88,7 +88,7 @@ export function LuckyWheel({
       <h3 className="text-lg font-bold text-ink-900">Vòng quay may mắn</h3>
       <p className="text-sm text-ink-600 mt-1 max-w-xs">
         Điền thông tin đăng ký học thử, gửi xong là được quay một lượt nhận{" "}
-        <span className="font-semibold">1 đến 3 buổi học thử miễn phí</span>.
+        <span className="font-semibold">tặng thêm 1 đến 3 buổi khi đăng ký khóa học</span>.
       </p>
 
       <div className="relative mt-5" style={{ width: SIZE, height: SIZE + 18 }}>
@@ -189,11 +189,11 @@ export function LuckyWheel({
         <div className="mt-5 rounded-2xl border border-mint-200 bg-mint-50 px-5 py-4 max-w-xs">
           <IconCheckCircle className="w-7 h-7 text-mint-600 mx-auto" />
           <p className="font-bold text-ink-900 mt-2">
-            Bạn nhận được {prize} buổi học thử miễn phí!
+            Bạn được tặng thêm {prize} buổi khi đăng ký khóa học!
           </p>
           <p className="text-sm text-ink-600 mt-1">
-            Đã ghi vào đăng ký của bạn — trung tâm sẽ liên hệ xếp lịch. Mỗi số điện thoại một lượt
-            quay.
+            Đã ghi vào đăng ký của bạn — học thử miễn phí trước, đăng ký khóa là được cộng thêm số
+            buổi này. Mỗi số điện thoại một lượt quay.
           </p>
         </div>
       )}

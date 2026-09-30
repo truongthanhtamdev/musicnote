@@ -8,7 +8,7 @@ import { assertRole } from "@/lib/guard";
 import { getUserById, getUserByEmail } from "@/lib/auth";
 import { createStudentAccount } from "@/lib/student-accounts";
 import { normalizeLoginPhone } from "@/lib/queries";
-import { SUBJECT_SUGGESTIONS, type TrialRequestStatus, ADMIN_AREA_ROLES, canonicalSubject, DAY_LABELS } from "@/lib/types";
+import { SUBJECT_SUGGESTIONS, type TrialRequestStatus, ADMIN_AREA_ROLES, canonicalSubject, DAY_LABELS, wheelPrizeNote } from "@/lib/types";
 import { DEFAULT_TRIAL_SESSIONS, readPrize, signRequest, WHEEL_COOKIE, WHEEL_REQUEST_COOKIE, wheelCookieOptions } from "@/lib/wheel";
 import type { FormState } from "./teachers";
 
@@ -222,7 +222,7 @@ export async function bookTrialAction(
     : undefined;
 
   const noteParts = [
-    req.trial_sessions > 1 ? `🎁 Trúng ${req.trial_sessions} buổi học thử` : null,
+    wheelPrizeNote(req),
     note || null,
     req.note ? `Khách ghi: ${req.note}` : null,
     req.contact ? `Liên hệ: ${req.contact}` : null,
