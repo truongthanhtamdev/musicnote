@@ -5,6 +5,7 @@ import {
   listClassesForTeacher,
   getClass,
   sessionNumberMap,
+  nextSessionNumbers,
   getLateCheckinQuota,
 } from "@/lib/queries";
 import { addDays, toISODate, todayISO, now } from "@/lib/format";
@@ -45,8 +46,11 @@ export default async function TeacherAttendanceHistoryPage({
   const sessionNumbers = sessionNumberMap([...new Set(rows.map((r) => r.class_id))]);
   // Not filtered to active classes — a teacher may still need to add or
   // correct attendance for a class that has since paused or ended.
-  const myClasses = listClassesForTeacher(session!.userId).map(teacherSees).map((c) => ({
+  const allMine = listClassesForTeacher(session!.userId);
+  const nextNumbers = nextSessionNumbers(allMine);
+  const myClasses = allMine.map(teacherSees).map((c) => ({
     id: c.id,
+    nextNumber: nextNumbers.get(c.id),
     label: `${c.student_name} · ${formatClassSchedule(c)}${
       c.status === "active" ? "" : ` (${CLASS_STATUS_LABELS[c.status]})`
     }`,

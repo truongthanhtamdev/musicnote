@@ -27,8 +27,10 @@ const STATUS_STYLE: Record<AttendanceStatus, string> = {
 export default function MakeupAttendanceForm({
   classes,
 }: {
-  classes: { id: number; label: string }[];
+  classes: { id: number; label: string; nextNumber?: number }[];
 }) {
+  // Chọn lớp là ô "Buổi thứ mấy" tự điền số tiếp theo, giáo viên vẫn sửa được.
+  const [sessionNumber, setSessionNumber] = useState("");
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(markAttendanceAction, initialState);
   const [status, setStatus] = useState<AttendanceStatus>("completed");
@@ -61,7 +63,16 @@ export default function MakeupAttendanceForm({
               <label className={label} htmlFor="m-class">
                 Lớp học
               </label>
-              <select id="m-class" name="class_id" required className={field}>
+              <select
+                id="m-class"
+                name="class_id"
+                required
+                className={field}
+                onChange={(e) => {
+                  const next = classes.find((c) => String(c.id) === e.target.value)?.nextNumber;
+                  setSessionNumber(next !== undefined ? String(next) : "");
+                }}
+              >
                 <option value="">-- Chọn lớp --</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -97,6 +108,8 @@ export default function MakeupAttendanceForm({
               min={0}
               step={1}
               inputMode="numeric"
+              value={sessionNumber}
+              onChange={(e) => setSessionNumber(e.target.value)}
               placeholder="VD: 15"
               className={`${field} sm:w-40 tabular`}
             />

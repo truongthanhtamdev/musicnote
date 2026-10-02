@@ -105,6 +105,9 @@ export interface ClassRow {
   teacher_label: string | null;
   /** YYYY-MM-DD — buổi đầu tiên của lịch tuần; null thì tính từ ngày tạo lớp. */
   start_date: string | null;
+  /** Lớp không theo gói: "đã học tới buổi mấy" giáo viên điền lần gần nhất. */
+  used_override?: number | null;
+  used_override_set_at?: string | null;
   status: ClassStatus;
   notes: string | null;
   /** 1 while the class is still waiting on its first session, which counts as the trial ("buổi 0"). */
@@ -700,4 +703,24 @@ export function wheelPrizeNote(req: Pick<TrialRequestRow, "trial_sessions" | "wh
  */
 export function scheduleStart(c: { start_date?: string | null; created_at: string }): string {
   return c.start_date || c.created_at.slice(0, 10);
+}
+
+/**
+ * Một người khách: theo tài khoản học viên nếu có, không thì theo tên (bỏ dấu,
+ * chữ thường). Khách học 2 buổi/tuần là 2 dòng lớp — khoá này gộp chúng lại.
+ */
+export function personKey(c: { student_user_id?: number | null; student_name: string }): string {
+  return c.student_user_id ? `u${c.student_user_id}` : `n${foldVietnamese(c.student_name.trim())}`;
+}
+
+/**
+ * Nhóm để đếm "buổi thứ mấy": lớp theo gói đếm theo gói; lớp không theo gói
+ * đếm chung theo người khách, để khách học nhiều lịch trong tuần vẫn đếm liền.
+ */
+export function sessionPoolKey(c: {
+  package_id: number | null;
+  student_user_id?: number | null;
+  student_name: string;
+}): string {
+  return c.package_id ? `p${c.package_id}` : personKey(c);
 }

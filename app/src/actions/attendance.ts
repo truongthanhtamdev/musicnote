@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { nowHHMM, todayISO } from "@/lib/format";
 import { assertRole } from "@/lib/guard";
-import { getAttendance, getClass, getPackageProgress } from "@/lib/queries";
+import { getAttendance, getClass, getPackageProgress, nextSessionNumbers } from "@/lib/queries";
 import { ATTENDANCE_STATUS_LABELS, hasRescheduleInfo, type AttendanceStatus, MANAGE_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import { awardTrialBonus } from "@/lib/bonus";
@@ -40,11 +40,22 @@ function readStatedSessionNumber(formData: FormData): number | null {
  */
 function applyStatedSessionNumber(classId: number, stated: number) {
   const cls = getClass(classId);
-  if (!cls?.package_id) return;
-  if (getPackageProgress(cls)?.used === stated) return;
+  if (!cls) return;
+  if (cls.package_id) {
+    if (getPackageProgress(cls)?.used === stated) return;
+    db.prepare(
+      "UPDATE packages SET used_override = ?, used_override_set_at = datetime('now') WHERE id = ?"
+    ).run(stated, cls.package_id);
+    return;
+  }
+  // Lớp không theo gói: ghi mốc ngay trên lớp, để buổi sau ô "Buổi thứ mấy"
+  // tự nhảy tiếp từ số giáo viên vừa điền. Buổi 0 (học thử) không đặt mốc.
+  if (stated === 0) return;
+  const current = (nextSessionNumbers([cls]).get(cls.id) ?? 1) - 1;
+  if (current === stated) return;
   db.prepare(
-    "UPDATE packages SET used_override = ?, used_override_set_at = datetime('now') WHERE id = ?"
-  ).run(stated, cls.package_id);
+    "UPDATE classes SET used_override = ?, used_override_set_at = datetime('now') WHERE id = ?"
+  ).run(stated, classId);
 }
 
 export async function markAttendanceAction(

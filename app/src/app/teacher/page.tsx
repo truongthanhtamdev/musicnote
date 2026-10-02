@@ -7,6 +7,7 @@ import {
   listRescheduleRequests,
   listConfirmedClassIdsOn,
   getLateCheckinQuota,
+  nextSessionNumbers,
 } from "@/lib/queries";
 import { todayISO, now } from "@/lib/format";
 import { DAY_LABELS, teacherSees, scheduleStart } from "@/lib/types";
@@ -41,6 +42,8 @@ export default async function TeacherTodayPage() {
   // Already-checked-in classes drop off "Hôm nay" — the teacher has
   // finished that session; corrections go through "Lịch sử điểm danh".
   const pendingClasses = classes.filter((c) => !c.existing);
+  // Số gợi ý cho ô "Buổi thứ mấy": tự nhảy tiếp từ số giáo viên điền lần trước.
+  const nextNumbers = nextSessionNumbers(pendingClasses);
   const doneCount = classes.length - pendingClasses.length;
   const firstName = session!.name.split(" ").pop();
   const pendingReschedules = listRescheduleRequests({ teacherId, status: "pending" }).map(teacherSees);
@@ -141,6 +144,7 @@ export default async function TeacherTodayPage() {
           </h2>
           <ol className="relative">
             {pendingClasses.map((c) => {
+              const nextNumber = nextNumbers.get(c.id);
               const progress = getPackageProgress(c);
               return (
                 <TodayClassCard
@@ -150,7 +154,7 @@ export default async function TeacherTodayPage() {
                   progress={progress}
                   // A class still waiting on its trial prefills "buổi 0", so
                   // the teacher sees the trial rate is what applies today.
-                  sessionNumber={c.trial_pending ? 0 : progress ? progress.used + 1 : undefined}
+                  sessionNumber={nextNumber}
                   overdue={nowMinutes > classEndMinutes(c.start_time, c.duration_minutes)}
                   confirmed={confirmedToday.has(c.id)}
                 />

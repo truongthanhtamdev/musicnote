@@ -27,6 +27,7 @@ import {
   type TrialRequestStatus,
   type UserRow,
   scheduleStart,
+  sessionPoolKey,
 } from "./types";
 
 export function listTeachers(includeInactive = true): UserRow[] {
@@ -505,56 +506,132 @@ export function sessionNumberMap(classIds: number[]): Map<number, number> {
   const out = new Map<number, number>();
   if (classIds.length === 0) return out;
 
-  const placeholders = classIds.map(() => "?").join(",");
+  const pools = sessionPools(classIds);
+  const ids = [...pools.classPool.keys()];
+  const placeholders = ids.map(() => "?").join(",");
   const rows = db
     .prepare(
-      `SELECT a.id, a.is_trial, a.status, a.counts_as_used, a.created_at, COALESCE(c.package_id, -c.id) AS pool,
-              p.used_override AS baseline, p.used_override_set_at AS baselineAt
-       FROM attendance a
-       JOIN classes c ON c.id = a.class_id
-       LEFT JOIN packages p ON p.id = c.package_id
-       WHERE COALESCE(c.package_id, -c.id) IN (
-         SELECT COALESCE(package_id, -id) FROM classes WHERE id IN (${placeholders})
-       )
-       ORDER BY a.session_date ASC, a.id ASC`
+      `SELECT id, class_id, is_trial, status, counts_as_used, created_at
+       FROM attendance WHERE class_id IN (${placeholders})
+       ORDER BY session_date ASC, id ASC`
     )
-    .all(...classIds) as {
+    .all(...ids) as {
     id: number;
+    class_id: number;
     is_trial: number;
     status: string;
     counts_as_used: number;
     created_at: string;
-    pool: number;
-    baseline: number | null;
-    baselineAt: string | null;
   }[];
 
-  const byPool = new Map<number, typeof rows>();
+  const byPool = new Map<string, typeof rows>();
   for (const r of rows) {
     // Đánh số đúng theo cách gói học đếm: buổi đã dạy, cộng buổi khách vắng
     // không báo trước (cũng trừ tiết), trừ buổi học thử.
     if ((r.status !== "completed" && !r.counts_as_used) || r.is_trial) continue;
-    const list = byPool.get(r.pool) ?? [];
+    const pool = pools.classPool.get(r.class_id)!;
+    const list = byPool.get(pool) ?? [];
     list.push(r);
-    byPool.set(r.pool, list);
+    byPool.set(pool, list);
   }
 
-  for (const counted of byPool.values()) {
-    const { baseline, baselineAt } = counted[0];
-    if (baseline == null || baselineAt == null) {
+  for (const [pool, counted] of byPool) {
+    const base = pools.baseline.get(pool);
+    if (!base) {
       counted.forEach((r, i) => out.set(r.id, i + 1));
       continue;
     }
-    const before = counted.filter((r) => r.created_at <= baselineAt);
-    const after = counted.filter((r) => r.created_at > baselineAt);
+    const before = counted.filter((r) => r.created_at <= base.at);
+    const after = counted.filter((r) => r.created_at > base.at);
     // The last session recorded before the correction is the number typed in;
     // earlier ones step back from it (skipping any that would land at 0 or
     // below, i.e. sessions the typed number doesn't account for).
     before.forEach((r, i) => {
-      const n = baseline - (before.length - 1 - i);
+      const n = base.value - (before.length - 1 - i);
       if (n > 0) out.set(r.id, n);
     });
-    after.forEach((r, i) => out.set(r.id, baseline + i + 1));
+    after.forEach((r, i) => out.set(r.id, base.value + i + 1));
+  }
+  return out;
+}
+
+/**
+ * Gom các lớp cùng nhóm đếm buổi (cùng gói, hoặc cùng người khách nếu không
+ * theo gói) với các lớp được hỏi, kèm mốc "đã học tới buổi mấy" của từng nhóm.
+ */
+function sessionPools(classIds: number[]): {
+  classPool: Map<number, string>;
+  baseline: Map<string, { value: number; at: string }>;
+} {
+  const all = db
+    .prepare(
+      `SELECT c.id, c.package_id, c.student_user_id, c.student_name,
+              c.used_override, c.used_override_set_at,
+              p.used_override AS pkg_override, p.used_override_set_at AS pkg_override_at
+       FROM classes c LEFT JOIN packages p ON p.id = c.package_id`
+    )
+    .all() as {
+    id: number;
+    package_id: number | null;
+    student_user_id: number | null;
+    student_name: string;
+    used_override: number | null;
+    used_override_set_at: string | null;
+    pkg_override: number | null;
+    pkg_override_at: string | null;
+  }[];
+  const keyOf = new Map(all.map((c) => [c.id, sessionPoolKey(c)]));
+  const wanted = new Set(classIds.map((id) => keyOf.get(id)).filter(Boolean) as string[]);
+
+  const classPool = new Map<number, string>();
+  const baseline = new Map<string, { value: number; at: string }>();
+  for (const c of all) {
+    const key = keyOf.get(c.id)!;
+    if (!wanted.has(key)) continue;
+    classPool.set(c.id, key);
+    const value = c.package_id ? c.pkg_override : c.used_override;
+    const at = c.package_id ? c.pkg_override_at : c.used_override_set_at;
+    if (value == null || !at) continue;
+    // Nhiều lớp cùng nhóm cùng có mốc: lấy mốc ghi sau cùng.
+    const prev = baseline.get(key);
+    if (!prev || at > prev.at) baseline.set(key, { value, at });
+  }
+  return { classPool, baseline };
+}
+
+/**
+ * Số gợi ý cho ô "Buổi thứ mấy" của buổi sắp điểm danh, theo từng lớp.
+ *
+ * - Lớp đang chờ học thử: 0.
+ * - Lớp theo gói: số buổi gói đã dùng + 1.
+ * - Lớp không theo gói: mốc giáo viên điền lần trước + số buổi đã dạy sau đó
+ *   + 1; chưa từng điền thì đếm số buổi đã dạy + 1.
+ */
+export function nextSessionNumbers(classes: ClassRow[]): Map<number, number> {
+  const out = new Map<number, number>();
+  const progressByPackage = getPackageProgressForClasses(classes);
+  const loose = classes.filter((c) => !c.trial_pending && !c.package_id);
+  const pools = loose.length ? sessionPools(loose.map((c) => c.id)) : null;
+  for (const c of classes) {
+    if (c.trial_pending) {
+      out.set(c.id, 0);
+    } else if (c.package_id) {
+      const used = progressByPackage.get(c.package_id)?.used;
+      if (used !== undefined) out.set(c.id, used + 1);
+    } else if (pools) {
+      const key = pools.classPool.get(c.id)!;
+      const ids = [...pools.classPool].filter(([, k]) => k === key).map(([id]) => id);
+      const base = pools.baseline.get(key);
+      const ph = ids.map(() => "?").join(",");
+      const { n } = db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM attendance
+            WHERE class_id IN (${ph}) AND is_trial = 0 AND (status = 'completed' OR counts_as_used = 1)
+              ${base ? "AND created_at > ?" : ""}`
+        )
+        .get(...ids, ...(base ? [base.at] : [])) as { n: number };
+      out.set(c.id, (base?.value ?? 0) + n + 1);
+    }
   }
   return out;
 }
@@ -803,6 +880,7 @@ export function getAttendance(classId: number, sessionDate: string): AttendanceR
 export interface AttendanceWithContext extends AttendanceRow {
   student_name: string;
   teacher_label: string | null;
+  student_user_id: number | null;
   teacher_name: string;
   /** Số sao khách đã chấm cho buổi này, null nếu chưa chấm. */
   rating_stars: number | null;
@@ -835,7 +913,7 @@ export function listAttendance(filter?: {
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   return db
     .prepare(
-      `SELECT a.*, c.student_name as student_name, c.teacher_label, u.name as teacher_name,
+      `SELECT a.*, c.student_name as student_name, c.teacher_label, c.student_user_id, u.name as teacher_name,
               r.stars as rating_stars
        FROM attendance a
        JOIN classes c ON c.id = a.class_id

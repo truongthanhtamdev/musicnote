@@ -425,6 +425,11 @@ function migrate() {
   // Ngày buổi đầu tiên của lịch tuần (VD xếp học thử đúng thứ 2 ngày 13/10 dù
   // hôm nay mới thứ 5). NULL thì lịch chạy từ ngày tạo lớp như trước.
   ensureColumn("classes", "start_date", "TEXT");
+  // Mốc "đã học tới buổi mấy" cho lớp KHÔNG theo gói (lớp có gói dùng mốc
+  // của gói). Giáo viên điền "Buổi thứ mấy" lúc điểm danh là đặt mốc này, các
+  // buổi sau tự đếm tiếp.
+  ensureColumn("classes", "used_override", "INTEGER");
+  ensureColumn("classes", "used_override_set_at", "TEXT");
   // Index phải tạo SAU ensureColumn: `code` là cột thêm sau, database mới toanh
   // chưa có nó lúc chạy khối CREATE TABLE ở trên.
   db.exec("CREATE INDEX IF NOT EXISTS idx_classes_code ON classes(code)");

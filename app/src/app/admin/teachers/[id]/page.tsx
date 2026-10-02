@@ -8,13 +8,14 @@ import {
   listClassesForTeacher,
   listAttendance,
   computePayroll,
+  sessionNumberMap,
   type AttendanceWithContext,
 } from "@/lib/queries";
 import { formatVND, monthRangeOf, todayISO } from "@/lib/format";
 import { MonthNav } from "@/components/month-nav";
 import { MonthSelect } from "@/components/month-select";
 import { db } from "@/lib/db";
-import { LANGUAGE_LABELS, parseLanguages, parseSubjects, MANAGE_ROLES, TRIAL_SESSION_RATE } from "@/lib/types";
+import { LANGUAGE_LABELS, parseLanguages, parseSubjects, MANAGE_ROLES, TRIAL_SESSION_RATE, personKey } from "@/lib/types";
 import { TeacherScheduleGrid } from "@/components/teacher-schedule-grid";
 import TeacherClassList from "./class-list";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
@@ -35,7 +36,9 @@ import ResetPasswordButton from "@/components/reset-password-button";
 
 /** Điểm danh của một học viên trong kỳ — gom để xem giáo viên dạy từng khách ra sao. */
 interface StudentGroup {
-  classId: number;
+  key: string;
+  /** Các lớp (lịch trong tuần) của cùng một khách — khách học 2 buổi/tuần là 2 lớp. */
+  classIds: number[];
   name: string;
   rows: AttendanceWithContext[];
   taught: number;
@@ -45,13 +48,17 @@ interface StudentGroup {
 }
 
 function groupByStudent(rows: AttendanceWithContext[]): StudentGroup[] {
-  const map = new Map<number, StudentGroup>();
+  // Gom theo người khách chứ không theo lớp: một khách học nhiều lịch trong
+  // tuần là nhiều dòng lớp, nhưng chỉ nên hiện một mục.
+  const map = new Map<string, StudentGroup>();
   for (const a of rows) {
-    let g = map.get(a.class_id);
+    const key = personKey(a);
+    let g = map.get(key);
     if (!g) {
-      g = { classId: a.class_id, name: a.student_name, rows: [], taught: 0, trial: 0, missed: 0, late: 0 };
-      map.set(a.class_id, g);
+      g = { key, classIds: [], name: a.student_name, rows: [], taught: 0, trial: 0, missed: 0, late: 0 };
+      map.set(key, g);
     }
+    if (!g.classIds.includes(a.class_id)) g.classIds.push(a.class_id);
     g.rows.push(a);
     if (a.status === "completed") {
       if (a.is_trial) g.trial++;
@@ -103,7 +110,9 @@ export default async function TeacherDetailPage({
     if (!first || m <= first.slice(0, 7)) break;
     m = monthRangeOf(`${m}-01`, -1).from.slice(0, 7);
   }
-  const byStudent = groupByStudent(listAttendance({ teacherId, from, to }));
+  const periodRows = listAttendance({ teacherId, from, to });
+  const byStudent = groupByStudent(periodRows);
+  const sessionNumbers = sessionNumberMap([...new Set(periodRows.map((a) => a.class_id))]);
   const periodLabel =
     from.slice(0, 7) === to.slice(0, 7) && from.endsWith("-01")
       ? `tháng ${Number(from.slice(5, 7))}/${from.slice(0, 4)}`
@@ -285,7 +294,7 @@ export default async function TeacherDetailPage({
         ) : (
           <div className="divide-y divide-navy-100">
             {byStudent.map((g) => (
-              <details key={g.classId} className="group">
+              <details key={g.key} className="group">
                 <summary className="list-none cursor-pointer px-4 sm:px-5 py-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 hover:bg-ivory-50">
                   <span className="text-ink-400 transition group-open:rotate-90">›</span>
                   <span className="font-semibold text-ink-900 min-w-0 truncate">{g.name}</span>
@@ -301,6 +310,7 @@ export default async function TeacherDetailPage({
                     <thead>
                       <tr>
                         <Th>Ngày</Th>
+                        <Th>Buổi</Th>
                         <Th>Trạng thái</Th>
                         <Th>Giờ điểm danh</Th>
                         <Th>Nội dung bài</Th>
@@ -312,6 +322,9 @@ export default async function TeacherDetailPage({
                           <td className="px-4 py-2.5 tabular text-ink-700 whitespace-nowrap">
                             {a.session_date.slice(8, 10)}/{a.session_date.slice(5, 7)}
                             {a.is_trial ? <span className="ml-1.5 text-[11px] text-wood-600 font-semibold">thử</span> : null}
+                          </td>
+                          <td className="px-4 py-2.5 tabular text-ink-700 whitespace-nowrap">
+                            {a.is_trial ? "0" : (sessionNumbers.get(a.id) ?? "–")}
                           </td>
                           <td className="px-4 py-2.5">
                             <AttendanceStatusCell row={a} />
@@ -327,12 +340,17 @@ export default async function TeacherDetailPage({
                       ))}
                     </tbody>
                   </TableShell>
-                  <Link
-                    href={`/admin/classes/${g.classId}`}
-                    className="inline-block mt-2 px-4 sm:px-5 text-sm font-semibold text-wood-600 hover:text-wood-700"
-                  >
-                    Mở trang lớp của học viên →
-                  </Link>
+                  <div className="mt-2 px-4 sm:px-5 flex flex-wrap gap-x-4 gap-y-1">
+                    {g.classIds.map((id, i) => (
+                      <Link
+                        key={id}
+                        href={`/admin/classes/${id}`}
+                        className="text-sm font-semibold text-wood-600 hover:text-wood-700"
+                      >
+                        {g.classIds.length > 1 ? `Mở lớp ${i + 1} →` : "Mở trang lớp của học viên →"}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </details>
             ))}
