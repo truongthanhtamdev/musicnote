@@ -18,7 +18,10 @@ export function TrialForm({
   onSubmitted,
   onSpinClick,
   facebookUrl = null,
+  wonSessions = null,
 }: {
+  /** Đã quay xong vòng quay: hiện kết quả thay cho nút "Quay". */
+  wonSessions?: number | null;
   /** Facebook em Tâm — bước "kết bạn để được sắp lớp" sau khi đăng ký. */
   facebookUrl?: string | null;
   /** Gửi thành công — `wheelOpen` báo vòng quay vừa được mở cho đăng ký này. */
@@ -53,28 +56,36 @@ export function TrialForm({
 
   if (state.success && !dismissed) {
     return (
-      <div className="bg-white rounded-2xl border border-mint-200 p-6 sm:p-8 text-center">
-        <IconCheckCircle className="w-10 h-10 text-mint-600 mx-auto" />
-        <h3 className="text-lg font-bold text-ink-900 mt-3">Đã nhận đăng ký của bạn</h3>
-        <p className="text-ink-600 mt-1.5">
-          {state.trialSessions && state.trialSessions > 1
-            ? `Trung tâm sẽ liên hệ sớm nhất để xếp ${state.trialSessions} buổi học thử miễn phí bạn vừa quay trúng.`
-            : "Trung tâm sẽ liên hệ trong thời gian sớm nhất để xếp buổi học thử miễn phí."}
-        </p>
-        {state.wheelOpen && (
-          <button
-            type="button"
-            onClick={onSpinClick}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-coral-600 hover:bg-coral-700 text-white px-5 py-2.5 text-sm font-semibold transition"
-          >
-            🎁 Quay vòng quay may mắn — tặng tới 3 buổi khi đăng ký khóa
-          </button>
-        )}
+      <div className="bg-white rounded-2xl border border-mint-200 p-5 sm:p-8">
+        <div className="text-center">
+          <IconCheckCircle className="w-11 h-11 text-mint-600 mx-auto" />
+          <h3 className="text-xl font-bold text-ink-900 mt-3">Cảm ơn bạn đã đăng ký học thử!</h3>
+          <p className="text-ink-600 mt-1.5">
+            {state.trialSessions && state.trialSessions > 1
+              ? `Trung tâm sẽ liên hệ sớm nhất để xếp ${state.trialSessions} buổi học thử miễn phí bạn vừa quay trúng.`
+              : "Trung tâm sẽ liên hệ trong thời gian sớm nhất để xếp buổi học thử miễn phí."}{" "}
+            Bạn làm tiếp 2 bước dưới đây nhé:
+          </p>
+          {wonSessions ? (
+            <p className="mt-4 inline-block rounded-xl bg-mint-50 border border-mint-200 text-mint-800 px-4 py-2 text-sm font-semibold">
+              🎁 Bạn được tặng thêm {wonSessions} buổi khi đăng ký khóa học
+            </p>
+          ) : state.wheelOpen && (
+            <button
+              type="button"
+              onClick={onSpinClick}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-coral-600 hover:bg-coral-700 text-white px-5 py-2.5 text-sm font-semibold transition"
+            >
+              🎁 Quay vòng quay may mắn — tặng tới 3 buổi khi đăng ký khóa
+            </button>
+          )}
+        </div>
 
-        {/* Các bước tiếp theo: khách biết ngay phải làm gì để vào được buổi học thử. */}
-        <ol className="mt-6 space-y-3 text-left">
-          <li className="rounded-xl border border-navy-100 bg-ivory-50 px-4 py-3.5">
-            <p className="font-semibold text-ink-900">① Đăng nhập chờ link học thử</p>
+        <ol className="mt-6 space-y-3">
+          {/* Bước 1: đăng nhập. Tài khoản nằm ngay trong bước này — mật khẩu
+              chỉ hiện đúng lần này, khách không lưu lại là phải nhắn xin. */}
+          <li className="rounded-xl border border-navy-100 bg-ivory-50 px-4 py-4">
+            <p className="font-semibold text-ink-900">① Đăng nhập tài khoản để xem lịch học</p>
             <p className="text-sm text-ink-600 mt-1">
               Trung tâm xếp lịch xong, <b>link học Google Meet</b> sẽ hiện ở nút <b>“Vào lớp”</b> trong tài
               khoản của bạn
@@ -82,66 +93,61 @@ export function TrialForm({
                 <>
                   {" "}và được gửi về email <b>{state.email}</b>
                 </>
-              ) : null}{" "}
-              trước giờ học.
+              ) : null}
+              .
             </p>
+            {state.account ? (
+              <div className="mt-3 rounded-lg border border-wood-200 bg-white px-3.5 py-3">
+                <dl className="text-sm space-y-1">
+                  <div className="flex gap-2">
+                    <dt className="text-ink-500 w-24 shrink-0">Đăng nhập</dt>
+                    <dd className="tabular font-semibold text-ink-900">{state.account.login}</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="text-ink-500 w-24 shrink-0">Mật khẩu</dt>
+                    <dd className="font-mono font-semibold text-wood-700">{state.account.password}</dd>
+                  </div>
+                </dl>
+                <p className="text-xs text-coral-700 mt-2">
+                  📸 Chụp màn hình lại giúp bạn nhé — mật khẩu chỉ hiện lần này. Đăng nhập xong bạn đổi được
+                  mật khẩu riêng.
+                </p>
+              </div>
+            ) : state.accountExists ? (
+              <p className="mt-2 text-sm text-ink-600">
+                Số điện thoại này đã có tài khoản ở trung tâm — bạn đăng nhập bằng số đó. Quên mật khẩu thì
+                nhắn em Tâm ở bước ② để được cấp lại.
+              </p>
+            ) : null}
+            <Link
+              href="/login"
+              className="mt-3 inline-flex items-center rounded-xl bg-wood-500 hover:bg-wood-600 text-white text-sm font-semibold px-4 py-2.5"
+            >
+              Đăng nhập ngay
+            </Link>
           </li>
+
           {facebookUrl && (
-            <li className="rounded-xl border border-[#1877f2]/25 bg-[#1877f2]/5 px-4 py-3.5">
-              <p className="font-semibold text-ink-900">② Kết bạn Facebook với em Tâm</p>
+            <li className="rounded-xl border border-[#1877f2]/25 bg-[#1877f2]/5 px-4 py-4">
+              <p className="font-semibold text-ink-900">② Kết bạn &amp; nhắn tin với em Tâm</p>
               <p className="text-sm text-ink-600 mt-1 mb-3">
-                Để được sắp lớp và thêm vào <b>nhóm lớp học</b> trên Facebook. Bấm là mở app Facebook trên điện
-                thoại.
+                Để được <b>tạo lớp và tư vấn sớm nhất</b>. Bấm nút là mở thẳng app Facebook / Messenger trên
+                điện thoại.
               </p>
               <FacebookSteps facebookUrl={facebookUrl} />
             </li>
           )}
         </ol>
 
-        {/* Tài khoản hiện ngay ở đây (email có thể chưa tới) — khách không chụp
-            lại bây giờ thì phải nhắn xin lại. */}
-        {state.account && (
-          <div className="mt-5 rounded-xl border border-navy-100 bg-ivory-50 px-4 py-4 text-left">
-            <p className="font-semibold text-ink-900">Tài khoản theo dõi lịch học của bạn</p>
-            <dl className="mt-2 text-sm space-y-1">
-              <div className="flex gap-2">
-                <dt className="text-ink-500 w-24 shrink-0">Đăng nhập</dt>
-                <dd className="tabular font-medium text-ink-900">{state.account.login}</dd>
-              </div>
-              <div className="flex gap-2">
-                <dt className="text-ink-500 w-24 shrink-0">Mật khẩu</dt>
-                <dd className="font-mono font-semibold text-wood-700">{state.account.password}</dd>
-              </div>
-            </dl>
-            <p className="text-xs text-ink-500 mt-2">
-              Chụp màn hình hoặc lưu lại giúp bạn nhé — mật khẩu chỉ hiện lần này. Đăng nhập xong
-              bạn đổi được mật khẩu riêng.
-            </p>
-            <Link
-              href="/login"
-              className="mt-3 inline-block rounded-xl bg-wood-500 hover:bg-wood-600 text-white text-sm font-semibold px-4 py-2.5"
-            >
-              Đăng nhập ngay
-            </Link>
-          </div>
-        )}
-        {state.accountExists && (
-          <p className="mt-5 text-sm text-ink-600 bg-ivory-50 border border-navy-100 rounded-xl px-4 py-3">
-            Số điện thoại này đã có tài khoản ở trung tâm — bạn{" "}
-            <Link href="/login" className="font-semibold text-wood-600 hover:underline">
-              đăng nhập
-            </Link>{" "}
-            bằng số đó để xem lịch. Quên mật khẩu thì nhắn Zalo cho trung tâm.
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setDismissed(true)}
-          className="mt-4 text-sm font-semibold text-wood-600 hover:text-wood-700"
-        >
-          Đăng ký thêm một người nữa
-        </button>
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="mt-4 text-sm font-semibold text-wood-600 hover:text-wood-700"
+          >
+            Đăng ký thêm một người nữa
+          </button>
+        </div>
       </div>
     );
   }

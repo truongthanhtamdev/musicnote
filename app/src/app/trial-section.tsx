@@ -22,10 +22,13 @@ export function TrialSection({
   // về trạng thái chưa quay (cùng số điện thoại thì máy chủ trả lại kết quả cũ).
   const [round, setRound] = useState(0);
   const wheelRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const [wonSessions, setWonSessions] = useState<number | null>(null);
 
   function onSubmitted(wheelOpen: boolean) {
     if (!wheelOpen) return;
     setUnlocked(true);
+    setWonSessions(null);
     setRound((r) => r + 1);
     window.setTimeout(() => wheelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 150);
   }
@@ -37,6 +40,8 @@ export function TrialSection({
         unlocked={unlocked}
         initialPrize={round === 0 ? initialWheel.prize : null}
         anchorRef={wheelRef}
+        onSpun={setWonSessions}
+        onNext={unlocked ? () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) : undefined}
       />
 
       <div>
@@ -50,8 +55,8 @@ export function TrialSection({
             buộc. Gửi xong bạn được quay vòng quay may mắn, trúng tới 3 buổi tặng thêm khi đăng ký khóa học.
           </span>
         </p>
-        <div className="mt-7">
-          <TrialForm facebookUrl={facebookUrl} onSubmitted={onSubmitted} onSpinClick={() => wheelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} />
+        <div ref={formRef} className="mt-7 scroll-mt-24">
+          <TrialForm wonSessions={wonSessions} facebookUrl={facebookUrl} onSubmitted={onSubmitted} onSpinClick={() => wheelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} />
         </div>
       </div>
     </div>

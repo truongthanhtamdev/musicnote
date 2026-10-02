@@ -51,7 +51,13 @@ export function LuckyWheel({
   unlocked,
   initialPrize,
   anchorRef,
+  onNext,
+  onSpun,
 }: {
+  /** Báo số buổi vừa trúng, để màn cảm ơn bỏ nút "Quay" và hiện kết quả. */
+  onSpun?: (sessions: number) => void;
+  /** Quay xong thì đưa khách xuống các bước tiếp theo (đăng nhập, kết bạn). */
+  onNext?: () => void;
   unlocked: boolean;
   initialPrize: number | null;
   anchorRef?: RefObject<HTMLDivElement | null>;
@@ -116,6 +122,7 @@ export function LuckyWheel({
           if (el) el.style.transition = "";
           setPrize(result.sessions);
           setSpinning(false);
+          onSpun?.(result.sessions);
           trackEvent("quay_vong_may_man", { so_buoi: result.sessions });
         },
         reduced ? 0 : SPIN_MS
@@ -237,6 +244,15 @@ export function LuckyWheel({
             Đã ghi vào đăng ký của bạn — học thử miễn phí trước, đăng ký khóa là được cộng thêm số
             buổi này. Mỗi số điện thoại một lượt quay.
           </p>
+          {onNext && (
+            <button
+              type="button"
+              onClick={onNext}
+              className="mt-3 rounded-xl bg-wood-500 hover:bg-wood-600 text-white px-4 py-2 text-sm font-semibold transition"
+            >
+              Xem bước tiếp theo ↓
+            </button>
+          )}
         </div>
       )}
     </div>
