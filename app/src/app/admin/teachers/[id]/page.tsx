@@ -12,6 +12,8 @@ import {
 } from "@/lib/queries";
 import { formatVND, monthRangeOf, todayISO } from "@/lib/format";
 import { MonthNav } from "@/components/month-nav";
+import { MonthSelect } from "@/components/month-select";
+import { db } from "@/lib/db";
 import { LANGUAGE_LABELS, parseLanguages, parseSubjects, MANAGE_ROLES, TRIAL_SESSION_RATE } from "@/lib/types";
 import { TeacherScheduleGrid } from "@/components/teacher-schedule-grid";
 import TeacherClassList from "./class-list";
@@ -89,11 +91,23 @@ export default async function TeacherDetailPage({
   const from = /^\d{4}-\d{2}-\d{2}$/.test(sp.from ?? "") ? sp.from! : month.from;
   const to = /^\d{4}-\d{2}-\d{2}$/.test(sp.to ?? "") ? sp.to! : month.to;
   const pay = computePayroll(from, to).find((r) => r.teacher_id === teacherId);
+  // Các tháng để chọn: từ buổi điểm danh đầu tiên của giáo viên tới tháng này.
+  const first = (
+    db.prepare("SELECT MIN(session_date) AS d FROM attendance WHERE teacher_id = ?").get(teacherId) as {
+      d: string | null;
+    }
+  ).d;
+  const months: string[] = [];
+  for (let m = month.from.slice(0, 7); months.length < 36; ) {
+    months.push(m);
+    if (!first || m <= first.slice(0, 7)) break;
+    m = monthRangeOf(`${m}-01`, -1).from.slice(0, 7);
+  }
   const byStudent = groupByStudent(listAttendance({ teacherId, from, to }));
   const periodLabel =
     from.slice(0, 7) === to.slice(0, 7) && from.endsWith("-01")
       ? `tháng ${Number(from.slice(5, 7))}/${from.slice(0, 4)}`
-      : `${from} → ${to}`;
+      : `${from.slice(8, 10)}/${from.slice(5, 7)} → ${to.slice(8, 10)}/${to.slice(5, 7)}/${to.slice(0, 4)}`;
 
   return (
     <div className="space-y-5">
@@ -191,6 +205,32 @@ export default async function TeacherDetailPage({
           icon={<IconWallet className="w-4.5 h-4.5 text-wood-500" />}
         />
         <div className="p-4 sm:p-5 space-y-4">
+          <div className="flex flex-wrap items-end gap-2">
+            <MonthSelect months={months} from={from} to={to} />
+            <form className="flex flex-wrap items-end gap-2">
+              <input
+                type="date"
+                name="from"
+                defaultValue={from}
+                aria-label="Từ ngày"
+                className="rounded-xl border border-navy-200 bg-white px-3 py-2 text-sm tabular"
+              />
+              <span className="text-ink-400 py-2">→</span>
+              <input
+                type="date"
+                name="to"
+                defaultValue={to}
+                aria-label="Đến ngày"
+                className="rounded-xl border border-navy-200 bg-white px-3 py-2 text-sm tabular"
+              />
+              <button
+                type="submit"
+                className="rounded-xl bg-wood-500 hover:bg-wood-600 text-white px-4 py-2 text-sm font-semibold"
+              >
+                Xem
+              </button>
+            </form>
+          </div>
           <MonthNav from={from} />
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <MetricCard label="Tiết đã dạy" value={pay?.completed_sessions ?? 0} unit="tiết" tone="mint" />
