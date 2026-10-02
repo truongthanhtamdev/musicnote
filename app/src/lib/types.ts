@@ -175,6 +175,8 @@ export interface TrialRequestRow {
   trial_sessions: number;
   /** Số buổi tặng thêm khi đăng ký khóa, quay trúng ở vòng quay; null là chưa quay. */
   wheel_prize: number | null;
+  /** Email khách điền lúc đăng ký — trung tâm gửi link học thử qua đây. */
+  email: string | null;
   name: string;
   phone: string;
   /** Facebook/Zalo/email — cách liên hệ phụ khách tự khai. */

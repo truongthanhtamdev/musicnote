@@ -127,11 +127,11 @@ export function welcomeMail(o: {
 <p><b>Các bước tiếp theo:</b></p>
 <ol>
 <li>Đăng nhập web để xem lịch học thử. <b>Link học Google Meet</b> sẽ hiện ở nút <b>“Vào lớp”</b> và được gửi qua email này trước giờ học.</li>
-${o.facebookUrl ? `<li>Kết bạn Facebook với thầy Tâm để được sắp lớp và thêm vào nhóm lớp học.</li>` : ""}
+${o.facebookUrl ? `<li>Kết bạn Facebook với em Tâm để được sắp lớp và thêm vào nhóm lớp học.</li>` : ""}
 </ol>
 ${acc}
 ${button(`${SITE_URL}/login`, "Đăng nhập xem lịch học")}
-${o.facebookUrl ? button(o.facebookUrl, "Kết bạn Facebook thầy Tâm", "#1877f2") : ""}`,
+${o.facebookUrl ? button(o.facebookUrl, "Kết bạn Facebook em Tâm", "#1877f2") : ""}`,
   };
 }
 

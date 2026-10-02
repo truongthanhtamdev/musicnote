@@ -301,7 +301,7 @@ export default async function StudentHomePage() {
 
       {contact.facebook && (
         <Card>
-          <p className="font-semibold text-ink-900">Kết bạn Facebook với thầy Tâm</p>
+          <p className="font-semibold text-ink-900">Kết bạn Facebook với em Tâm</p>
           <p className="text-sm text-ink-600 mt-1 mb-3">
             Để được sắp lớp và thêm vào nhóm lớp học trên Facebook. Bấm là mở app Facebook trên điện thoại.
           </p>

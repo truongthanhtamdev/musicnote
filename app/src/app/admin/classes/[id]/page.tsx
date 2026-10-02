@@ -33,6 +33,7 @@ import WeeklySlots from "./weekly-slots";
 import ClassActions from "./class-actions";
 import PackageWidget from "./package-widget";
 import { wheelBonusForPhone } from "@/lib/wheel-state";
+import { contactEmailOf } from "@/lib/mail";
 import CoordinatorWidget from "./coordinator-widget";
 import { customerBonusStatus } from "@/lib/bonus";
 import StudentLinkWidget from "./student-link-widget";
@@ -45,6 +46,8 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   const classId = Number(id);
   const cls = getClass(classId);
   if (!cls) notFound();
+  // Email khách để trung tâm tự gửi link học (gửi tay, chưa bật gửi tự động).
+  const studentEmail = contactEmailOf(cls.student_user_id);
 
   const session = await getSession();
   // Quản lý làm được mọi việc trên lớp, kể cả thu học phí và xoá lớp —
@@ -95,6 +98,14 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
               <p className="text-ink-500 text-sm flex flex-wrap items-center gap-1.5">
                 Khách hàng:
                 <CustomerName name={cls.guardian_name} facebookUrl={cls.facebook_url} />
+              </p>
+            )}
+            {studentEmail && (
+              <p className="text-ink-500 text-sm">
+                Email:{" "}
+                <a href={`mailto:${studentEmail}`} className="text-navy-600 hover:underline break-all">
+                  {studentEmail}
+                </a>
               </p>
             )}
             <p className="text-ink-500 text-sm flex flex-wrap items-center gap-x-1.5 mt-0.5">

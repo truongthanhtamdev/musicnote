@@ -3,7 +3,7 @@ import { IconChat, IconFacebook } from "./icons";
 import { messengerUrl } from "@/lib/facebook-links";
 
 /**
- * Hai nút "kết bạn Facebook thầy Tâm" và "nhắn Messenger" — trung tâm sắp lớp
+ * Hai nút "kết bạn Facebook em Tâm" và "nhắn Messenger" — trung tâm sắp lớp
  * và lập nhóm lớp qua Facebook, nên đây là bước khách cần làm sau khi đăng ký.
  */
 export function FacebookSteps({ facebookUrl }: { facebookUrl: string | null }) {
@@ -17,7 +17,7 @@ export function FacebookSteps({ facebookUrl }: { facebookUrl: string | null }) {
         className="inline-flex items-center gap-2 rounded-xl bg-[#1877f2] text-white px-4 py-2.5 text-sm font-semibold hover:brightness-110 transition"
       >
         <IconFacebook className="w-4 h-4" />
-        Kết bạn Facebook thầy Tâm
+        Kết bạn Facebook em Tâm
       </FbAppLink>
       {messenger && messenger !== facebookUrl && (
         <FbAppLink

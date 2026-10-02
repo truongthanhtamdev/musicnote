@@ -19,7 +19,7 @@ export function TrialForm({
   onSpinClick,
   facebookUrl = null,
 }: {
-  /** Facebook thầy Tâm — bước "kết bạn để được sắp lớp" sau khi đăng ký. */
+  /** Facebook em Tâm — bước "kết bạn để được sắp lớp" sau khi đăng ký. */
   facebookUrl?: string | null;
   /** Gửi thành công — `wheelOpen` báo vòng quay vừa được mở cho đăng ký này. */
   onSubmitted?: (wheelOpen: boolean) => void;
@@ -88,7 +88,7 @@ export function TrialForm({
           </li>
           {facebookUrl && (
             <li className="rounded-xl border border-[#1877f2]/25 bg-[#1877f2]/5 px-4 py-3.5">
-              <p className="font-semibold text-ink-900">② Kết bạn Facebook với thầy Tâm</p>
+              <p className="font-semibold text-ink-900">② Kết bạn Facebook với em Tâm</p>
               <p className="text-sm text-ink-600 mt-1 mb-3">
                 Để được sắp lớp và thêm vào <b>nhóm lớp học</b> trên Facebook. Bấm là mở app Facebook trên điện
                 thoại.

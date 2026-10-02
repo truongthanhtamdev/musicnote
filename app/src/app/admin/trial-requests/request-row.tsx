@@ -42,6 +42,14 @@ export default function RequestRow({
         >
           {request.phone}
         </a>
+        {request.email && (
+          <a
+            href={`mailto:${request.email}`}
+            className="block text-xs text-navy-600 hover:underline break-all mt-0.5"
+          >
+            ✉ {request.email}
+          </a>
+        )}
         {request.contact && <ContactLines value={request.contact} />}
       </td>
       <td className="px-4 py-3 text-ink-700 whitespace-nowrap">
