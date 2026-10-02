@@ -4,10 +4,8 @@ import {
   IconCalendarCheck,
   IconGuitar,
   IconPiano,
-  IconTelegram,
   IconUser,
 } from "@/components/icons";
-import { telegramEnabled } from "@/lib/telegram";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole(["student"]);
@@ -19,15 +17,6 @@ export default async function StudentLayout({ children }: { children: React.Reac
     // nên để luôn trong menu cho khỏi phải nhớ địa chỉ.
     { href: "/guitar", label: "Thư viện guitar", icon: <IconGuitar className="w-5 h-5" /> },
     { href: "/piano", label: "Thư viện piano", icon: <IconPiano className="w-5 h-5" /> },
-    ...(telegramEnabled()
-      ? [
-          {
-            href: "/account/telegram",
-            label: "Nhắc lịch Telegram",
-            icon: <IconTelegram className="w-5 h-5" />,
-          },
-        ]
-      : []),
   ];
 
   return (

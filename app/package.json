@@ -9,11 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@types/nodemailer": "^8.0.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "date-fns": "^4.4.0",
     "jsonwebtoken": "^9.0.3",
     "next": "16.3.3",
+    "nodemailer": "^10.0.13",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

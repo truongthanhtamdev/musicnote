@@ -34,6 +34,7 @@ export default async function MyProfilePage() {
               facebookUrl: me?.facebook_url ?? "",
               address: me?.address ?? "",
               note: me?.note ?? "",
+              contactEmail: me?.contact_email ?? "",
             }}
           />
         </div>

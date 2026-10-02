@@ -1325,8 +1325,6 @@ export function listMissedCheckins(opts?: {
 }): MissedCheckin[] {
   const days = opts?.days ?? MISSED_CHECKIN_DAYS;
   const today = now();
-  const todayStr = toISODate(today);
-  const nowMinutes = today.getHours() * 60 + today.getMinutes();
   const fromStr = toISODate(addDays(today, -days));
 
   const classes = (
@@ -1358,13 +1356,8 @@ export function listMissedCheckins(opts?: {
       if (marked.has(`${cls.id}|${iso}`)) continue;
       out.push({ cls, date: iso, daysLate: i });
     }
-    // Buổi hôm nay chỉ tính là quên khi đã qua giờ kết thúc.
-    if (today.getDay() === cls.day_of_week && todayStr >= createdDate) {
-      const [h, m] = cls.start_time.split(":").map(Number);
-      if (nowMinutes > h * 60 + m + cls.duration_minutes && !marked.has(`${cls.id}|${todayStr}`)) {
-        out.push({ cls, date: todayStr, daysLate: 0 });
-      }
-    }
+    // Buổi hôm nay chưa tính là quên: tiết ngày nào điểm danh trong ngày đó là
+    // đủ, không bắt phải ngay lúc hết giờ học.
   }
   return out.sort((a, b) => b.date.localeCompare(a.date) || a.cls.start_time.localeCompare(b.cls.start_time));
 }

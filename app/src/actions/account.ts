@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { cleanEmail } from "@/lib/mail";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { adminGuardError, assertRole, assertSession } from "@/lib/guard";
@@ -94,12 +95,15 @@ export async function saveMyProfileAction(
   const facebook = normalizeFacebookUrl(String(formData.get("facebook_url") || ""));
   const address = String(formData.get("address") || "").trim().slice(0, 200);
   const note = String(formData.get("note") || "").trim().slice(0, 500);
+  const emailRaw = String(formData.get("contact_email") || "").trim();
+  const contactEmail = cleanEmail(emailRaw);
 
   if (!name) return { error: "Bạn nhập giúp mình họ tên nhé" };
+  if (emailRaw && !contactEmail) return { error: "Email chưa đúng — kiểm tra lại giúp mình nhé" };
 
   db.prepare(
-    "UPDATE users SET name = ?, phone = ?, facebook_url = ?, address = ?, note = ? WHERE id = ?"
-  ).run(name, phone || null, facebook, address || null, note || null, session.userId);
+    "UPDATE users SET name = ?, phone = ?, facebook_url = ?, address = ?, note = ?, contact_email = ? WHERE id = ?"
+  ).run(name, phone || null, facebook, address || null, note || null, contactEmail, session.userId);
 
   db.prepare(
     `UPDATE classes

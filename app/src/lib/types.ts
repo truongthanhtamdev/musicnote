@@ -61,6 +61,8 @@ export interface UserRow {
   address: string | null;
   /** Ghi chú khách tự khai: trình độ, mong muốn, giờ rảnh... */
   note: string | null;
+  /** Email nhận thư (xác nhận, link học, nhắc lịch) — khác `email` là tên đăng nhập. */
+  contact_email: string | null;
   languages: string; // comma-separated: "vi" | "vi,en"
   subjects: string; // comma-separated free text, e.g. "Guitar,Piano"; empty = not specified (matches any)
   /** Hộp thư Telegram đã kết nối; null là chưa bật nhắc lịch qua Telegram. */

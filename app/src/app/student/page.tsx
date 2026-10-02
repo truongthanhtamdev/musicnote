@@ -7,6 +7,7 @@ import {
   listTeacherFreeSlots,
   listUpcomingSessionsForStudent,
   type FreeSlotOption,
+  getCenterContact,
 } from "@/lib/queries";
 import { toISODate, nextOccurrence, formatTimeRange, now } from "@/lib/format";
 import {
@@ -30,6 +31,7 @@ import {
   packageTone,
 } from "@/components/ui";
 import { ContactButtons } from "@/components/contact-buttons";
+import { FacebookSteps } from "@/components/facebook-steps";
 import { JoinClassLink } from "@/components/join-class-link";
 import ExtraTrialForm from "./extra-trial-form";
 import SessionActions from "./session-actions";
@@ -44,6 +46,7 @@ export default async function StudentHomePage() {
   const session = await getSession();
   const me = getUserById(session!.userId);
   const missingProfile = !me?.phone || !me?.facebook_url;
+  const contact = getCenterContact();
   const classes = listClassesForStudent(session!.userId);
   const upcoming = listUpcomingSessionsForStudent(session!.userId);
   const rightNow = now();
@@ -134,6 +137,9 @@ export default async function StudentHomePage() {
                           phòng — hiện nút cho buổi hai tuần nữa chỉ gây bấm nhầm. */}
                       {item.daysAway <= 1 && !item.recorded && (
                         <JoinClassLink url={item.cls.meeting_url} size="sm" />
+                      )}
+                      {!item.recorded && !item.cls.meeting_url && (
+                        <span className="text-xs text-ink-500">Link Google Meet sẽ hiện ở đây trước giờ học</span>
                       )}
                       {item.recorded ? (
                         <StatusChip tone={item.recorded.countsAsUsed ? "amber" : "neutral"}>
@@ -292,6 +298,16 @@ export default async function StudentHomePage() {
       <Card>
         <ExtraTrialForm studyingSubjects={classes.map((c) => c.subject)} />
       </Card>
+
+      {contact.facebook && (
+        <Card>
+          <p className="font-semibold text-ink-900">Kết bạn Facebook với thầy Tâm</p>
+          <p className="text-sm text-ink-600 mt-1 mb-3">
+            Để được sắp lớp và thêm vào nhóm lớp học trên Facebook. Bấm là mở app Facebook trên điện thoại.
+          </p>
+          <FacebookSteps facebookUrl={contact.facebook} />
+        </Card>
+      )}
 
       <Card>
         <ContactButtons />

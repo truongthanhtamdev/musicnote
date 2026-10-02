@@ -2,13 +2,11 @@ import { requireRole } from "@/lib/guard";
 import { ADMIN_AREA_ROLES, MANAGE_ROLES, ROLE_LABELS } from "@/lib/types";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import {
-  listClassesByDay,
-  listAttendance,
+  listMissedCheckins,
   countNewTrialRequests,
   countPendingRescheduleRequests,
 } from "@/lib/queries";
 import { countDueLeads } from "@/lib/leads";
-import { todayISO, now } from "@/lib/format";
 import {
   IconBell,
   IconCalendarCheck,
@@ -32,17 +30,12 @@ import {
 
 const ICON = "w-5 h-5";
 
-/** Số lớp hôm nay đã qua giờ kết thúc mà chưa có điểm danh — hiện ở chuông cảnh báo. */
+/**
+ * Số buổi đã QUA NGÀY mà chưa có điểm danh — hiện ở chuông cảnh báo. Buổi hôm
+ * nay chưa tính: tiết ngày nào điểm danh trong ngày đó là được.
+ */
 function overdueTodayCount(): number {
-  const today = now();
-  const todayStr = todayISO();
-  const marked = new Set(listAttendance({ from: todayStr, to: todayStr }).map((a) => a.class_id));
-  const nowMinutes = today.getHours() * 60 + today.getMinutes();
-  return listClassesByDay(today.getDay(), todayStr).filter((c) => {
-    if (marked.has(c.id)) return false;
-    const [h, m] = c.start_time.split(":").map(Number);
-    return nowMinutes > h * 60 + m + c.duration_minutes;
-  }).length;
+  return listMissedCheckins().length;
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -14,6 +14,7 @@ export interface MyProfile {
   facebookUrl: string;
   address: string;
   note: string;
+  contactEmail: string;
 }
 
 /**
@@ -47,6 +48,22 @@ export default function ProfileForm({ profile }: { profile: MyProfile }) {
         <p className="text-xs text-ink-400 mt-1">
           Người đóng học phí và liên hệ với trung tâm — có thể là ba mẹ của học viên.
         </p>
+      </div>
+
+      <div>
+        <label className={label} htmlFor="p-email">
+          Email
+        </label>
+        <input
+          id="p-email"
+          name="contact_email"
+          type="email"
+          inputMode="email"
+          maxLength={200}
+          defaultValue={profile.contactEmail}
+          placeholder="Để nhận link học Google Meet và nhắc lịch qua mail"
+          className={field}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

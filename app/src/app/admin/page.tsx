@@ -43,11 +43,6 @@ function endMinutes(startTime: string, durationMinutes: number): number {
   return h * 60 + m + durationMinutes;
 }
 
-function hhmm(totalMinutes: number): string {
-  const h = Math.floor(totalMinutes / 60) % 24;
-  return `${String(h).padStart(2, "0")}:${String(totalMinutes % 60).padStart(2, "0")}`;
-}
-
 /** Số tiết theo lịch và số tiết đã ghi nhận điểm danh trong 7 ngày gần nhất. */
 function weeklyStats() {
   const activeClasses = listClasses({ status: "active" });
@@ -155,9 +150,9 @@ export default async function AdminDashboard() {
           label="Chưa điểm danh"
           value={pendingCount + overdue.length}
           unit="tiết"
-          hint={overdue.length ? `${overdue.length} tiết đã quá giờ` : "Chưa tới giờ dạy"}
+          hint={overdue.length ? `${overdue.length} tiết đã học xong — điểm danh trong ngày` : "Chưa tới giờ dạy"}
           icon={<IconClock className="w-5 h-5" />}
-          tone={overdue.length ? "coral" : "amber"}
+          tone="amber"
         />
         <MetricCard
           label="Sắp hết gói"
@@ -207,13 +202,13 @@ export default async function AdminDashboard() {
           {overdue.length === 0 ? (
             <EmptyState
               icon={<IconCheckCircle className="w-6 h-6" />}
-              title="Không có tiết nào quá hạn"
-              description="Mọi lớp đã qua giờ đều đã được điểm danh."
+              title="Chưa có tiết nào cần điểm danh"
+              description="Tiết nào học xong mà chưa điểm danh sẽ hiện ở đây — giáo viên điểm danh trong ngày là được."
             />
           ) : (
             <>
               <p className="px-5 pt-3 text-xs font-semibold uppercase tracking-wide text-ink-400">
-                Điểm danh quá hạn
+                Đã học xong, chưa điểm danh
               </p>
               <ul className="divide-y divide-navy-100">
                 {overdue.slice(0, 6).map((c) => (
@@ -228,9 +223,7 @@ export default async function AdminDashboard() {
                         {c.subject} · {c.teacher_name || "Chưa có GV"}
                       </p>
                     </div>
-                    <StatusChip tone="coral">
-                      Hạn {hhmm(endMinutes(c.start_time, c.duration_minutes))}
-                    </StatusChip>
+                    <StatusChip tone="amber">Hạn hết hôm nay</StatusChip>
                   </li>
                 ))}
               </ul>
@@ -463,7 +456,7 @@ export default async function AdminDashboard() {
                 <li
                   key={c.id}
                   className={`px-4 sm:px-5 py-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 ${
-                    late ? "bg-coral-50/50" : ""
+                    late ? "bg-amber-50/50" : ""
                   }`}
                 >
                   <span className="text-sm font-semibold text-ink-900 tabular w-20 sm:w-24 shrink-0">
@@ -485,8 +478,8 @@ export default async function AdminDashboard() {
                       Đã điểm danh
                     </StatusChip>
                   ) : late ? (
-                    <StatusChip tone="coral" icon={<IconAlert className="w-3.5 h-3.5" />}>
-                      Quá giờ, chưa điểm danh
+                    <StatusChip tone="amber" icon={<IconAlert className="w-3.5 h-3.5" />}>
+                      Đã học xong, chưa điểm danh
                     </StatusChip>
                   ) : (
                     <StatusChip tone="amber" icon={<IconClock className="w-3.5 h-3.5" />}>

@@ -7,7 +7,9 @@ import { db } from "@/lib/db";
 import { assertRole } from "@/lib/guard";
 import { getUserById, getUserByEmail } from "@/lib/auth";
 import { createStudentAccount } from "@/lib/student-accounts";
-import { normalizeLoginPhone } from "@/lib/queries";
+import { getCenterContact, normalizeLoginPhone } from "@/lib/queries";
+import { cleanEmail, contactEmailOf, queueMail, trialBookedMail, welcomeMail } from "@/lib/mail";
+import { todayISO } from "@/lib/format";
 import { SUBJECT_SUGGESTIONS, type TrialRequestStatus, ADMIN_AREA_ROLES, canonicalSubject, DAY_LABELS, wheelPrizeNote } from "@/lib/types";
 import { DEFAULT_TRIAL_SESSIONS, readPrize, signRequest, WHEEL_COOKIE, WHEEL_REQUEST_COOKIE, wheelCookieOptions } from "@/lib/wheel";
 import type { FormState } from "./teachers";
@@ -21,6 +23,8 @@ export interface TrialFormState extends FormState {
   trialSessions?: number;
   /** Vòng quay vừa mở khoá cho đăng ký này (false khi đã có thưởng từ lượt quay kiểu cũ). */
   wheelOpen?: boolean;
+  /** Email khách điền — để báo "link học sẽ gửi về email này". */
+  email?: string;
 }
 
 /** Giới hạn độ dài từng ô. Form này ai vào trang chủ cũng gửi được nên phải tự cắt, không tin dữ liệu gửi lên. */
@@ -43,6 +47,8 @@ export async function submitTrialRequestAction(
   const phone = clean(formData, "phone", MAX.phone);
   const contact = clean(formData, "contact", MAX.contact);
   const note = clean(formData, "note", MAX.note);
+  const emailRaw = clean(formData, "email", 200);
+  const email = cleanEmail(emailRaw);
   const subjectRaw = String(formData.get("subject") || "");
   const subject = SUBJECT_SUGGESTIONS.includes(subjectRaw) ? subjectRaw : SUBJECT_SUGGESTIONS[0];
   const language = String(formData.get("language") || "vi") === "en" ? "en" : "vi";
@@ -52,6 +58,9 @@ export async function submitTrialRequestAction(
   }
   if (!/[0-9]{8,}/.test(phone.replace(/[\s.+()-]/g, ""))) {
     return { error: "Số điện thoại chưa hợp lệ" };
+  }
+  if (emailRaw && !email) {
+    return { error: "Email chưa đúng — kiểm tra lại giúp mình nhé (VD: ten@gmail.com)" };
   }
 
   // Khách quay theo luật cũ (quay trước, gửi form sau) vẫn giữ được thưởng:
@@ -63,9 +72,9 @@ export async function submitTrialRequestAction(
   const requestId = Number(
     db
       .prepare(
-        "INSERT INTO trial_requests (name, phone, contact, subject, language, note, trial_sessions, wheel_prize) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO trial_requests (name, phone, contact, subject, language, note, trial_sessions, wheel_prize, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
       )
-      .run(name, phone, contact || null, subject, language, note || null, trialSessions, oldPrize).lastInsertRowid
+      .run(name, phone, contact || null, subject, language, note || null, trialSessions, oldPrize, email).lastInsertRowid
   );
   if (oldPrize) store.delete(WHEEL_COOKIE);
   // Mở khoá vòng quay cho đúng đăng ký vừa gửi.
@@ -77,32 +86,46 @@ export async function submitTrialRequestAction(
   // Tạo luôn tài khoản cho khách: đăng ký xong là xem được lịch, khỏi chờ
   // giáo vụ. Chỉ cần tên và số điện thoại — mấy ô còn lại khách tự bổ sung
   // trong trang hồ sơ sau khi đăng nhập.
-  const login = normalizeLoginPhone(phone);
-  if (!login) return { success: true, trialSessions, wheelOpen: !oldPrize };
+  const result = createTrialAccount({ name, phone, contact, email });
+  const state: TrialFormState = { success: true, trialSessions, wheelOpen: !oldPrize, email: email ?? undefined, ...result };
+
+  // Thư xác nhận + các bước tiếp theo. Mỗi email một thư mỗi ngày: form này ai
+  // cũng gửi được, không để người lạ dùng nó gửi thư hàng loạt vào hộp thư khác.
+  if (email) {
+    const mail = welcomeMail({ name, account: result.account, facebookUrl: getCenterContact().facebook });
+    queueMail({ to: email, ...mail, dedupKey: `welcome|${email}|${todayISO()}` });
+  }
+  return state;
+}
+
+function createTrialAccount(o: {
+  name: string;
+  phone: string;
+  contact: string;
+  email: string | null;
+}): Pick<TrialFormState, "account" | "accountExists"> {
+  const login = normalizeLoginPhone(o.phone);
+  if (!login) return {};
 
   // Số đã có tài khoản thì KHÔNG tạo và KHÔNG sinh mật khẩu mới: form này ai
   // trên mạng cũng gửi được, làm thế là người lạ gõ số của khách rồi chiếm
-  // luôn tài khoản của họ.
-  if (getUserByEmail(login)) return { success: true, accountExists: true, trialSessions, wheelOpen: !oldPrize };
+  // luôn tài khoản của họ. Cũng không ghi đè email nhận thư của tài khoản đó.
+  if (getUserByEmail(login)) return { accountExists: true };
 
   try {
-    const account = createStudentAccount({ name, login, classIds: [] });
-    db.prepare("UPDATE users SET phone = ?, note = ? WHERE id = ?").run(
-      phone,
-      contact || null,
+    const account = createStudentAccount({ name: o.name, login, classIds: [] });
+    db.prepare("UPDATE users SET phone = ?, note = ?, contact_email = ? WHERE id = ?").run(
+      o.phone,
+      o.contact || null,
+      o.email,
       account.userId
     );
     revalidatePath("/admin/students");
-    return {
-      success: true,
-      trialSessions,
-      wheelOpen: !oldPrize,
-      account: { login: account.login, password: account.password },
-    };
+    return { account: { login: account.login, password: account.password } };
   } catch (e) {
     // Đăng ký đã ghi nhận rồi, tài khoản hỏng thì thôi — giáo vụ tạo tay sau.
     console.error("[dang-ky-hoc-thu-tao-tk]", e);
-    return { success: true, trialSessions, wheelOpen: !oldPrize };
+    return {};
   }
 }
 
@@ -210,7 +233,7 @@ export async function bookTrialAction(
   }
 
   const req = db.prepare("SELECT * FROM trial_requests WHERE id = ?").get(requestId) as
-    | (import("@/lib/types").TrialRequestRow & { contact: string | null; note: string | null })
+    | (import("@/lib/types").TrialRequestRow & { contact: string | null; note: string | null; email: string | null })
     | undefined;
   if (!req) return { error: "Không tìm thấy đăng ký này" };
   // Chặn đặt hẹn hai lần: bấm đúp hay hai người cùng xử lý một khách là ra
@@ -254,6 +277,26 @@ export async function bookTrialAction(
     );
     db.prepare("UPDATE trial_requests SET status = 'done' WHERE id = ?").run(requestId);
   })();
+
+  // Báo lịch học thử qua email: email khách điền lúc đăng ký, không có thì
+  // email nhận thư của tài khoản. Tài khoản chưa có email thì ghi luôn vào.
+  const email = cleanEmail(req.email) ?? contactEmailOf(studentUser?.id);
+  if (studentUser && req.email && !contactEmailOf(studentUser.id)) {
+    db.prepare("UPDATE users SET contact_email = ? WHERE id = ?").run(cleanEmail(req.email), studentUser.id);
+  }
+  if (email) {
+    const dateLabel = startDate ? ` ${startDate.slice(8, 10)}/${startDate.slice(5, 7)}` : "";
+    queueMail({
+      to: email,
+      ...trialBookedMail({
+        name: req.name,
+        subject: subject || req.subject,
+        when: `${DAY_LABELS[dayOfWeek]}${dateLabel} lúc ${startTime}`,
+        meetingUrl: null,
+      }),
+      dedupKey: `trial-booked|${requestId}`,
+    });
+  }
 
   logAudit(
     session,

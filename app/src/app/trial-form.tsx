@@ -6,6 +6,7 @@ import { submitTrialRequestAction, type TrialFormState } from "@/actions/trial";
 import { LANGUAGE_LABELS, SUBJECT_SUGGESTIONS } from "@/lib/types";
 import { IconCheckCircle } from "@/components/icons";
 import { trackEvent } from "@/lib/analytics";
+import { FacebookSteps } from "@/components/facebook-steps";
 
 const initialState: TrialFormState = {};
 
@@ -16,7 +17,10 @@ const labelClass = "block text-sm font-medium text-ink-700 mb-1.5";
 export function TrialForm({
   onSubmitted,
   onSpinClick,
+  facebookUrl = null,
 }: {
+  /** Facebook thầy Tâm — bước "kết bạn để được sắp lớp" sau khi đăng ký. */
+  facebookUrl?: string | null;
   /** Gửi thành công — `wheelOpen` báo vòng quay vừa được mở cho đăng ký này. */
   onSubmitted?: (wheelOpen: boolean) => void;
   onSpinClick?: () => void;
@@ -67,8 +71,35 @@ export function TrialForm({
           </button>
         )}
 
-        {/* Tài khoản hiện ngay ở đây vì trung tâm chưa gửi được email — khách
-            không chụp lại bây giờ thì phải nhắn Zalo xin lại. */}
+        {/* Các bước tiếp theo: khách biết ngay phải làm gì để vào được buổi học thử. */}
+        <ol className="mt-6 space-y-3 text-left">
+          <li className="rounded-xl border border-navy-100 bg-ivory-50 px-4 py-3.5">
+            <p className="font-semibold text-ink-900">① Đăng nhập chờ link học thử</p>
+            <p className="text-sm text-ink-600 mt-1">
+              Trung tâm xếp lịch xong, <b>link học Google Meet</b> sẽ hiện ở nút <b>“Vào lớp”</b> trong tài
+              khoản của bạn
+              {state.email ? (
+                <>
+                  {" "}và được gửi về email <b>{state.email}</b>
+                </>
+              ) : null}{" "}
+              trước giờ học.
+            </p>
+          </li>
+          {facebookUrl && (
+            <li className="rounded-xl border border-[#1877f2]/25 bg-[#1877f2]/5 px-4 py-3.5">
+              <p className="font-semibold text-ink-900">② Kết bạn Facebook với thầy Tâm</p>
+              <p className="text-sm text-ink-600 mt-1 mb-3">
+                Để được sắp lớp và thêm vào <b>nhóm lớp học</b> trên Facebook. Bấm là mở app Facebook trên điện
+                thoại.
+              </p>
+              <FacebookSteps facebookUrl={facebookUrl} />
+            </li>
+          )}
+        </ol>
+
+        {/* Tài khoản hiện ngay ở đây (email có thể chưa tới) — khách không chụp
+            lại bây giờ thì phải nhắn xin lại. */}
         {state.account && (
           <div className="mt-5 rounded-xl border border-navy-100 bg-ivory-50 px-4 py-4 text-left">
             <p className="font-semibold text-ink-900">Tài khoản theo dõi lịch học của bạn</p>
@@ -167,8 +198,23 @@ export function TrialForm({
           </select>
         </div>
         <div className="sm:col-span-2">
+          <label className={labelClass} htmlFor="t-email">
+            Email
+          </label>
+          <input
+            id="t-email"
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            maxLength={200}
+            placeholder="Để nhận link học thử Google Meet qua mail"
+            className={inputClass}
+          />
+        </div>
+        <div className="sm:col-span-2">
           <label className={labelClass} htmlFor="t-contact">
-            Facebook / Zalo / Email
+            Facebook / Zalo
           </label>
           <input
             id="t-contact"

@@ -1,3 +1,4 @@
+import { contactEmailOf, lessonReminderMail, mailEnabled, sendMail } from "./mail";
 import { addDays, formatTimeRange, now, toISODate, toMinutesOfDay } from "./format";
 import { listSessionsOn, type ScheduledSession } from "./queries";
 import { escapeHtml, pruneTelegramLog, sendToUser, telegramEnabled } from "./telegram";
@@ -96,6 +97,20 @@ async function remindBeforeLessons(current: Date) {
     }
 
     if (s.cls.student_user_id) {
+      // Email nhắc kèm link Google Meet, cho khách không dùng Telegram.
+      const email = contactEmailOf(s.cls.student_user_id);
+      if (email) {
+        await sendMail({
+          to: email,
+          ...lessonReminderMail({
+            name: s.cls.student_name,
+            subject: s.cls.subject,
+            when: timeRange(s),
+            meetingUrl: s.cls.meeting_url,
+          }),
+          dedupKey: `${key}|hv${s.cls.student_user_id}`,
+        });
+      }
       const teacher = s.cls.teacher_name ? `\nGiáo viên: ${escapeHtml(s.cls.teacher_name)}` : "";
       await sendToUser(
         s.cls.student_user_id,
@@ -160,13 +175,13 @@ async function sendTomorrowDigest(tomorrowISO: string) {
 /* ------------------------------------------------------------------ */
 
 async function tick() {
-  if (!telegramEnabled()) return;
+  if (!telegramEnabled() && !mailEnabled()) return;
   try {
     const current = now();
 
     await remindBeforeLessons(current);
 
-    if (current.getHours() >= DIGEST_HOUR) {
+    if (telegramEnabled() && current.getHours() >= DIGEST_HOUR) {
       await sendTomorrowDigest(toISODate(addDays(current, 1)));
       pruneTelegramLog();
     }
@@ -177,7 +192,8 @@ async function tick() {
 }
 
 export function startTelegramReminders() {
-  if (!telegramEnabled()) return;
+  // Chạy khi có Telegram HOẶC có email: nhắc trước giờ học gửi qua cả hai.
+  if (!telegramEnabled() && !mailEnabled()) return;
   if (globalThis.__musicnoteTelegramReminders) return;
   globalThis.__musicnoteTelegramReminders = true;
 

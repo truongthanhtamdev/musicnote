@@ -59,7 +59,7 @@ export default function TodayClassCard({
       {/* Trục thời gian */}
       <span
         className={`absolute left-0 top-6 w-3 h-3 rounded-full border-2 border-white ring-2 ${
-          overdue ? "bg-coral-500 ring-coral-100" : "bg-amber-500 ring-amber-100"
+          overdue ? "bg-wood-500 ring-wood-100" : "bg-amber-500 ring-amber-100"
         }`}
         aria-hidden="true"
       />
@@ -70,7 +70,7 @@ export default function TodayClassCard({
 
       <div
         className={`bg-white rounded-2xl border p-4 mb-3 transition ${
-          overdue ? "border-coral-200 bg-coral-50/40" : "border-navy-100"
+          overdue ? "border-wood-200 bg-wood-50/40" : "border-navy-100"
         }`}
       >
         <div className="flex flex-wrap items-start gap-3">
@@ -156,8 +156,8 @@ export default function TodayClassCard({
               <StatusChip tone="navy">Hôm nay là buổi {sessionNumber}</StatusChip>
             ) : null}
             {overdue && (
-              <StatusChip tone="coral" icon={<IconAlert className="w-3.5 h-3.5" />}>
-                Quá giờ
+              <StatusChip tone="wood" icon={<IconAlert className="w-3.5 h-3.5" />}>
+                Đã học xong — điểm danh trong hôm nay
               </StatusChip>
             )}
             <span className="ml-auto sm:ml-0 flex items-center gap-2">

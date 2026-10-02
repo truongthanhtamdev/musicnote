@@ -10,7 +10,13 @@ import type { WheelState } from "@/lib/wheel-state";
  * Vòng quay + form học thử. Gửi form xong thì vòng quay mở khoá và cuộn tới
  * (trên điện thoại vòng quay nằm phía trên form, khách không tự thấy).
  */
-export function TrialSection({ initialWheel }: { initialWheel: WheelState }) {
+export function TrialSection({
+  initialWheel,
+  facebookUrl,
+}: {
+  initialWheel: WheelState;
+  facebookUrl: string | null;
+}) {
   const [unlocked, setUnlocked] = useState(initialWheel.unlocked);
   // Mỗi lần gửi đăng ký mới là một lượt quay mới — đổi key để vòng quay
   // về trạng thái chưa quay (cùng số điện thoại thì máy chủ trả lại kết quả cũ).
@@ -45,7 +51,7 @@ export function TrialSection({ initialWheel }: { initialWheel: WheelState }) {
           </span>
         </p>
         <div className="mt-7">
-          <TrialForm onSubmitted={onSubmitted} onSpinClick={() => wheelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} />
+          <TrialForm facebookUrl={facebookUrl} onSubmitted={onSubmitted} onSpinClick={() => wheelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} />
         </div>
       </div>
     </div>

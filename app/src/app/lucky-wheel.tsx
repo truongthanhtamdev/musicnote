@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { spinWheelAction } from "@/actions/wheel";
 import { WHEEL_SEGMENTS } from "@/lib/wheel";
 import { trackEvent } from "@/lib/analytics";
@@ -30,6 +30,16 @@ function slicePath(index: number) {
   return `M ${CENTER} ${CENTER} L ${x1} ${y1} A ${R - 4} ${R - 4} 0 0 1 ${x2} ${y2} Z`;
 }
 
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Góc để vòng quay đứng yên ở một ô có đúng số buổi đã trúng (khách tải lại trang). */
+function restingAngle(sessions: number): number {
+  const index = Math.max(0, WHEEL_SEGMENTS.findIndex((s) => s === sessions));
+  return (360 - (index * SLICE + SLICE / 2)) % 360;
+}
+
 /**
  * Vòng quay may mắn ở trang chủ: quay ra 1–3 buổi tặng thêm khi đăng ký khóa học.
  *
@@ -46,32 +56,64 @@ export function LuckyWheel({
   initialPrize: number | null;
   anchorRef?: RefObject<HTMLDivElement | null>;
 }) {
-  const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
+  // Đang chờ máy chủ trả kết quả: vòng quay vù nhanh cho khách thấy nó chạy.
+  const [waiting, setWaiting] = useState(false);
   const [prize, setPrize] = useState<number | null>(initialPrize);
   const [error, setError] = useState<string | null>(null);
 
+  // Góc xoay đổi bằng tay trên phần tử (không qua state) để quay mượt 60 hình/giây
+  // mà không bắt React vẽ lại cả vòng quay mỗi khung hình.
+  const svgRef = useRef<SVGSVGElement>(null);
+  const angle = useRef(initialPrize ? restingAngle(initialPrize) : 0);
+
+  // Chưa quay thì vòng tự quay chậm — khách thấy ngay đây là vòng quay thật.
+  // Mở khoá rồi thì quay nhanh hơn chút, như đang mời bấm.
+  const idle = prize === null && !spinning;
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    el.style.transform = `rotate(${angle.current}deg)`;
+    if (!idle || prefersReducedMotion()) return;
+    const speed = waiting ? 540 : unlocked ? 50 : 20; // độ mỗi giây
+    let last = performance.now();
+    let raf = requestAnimationFrame(function tick(t) {
+      angle.current += ((t - last) / 1000) * speed;
+      last = t;
+      el.style.transform = `rotate(${angle.current}deg)`;
+      raf = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [idle, unlocked, waiting]);
+
   async function spin() {
-    if (!unlocked || spinning || prize !== null) return;
-    setSpinning(true);
+    if (!unlocked || spinning || waiting || prize !== null) return;
+    setWaiting(true);
     setError(null);
     try {
       const result = await spinWheelAction();
       if ("error" in result) {
         setError(result.error);
-        setSpinning(false);
+        setWaiting(false);
         return;
       }
 
-      // Đưa tâm ô trúng lên đúng vị trí mũi tên ở 12 giờ.
-      const target = EXTRA_TURNS * 360 - (result.index * SLICE + SLICE / 2);
-      const reduced =
-        typeof window !== "undefined" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      setRotation(reduced ? target - EXTRA_TURNS * 360 : target);
+      // Quay tiếp từ đúng góc đang đứng, thêm vài vòng rồi dừng sao cho tâm ô
+      // trúng nằm ngay mũi tên ở 12 giờ.
+      const el = svgRef.current;
+      const reduced = prefersReducedMotion();
+      const settle = (360 - (result.index * SLICE + SLICE / 2)) % 360;
+      const target = Math.ceil(angle.current / 360) * 360 + (reduced ? 0 : EXTRA_TURNS * 360) + settle;
+      angle.current = target;
+      setSpinning(true);
+      setWaiting(false);
+      if (el) {
+        el.style.transition = reduced ? "" : `transform ${SPIN_MS}ms cubic-bezier(0.17, 0.67, 0.12, 1)`;
+        el.style.transform = `rotate(${target}deg)`;
+      }
       window.setTimeout(
         () => {
+          if (el) el.style.transition = "";
           setPrize(result.sessions);
           setSpinning(false);
           trackEvent("quay_vong_may_man", { so_buoi: result.sessions });
@@ -79,6 +121,7 @@ export function LuckyWheel({
         reduced ? 0 : SPIN_MS
       );
     } catch {
+      setWaiting(false);
       setSpinning(false);
     }
   }
@@ -107,11 +150,8 @@ export function LuckyWheel({
           width={SIZE}
           height={SIZE}
           viewBox={`0 0 ${SIZE} ${SIZE}`}
-          className="absolute top-[18px] left-0 drop-shadow-sm"
-          style={{
-            transform: `rotate(${rotation}deg)`,
-            transition: spinning ? `transform ${SPIN_MS}ms cubic-bezier(0.17, 0.67, 0.12, 1)` : undefined,
-          }}
+          ref={svgRef}
+          className="absolute top-[18px] left-0 drop-shadow-sm will-change-transform"
           aria-hidden="true"
         >
           <circle cx={CENTER} cy={CENTER} r={R - 1} fill="#1E3A5F" />
@@ -178,10 +218,12 @@ export function LuckyWheel({
           <button
             type="button"
             onClick={spin}
-            disabled={spinning}
-            className="rounded-xl bg-coral-600 hover:bg-coral-700 disabled:opacity-60 text-white px-6 py-3 text-sm font-semibold transition"
+            disabled={spinning || waiting}
+            className={`rounded-xl bg-coral-600 hover:bg-coral-700 disabled:opacity-60 text-white px-6 py-3 text-sm font-semibold transition shadow-lg shadow-coral-600/30 ${
+              spinning || waiting ? "" : "animate-pulse"
+            }`}
           >
-            {spinning ? "Đang quay…" : "Quay ngay"}
+            {spinning || waiting ? "Đang quay…" : "🎯 Quay ngay"}
           </button>
           {error && <p className="text-sm text-coral-600 mt-2 max-w-xs">{error}</p>}
         </div>

@@ -359,7 +359,7 @@ export default async function HomePage() {
           {/* Vòng quay nằm cạnh form trên màn hình rộng; trên điện thoại vòng
               quay lên trước vì nó là cái kéo khách chịu điền form — nhưng phải
               gửi form rồi mới quay được. */}
-          <TrialSection initialWheel={wheel} />
+          <TrialSection initialWheel={wheel} facebookUrl={contact.facebook} />
         </section>
       </main>
 

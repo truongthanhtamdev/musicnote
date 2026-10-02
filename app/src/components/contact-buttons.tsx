@@ -1,6 +1,7 @@
 import { getCenterContact } from "@/lib/queries";
 import { IconChat, IconFacebook } from "./icons";
 import { TrackedLink } from "./tracked-link";
+import { messengerUrl } from "@/lib/facebook-links";
 
 /**
  * Nút nhắn Facebook / Zalo cho trung tâm. Số và link lấy từ phần Cài đặt nên
@@ -17,7 +18,9 @@ export function ContactButtons({
   variant?: "inline" | "floating";
   label?: string;
 }) {
-  const { facebook, zalo } = getCenterContact();
+  const { facebook: facebookPage, zalo } = getCenterContact();
+  // Nút nhắn tin mở thẳng Messenger (m.me) — khách bấm là vào khung chat luôn.
+  const facebook = messengerUrl(facebookPage);
   if (!facebook && !zalo) return null;
 
   if (variant === "floating") {
@@ -36,9 +39,9 @@ export function ContactButtons({
         {facebook && (
           <TrackedLink
             href={facebook}
-            event="nhan_facebook"
-            aria-label="Nhắn Facebook cho trung tâm"
-            className="w-13 h-13 rounded-full bg-[#1877f2] text-white shadow-lg flex items-center justify-center hover:brightness-110 transition"
+            event="nhan_messenger"
+            aria-label="Nhắn Messenger cho trung tâm"
+            className="w-13 h-13 rounded-full bg-gradient-to-br from-[#00B2FF] to-[#A033FF] text-white shadow-lg flex items-center justify-center hover:brightness-110 transition"
           >
             <IconFacebook className="w-6 h-6" />
           </TrackedLink>
@@ -63,11 +66,11 @@ export function ContactButtons({
       {facebook && (
         <TrackedLink
           href={facebook}
-          event="nhan_facebook"
-          className="inline-flex items-center gap-2 rounded-xl bg-[#1877f2] text-white px-4 py-2.5 text-sm font-semibold hover:brightness-110 transition"
+          event="nhan_messenger"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#00B2FF] to-[#A033FF] text-white px-4 py-2.5 text-sm font-semibold hover:brightness-110 transition"
         >
-          <IconFacebook className="w-4 h-4" />
-          Nhắn Facebook
+          <IconChat className="w-4 h-4" />
+          Nhắn Messenger
         </TrackedLink>
       )}
     </div>

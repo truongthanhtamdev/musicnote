@@ -440,6 +440,10 @@ function migrate() {
   // Số buổi quay trúng ở vòng quay may mắn; NULL là khách chưa quay. Khách
   // phải gửi đăng ký trước rồi mới được quay, nên kết quả gắn thẳng vào đây.
   ensureColumn("trial_requests", "wheel_prize", "INTEGER");
+  // Email khách tự điền khi đăng ký học thử — để gửi xác nhận và link học.
+  ensureColumn("trial_requests", "email", "TEXT");
+  // Email nhận thư của tài khoản (users.email là tên đăng nhập, thường là SĐT).
+  ensureColumn("users", "contact_email", "TEXT");
   ensureColumn("packages", "bonus_sessions", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("packages", "course_count", "INTEGER NOT NULL DEFAULT 1");
   backfillClassStages();

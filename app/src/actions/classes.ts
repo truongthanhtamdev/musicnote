@@ -12,6 +12,7 @@ import {
 } from "@/lib/queries";
 import { classStage, formatClassSchedule, type ClassRow, MANAGE_ROLES, canonicalSubject, ADMIN_AREA_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
+import { contactEmailOf, meetingLinkMail, queueMail } from "@/lib/mail";
 import {
   awardConversionForClass,
   awardMissingForCustomer,
@@ -398,6 +399,14 @@ export async function updateClassAction(
   // giáo viên thấy (teacher_label) — student_name giữ nguyên.
   const isTeacher = session.role === "teacher";
   if (isTeacher) setTeacherLabel(id, session.userId, studentName);
+  const before = db
+    .prepare("SELECT meeting_url, student_user_id, student_name, subject FROM classes WHERE id = ?")
+    .get(id) as
+    | { meeting_url: string | null; student_user_id: number | null; student_name: string; subject: string }
+    | undefined;
+  // Form của giáo viên không có ô link phòng học — không có ô thì giữ link cũ,
+  // đừng xoá trắng link Meet mỗi lần giáo viên sửa lớp.
+  const nextMeetingUrl = formData.has("meeting_url") ? meetingUrl : (before?.meeting_url ?? null);
   const result = db
     .prepare(
       `UPDATE classes SET ${isTeacher ? "" : "student_name=?, "}student_phone=?, guardian_name=?, facebook_url=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?, meeting_url=?
@@ -417,7 +426,7 @@ export async function updateClassAction(
         startTime,
         durationMinutes || 60,
         notes || null,
-        meetingUrl,
+        nextMeetingUrl,
         id,
         ...(isTeacher ? [session.userId] : []),
       ] as (string | number | null)[])
@@ -425,6 +434,16 @@ export async function updateClassAction(
 
   if (result.changes === 0) {
     return { error: "Không tìm thấy lớp học hoặc bạn không có quyền sửa" };
+  }
+
+  // Vừa gắn hoặc đổi link Google Meet: gửi link cho học viên qua email.
+  const email = contactEmailOf(before?.student_user_id);
+  if (nextMeetingUrl && nextMeetingUrl !== before?.meeting_url && email && before) {
+    queueMail({
+      to: email,
+      ...meetingLinkMail({ name: before.student_name, subject, meetingUrl: nextMeetingUrl }),
+      dedupKey: `meet|${id}|${nextMeetingUrl}`,
+    });
   }
 
   revalidatePath("/admin/classes");
