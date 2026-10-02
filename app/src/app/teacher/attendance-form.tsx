@@ -156,7 +156,12 @@ export default function AttendanceForm({
           defaultChecked={!!existing?.fb_checkin_confirmed}
           className="w-4.5 h-4.5 mt-0.5 rounded border-navy-300 accent-[var(--color-mint-500)]"
         />
-        <span className="text-sm text-ink-700">Đã điểm danh trên nhóm Facebook</span>
+        <span className="text-sm text-ink-700">
+          Đã đăng điểm danh lên nhóm Messenger rồi
+          <span className="block text-xs text-ink-400">
+            Chưa thì để trống — lưu xong, mục “Gửi bản sao lên Messenger” ở trang Hôm nay có sẵn tin để bạn dán vào nhóm.
+          </span>
+        </span>
       </label>
 
       <div>

@@ -105,6 +105,8 @@ export interface ClassRow {
   teacher_label: string | null;
   /** YYYY-MM-DD — buổi đầu tiên của lịch tuần; null thì tính từ ngày tạo lớp. */
   start_date: string | null;
+  /** Link nhóm Messenger của lớp (bản sao điểm danh); null là chưa gắn. */
+  messenger_url?: string | null;
   /** Lớp không theo gói: "đã học tới buổi mấy" giáo viên điền lần gần nhất. */
   used_override?: number | null;
   used_override_set_at?: string | null;

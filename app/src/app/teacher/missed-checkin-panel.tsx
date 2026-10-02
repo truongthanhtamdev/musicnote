@@ -17,6 +17,8 @@ export interface MissedRow {
   daysLate: number;
   /** Buổi thứ mấy điền sẵn cho form điểm danh bù. */
   sessionNumber?: number;
+  /** Nhóm Messenger của lớp — gửi bản sao điểm danh. */
+  messengerUrl?: string | null;
 }
 
 function lateLabel(daysLate: number): string {

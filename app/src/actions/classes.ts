@@ -407,6 +407,13 @@ export async function updateClassAction(
   // Form của giáo viên không có ô link phòng học — không có ô thì giữ link cũ,
   // đừng xoá trắng link Meet mỗi lần giáo viên sửa lớp.
   const nextMeetingUrl = formData.has("meeting_url") ? meetingUrl : (before?.meeting_url ?? null);
+  if (formData.has("messenger_url")) {
+    const raw = String(formData.get("messenger_url") || "").trim().slice(0, 300);
+    const messengerUrl = raw ? (/^https?:\/\//i.test(raw) ? raw : `https://${raw}`) : null;
+    db.prepare(`UPDATE classes SET messenger_url = ? WHERE id = ? ${isTeacher ? "AND teacher_id = ?" : ""}`).run(
+      ...([messengerUrl, id, ...(isTeacher ? [session.userId] : [])] as (string | number | null)[])
+    );
+  }
   const result = db
     .prepare(
       `UPDATE classes SET ${isTeacher ? "" : "student_name=?, "}student_phone=?, guardian_name=?, facebook_url=?, level=?, subject=?, language=?, schedule_type=?, day_of_week=?, start_time=?, duration_minutes=?, notes=?, meeting_url=?

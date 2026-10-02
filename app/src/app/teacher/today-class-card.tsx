@@ -22,6 +22,7 @@ export interface TodayClass {
   duration_minutes: number;
   trial_pending: number;
   meeting_url: string | null;
+  messenger_url?: string | null;
 }
 
 export default function TodayClassCard({

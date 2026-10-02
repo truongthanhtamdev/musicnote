@@ -145,6 +145,21 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
             trong lịch của mình.
           </p>
         </div>
+        <div>
+          <label className="block text-xs text-ink-500 mb-1" htmlFor="cls-messenger">
+            Link nhóm Messenger của lớp
+          </label>
+          <input
+            id="cls-messenger"
+            name="messenger_url"
+            defaultValue={cls.messenger_url || ""}
+            placeholder="VD: m.me/j/AbCdEf... (mở nhóm → Chia sẻ link nhóm)"
+            className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-ink-400 mt-1">
+            Điểm danh xong, giáo viên bấm một nút là mở đúng nhóm này để dán tin điểm danh backup.
+          </p>
+        </div>
         <input
           name="notes"
           defaultValue={cls.notes || ""}

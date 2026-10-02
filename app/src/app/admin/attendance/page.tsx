@@ -41,7 +41,11 @@ export default async function AttendancePage({
   const all = listAttendance({ teacherId, from, to });
   const rows = sp.status
     ? all.filter((a) =>
-        sp.status === "abnormal" ? a.status !== "completed" : a.status === "completed"
+        sp.status === "abnormal"
+          ? a.status !== "completed"
+          : sp.status === "no_fb"
+            ? a.status === "completed" && !a.fb_checkin_confirmed
+            : a.status === "completed"
       )
     : all;
 
@@ -82,10 +86,11 @@ export default async function AttendancePage({
           icon={<IconAlert className="w-5 h-5" />}
         />
         <MetricCard
-          label="Thiếu check-in Facebook"
+          label="Chưa gửi Messenger"
           value={noFb}
           unit="tiết"
-          hint="Đã dạy nhưng chưa xác nhận FB"
+          hint="Đã dạy nhưng chưa có bản backup trên nhóm Messenger — bấm để xem"
+          href={`?status=no_fb&from=${from}&to=${to}${teacherId ? `&teacherId=${teacherId}` : ""}`}
           tone={noFb ? "amber" : "navy"}
           icon={<IconAlert className="w-5 h-5" />}
         />
@@ -124,6 +129,7 @@ export default async function AttendancePage({
               <option value="">Tất cả</option>
               <option value="completed">Đã dạy</option>
               <option value="abnormal">Bất thường</option>
+              <option value="no_fb">Chưa gửi Messenger</option>
             </select>
           </div>
           <div>

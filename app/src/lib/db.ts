@@ -429,6 +429,8 @@ function migrate() {
   // của gói). Giáo viên điền "Buổi thứ mấy" lúc điểm danh là đặt mốc này, các
   // buổi sau tự đếm tiếp.
   ensureColumn("classes", "used_override", "INTEGER");
+  // Link nhóm Messenger của lớp — nơi giáo viên đăng bản sao điểm danh.
+  ensureColumn("classes", "messenger_url", "TEXT");
   ensureColumn("classes", "used_override_set_at", "TEXT");
   // Index phải tạo SAU ensureColumn: `code` là cột thêm sau, database mới toanh
   // chưa có nó lúc chạy khối CREATE TABLE ở trên.

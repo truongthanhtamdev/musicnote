@@ -251,3 +251,20 @@ export async function correctAttendanceAction(
   revalidatePath("/teacher/attendance");
   return { success: true };
 }
+
+/**
+ * Giáo viên bấm "Đã gửi lên Messenger" sau khi dán tin điểm danh vào nhóm lớp:
+ * đánh dấu buổi đó đã có bản backup trên Messenger.
+ */
+export async function confirmMessengerBackupAction(classId: number, sessionDate: string) {
+  const session = await assertRole(["teacher", ...MANAGE_ROLES]);
+  const isTeacher = session.role === "teacher";
+  db.prepare(
+    `UPDATE attendance SET fb_checkin_confirmed = 1
+      WHERE class_id = ? AND session_date = ?
+        ${isTeacher ? "AND class_id IN (SELECT id FROM classes WHERE teacher_id = ?)" : ""}`
+  ).run(...([classId, sessionDate, ...(isTeacher ? [session.userId] : [])] as (string | number)[]));
+  revalidatePath("/teacher");
+  revalidatePath("/teacher/attendance");
+  revalidatePath("/admin/attendance");
+}

@@ -8,10 +8,13 @@ import {
   listConfirmedClassIdsOn,
   getLateCheckinQuota,
   nextSessionNumbers,
+  sessionNumberMap,
 } from "@/lib/queries";
-import { todayISO, now } from "@/lib/format";
-import { DAY_LABELS, teacherSees, scheduleStart } from "@/lib/types";
-import { IconCalendarCheck, IconCheckCircle, IconClock, IconMusic } from "@/components/icons";
+import { addDays, toISODate, todayISO, now } from "@/lib/format";
+import { ATTENDANCE_STATUS_LABELS, DAY_LABELS, teacherSees, scheduleStart } from "@/lib/types";
+import { buildBackupMessage } from "@/lib/messenger-backup";
+import MessengerBackupList, { type BackupItem } from "./messenger-backup";
+import { IconCalendarCheck, IconChat, IconCheckCircle, IconClock, IconMusic } from "@/components/icons";
 import { Card, CardHeader, EmptyState, TableShell, Th, btn } from "@/components/ui";
 import RescheduleRow from "@/components/reschedule-row";
 import FbReminder from "./fb-reminder";
@@ -50,6 +53,31 @@ export default async function TeacherTodayPage() {
   const confirmedToday = listConfirmedClassIdsOn(todayStr);
   const missedRows = missedRowsForTeacher(teacherId);
 
+  // Buổi 7 ngày gần đây đã điểm danh trên web nhưng chưa đăng bản sao lên
+  // nhóm Messenger — giữ ở đây tới khi giáo viên bấm "Đã gửi".
+  const recent = listAttendance({ teacherId, from: toISODate(addDays(today, -7)), to: todayStr })
+    .filter((a) => !a.fb_checkin_confirmed)
+    .map(teacherSees);
+  const recentNumbers = sessionNumberMap([...new Set(recent.map((a) => a.class_id))]);
+  const backupItems: BackupItem[] = recent.map((a) => ({
+    key: String(a.id),
+    classId: a.class_id,
+    sessionDate: a.session_date,
+    title: `${a.student_name} · ${a.session_date.slice(8, 10)}/${a.session_date.slice(5, 7)}`,
+    messengerUrl: a.class_messenger_url ?? null,
+    message: buildBackupMessage({
+      studentName: a.student_name,
+      sessionDate: a.session_date,
+      status: a.status,
+      statusLabel: ATTENDANCE_STATUS_LABELS[a.status],
+      sessionNumber: a.is_trial ? "0" : String(recentNumbers.get(a.id) ?? ""),
+      lessonContent: a.lesson_content ?? "",
+      note: a.note ?? "",
+      rescheduledDate: a.rescheduled_to_date ?? "",
+      rescheduledTime: a.rescheduled_to_time ?? "",
+    }),
+  }));
+
   return (
     <div className="space-y-5">
       {/* Hero — ca làm việc hôm nay */}
@@ -77,6 +105,21 @@ export default async function TeacherTodayPage() {
           </div>
         )}
       </section>
+
+      {backupItems.length > 0 && (
+        <Card padded={false} className="border-[#A033FF]/25">
+          <CardHeader
+            title="Gửi bản sao điểm danh lên Messenger"
+            count={backupItems.length}
+            icon={<IconChat className="w-5 h-5 text-[#A033FF]" />}
+          />
+          <p className="px-4 sm:px-5 pt-3 text-sm text-ink-500">
+            Buổi đã điểm danh trên web. Bấm <b>Copy &amp; mở nhóm</b>, dán vào nhóm Messenger của lớp rồi bấm{" "}
+            <b>Đã gửi</b>.
+          </p>
+          <MessengerBackupList items={backupItems} />
+        </Card>
+      )}
 
       <MissedCheckinPanel rows={missedRows} quota={getLateCheckinQuota()} />
 

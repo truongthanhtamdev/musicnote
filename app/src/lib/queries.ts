@@ -881,6 +881,8 @@ export interface AttendanceWithContext extends AttendanceRow {
   student_name: string;
   teacher_label: string | null;
   student_user_id: number | null;
+  /** Nhóm Messenger của lớp — để gửi bản sao điểm danh khi sửa lại. */
+  class_messenger_url?: string | null;
   teacher_name: string;
   /** Số sao khách đã chấm cho buổi này, null nếu chưa chấm. */
   rating_stars: number | null;
@@ -913,7 +915,7 @@ export function listAttendance(filter?: {
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   return db
     .prepare(
-      `SELECT a.*, c.student_name as student_name, c.teacher_label, c.student_user_id, u.name as teacher_name,
+      `SELECT a.*, c.student_name as student_name, c.teacher_label, c.student_user_id, c.messenger_url AS class_messenger_url, u.name as teacher_name,
               r.stars as rating_stars
        FROM attendance a
        JOIN classes c ON c.id = a.class_id

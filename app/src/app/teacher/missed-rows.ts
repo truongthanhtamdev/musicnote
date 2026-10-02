@@ -21,6 +21,7 @@ export function missedRowsForTeacher(teacherId: number): MissedRow[] {
       timeRange: formatTimeRange(m.cls.start_time, m.cls.duration_minutes),
       daysLate: m.daysLate,
       sessionNumber: nextNumbers.get(m.cls.id),
+      messengerUrl: m.cls.messenger_url ?? null,
     };
   });
 }

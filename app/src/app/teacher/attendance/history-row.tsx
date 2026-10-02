@@ -10,7 +10,7 @@ export default function TeacherAttendanceHistoryRow({
   row,
   sessionNumber,
 }: {
-  row: AttendanceRow & { student_name: string };
+  row: AttendanceRow & { student_name: string; class_messenger_url?: string | null };
   /** Buổi thứ mấy của học viên trong gói học. */
   sessionNumber?: number;
 }) {

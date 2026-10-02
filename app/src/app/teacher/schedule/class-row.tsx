@@ -234,6 +234,13 @@ export default function TeacherClassRow({
             className={`${field} col-span-2`}
             aria-label="Ghi chú"
           />
+          <input
+            name="messenger_url"
+            defaultValue={cls.messenger_url || ""}
+            placeholder="Link nhóm Messenger của lớp (để gửi điểm danh)"
+            className={`${field} col-span-2`}
+            aria-label="Link nhóm Messenger của lớp"
+          />
         </div>
 
         {state.error && (
