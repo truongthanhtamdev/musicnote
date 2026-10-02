@@ -2,17 +2,28 @@ import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { getTeacher, listBusySlots, listClassesForTeacher, listAttendance } from "@/lib/queries";
-import { LANGUAGE_LABELS, parseLanguages, parseSubjects, MANAGE_ROLES } from "@/lib/types";
+import {
+  getTeacher,
+  listBusySlots,
+  listClassesForTeacher,
+  listAttendance,
+  computePayroll,
+  type AttendanceWithContext,
+} from "@/lib/queries";
+import { formatVND, monthRangeOf, todayISO } from "@/lib/format";
+import { MonthNav } from "@/components/month-nav";
+import { LANGUAGE_LABELS, parseLanguages, parseSubjects, MANAGE_ROLES, TRIAL_SESSION_RATE } from "@/lib/types";
 import { TeacherScheduleGrid } from "@/components/teacher-schedule-grid";
 import TeacherClassList from "./class-list";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
-import { IconCalendarCheck, IconChevronLeft, IconClasses, IconClock } from "@/components/icons";
+import { IconCalendarCheck, IconChevronLeft, IconClasses, IconClock, IconWallet } from "@/components/icons";
 import {
   Avatar,
   Card,
   CardHeader,
   EmptyState,
+  MetricCard,
+  StatusChip,
   TableShell,
   Th,
 } from "@/components/ui";
@@ -20,7 +31,44 @@ import EditTeacherForm from "./edit-teacher-form";
 import ToggleActiveButton from "./toggle-active-button";
 import ResetPasswordButton from "@/components/reset-password-button";
 
-export default async function TeacherDetailPage({ params }: { params: Promise<{ id: string }> }) {
+/** Điểm danh của một học viên trong kỳ — gom để xem giáo viên dạy từng khách ra sao. */
+interface StudentGroup {
+  classId: number;
+  name: string;
+  rows: AttendanceWithContext[];
+  taught: number;
+  trial: number;
+  missed: number;
+  late: number;
+}
+
+function groupByStudent(rows: AttendanceWithContext[]): StudentGroup[] {
+  const map = new Map<number, StudentGroup>();
+  for (const a of rows) {
+    let g = map.get(a.class_id);
+    if (!g) {
+      g = { classId: a.class_id, name: a.student_name, rows: [], taught: 0, trial: 0, missed: 0, late: 0 };
+      map.set(a.class_id, g);
+    }
+    g.rows.push(a);
+    if (a.status === "completed") {
+      if (a.is_trial) g.trial++;
+      else g.taught++;
+      if (a.late_checkin) g.late++;
+    } else {
+      g.missed++;
+    }
+  }
+  return [...map.values()].sort((a, b) => b.taught + b.trial - (a.taught + a.trial) || a.name.localeCompare(b.name));
+}
+
+export default async function TeacherDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
   // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
   await requireRole(MANAGE_ROLES);
   const { id } = await params;
@@ -35,7 +83,17 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
 
   const busySlots = listBusySlots(teacherId);
   const classes = listClassesForTeacher(teacherId);
-  const attendance = listAttendance({ teacherId }).slice(0, 20);
+  // Kỳ xem công: mặc định tháng này, đổi bằng nút tháng trước / tháng này.
+  const sp = await searchParams;
+  const month = monthRangeOf(todayISO());
+  const from = /^\d{4}-\d{2}-\d{2}$/.test(sp.from ?? "") ? sp.from! : month.from;
+  const to = /^\d{4}-\d{2}-\d{2}$/.test(sp.to ?? "") ? sp.to! : month.to;
+  const pay = computePayroll(from, to).find((r) => r.teacher_id === teacherId);
+  const byStudent = groupByStudent(listAttendance({ teacherId, from, to }));
+  const periodLabel =
+    from.slice(0, 7) === to.slice(0, 7) && from.endsWith("-01")
+      ? `tháng ${Number(from.slice(5, 7))}/${from.slice(0, 4)}`
+      : `${from} → ${to}`;
 
   return (
     <div className="space-y-5">
@@ -126,43 +184,119 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
         </div>
       </Card>
 
+      {/* Công của giáo viên trong kỳ — cùng cách tính với trang Chấm công / Lương. */}
       <Card padded={false}>
         <CardHeader
-          title="Lịch sử điểm danh gần đây"
-          count={attendance.length}
+          title={`Công ${periodLabel}`}
+          icon={<IconWallet className="w-4.5 h-4.5 text-wood-500" />}
+        />
+        <div className="p-4 sm:p-5 space-y-4">
+          <MonthNav from={from} />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <MetricCard label="Tiết đã dạy" value={pay?.completed_sessions ?? 0} unit="tiết" tone="mint" />
+            <MetricCard
+              label="Buổi học thử"
+              value={pay?.trial_sessions ?? 0}
+              unit="buổi"
+              hint={`${formatVND(TRIAL_SESSION_RATE)}/buổi`}
+              tone="wood"
+            />
+            <MetricCard
+              label="Điểm danh bù"
+              value={pay?.late_sessions ?? 0}
+              unit="buổi"
+              hint={pay?.unpaid_late_sessions ? `Trừ ${pay.unpaid_late_sessions} buổi quá mức tha` : "Chưa bị trừ"}
+              tone={pay?.unpaid_late_sessions ? "coral" : "navy"}
+            />
+            <MetricCard
+              label="Thưởng / phụ cấp"
+              value={formatVND(pay?.adjustment_total ?? 0)}
+              tone="navy"
+            />
+            <MetricCard
+              label="Tổng công"
+              value={formatVND(pay?.total_pay ?? 0)}
+              hint={pay?.pay_per_session ? `${formatVND(pay.pay_per_session)}/tiết` : "Chưa khai đơn giá"}
+              tone="amber"
+            />
+          </div>
+          <Link
+            href={`/admin/payroll?from=${from}&to=${to}`}
+            className="inline-block text-sm font-semibold text-wood-600 hover:text-wood-700"
+          >
+            Xem bảng lương cả trung tâm →
+          </Link>
+        </div>
+      </Card>
+
+      {/* Điểm danh gom theo học viên: bấm tên để xem từng buổi. */}
+      <Card padded={false}>
+        <CardHeader
+          title={`Điểm danh theo học viên · ${periodLabel}`}
+          count={byStudent.length}
           icon={<IconCalendarCheck className="w-4.5 h-4.5 text-navy-600" />}
         />
-        {attendance.length === 0 ? (
+        {byStudent.length === 0 ? (
           <EmptyState
             icon={<IconCalendarCheck className="w-6 h-6" />}
-            title="Chưa có dữ liệu điểm danh"
-            description="Các buổi giáo viên đã điểm danh sẽ hiển thị tại đây."
+            title="Chưa có buổi điểm danh nào trong kỳ này"
+            description="Bấm “Tháng trước” ở trên để xem các tháng cũ."
           />
         ) : (
-          <TableShell>
-            <thead>
-              <tr>
-                <Th>Ngày</Th>
-                <Th>Học viên</Th>
-                <Th>Trạng thái</Th>
-                <Th>Giờ điểm danh</Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-navy-100">
-              {attendance.map((a) => (
-                <tr key={a.id} className="hover:bg-ivory-50">
-                  <td className="px-4 py-3 tabular text-ink-700 whitespace-nowrap">
-                    {a.session_date}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-ink-900">{a.student_name}</td>
-                  <td className="px-4 py-3">
-                    <AttendanceStatusCell row={a} />
-                  </td>
-                  <td className="px-4 py-3 tabular text-ink-500">{a.check_in_time || "–"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </TableShell>
+          <div className="divide-y divide-navy-100">
+            {byStudent.map((g) => (
+              <details key={g.classId} className="group">
+                <summary className="list-none cursor-pointer px-4 sm:px-5 py-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 hover:bg-ivory-50">
+                  <span className="text-ink-400 transition group-open:rotate-90">›</span>
+                  <span className="font-semibold text-ink-900 min-w-0 truncate">{g.name}</span>
+                  <span className="flex flex-wrap gap-1.5 ml-auto">
+                    <StatusChip tone="mint">{g.taught} tiết dạy</StatusChip>
+                    {g.trial > 0 && <StatusChip tone="wood">{g.trial} học thử</StatusChip>}
+                    {g.missed > 0 && <StatusChip tone="amber">{g.missed} vắng / dời</StatusChip>}
+                    {g.late > 0 && <StatusChip tone="coral">{g.late} điểm danh bù</StatusChip>}
+                  </span>
+                </summary>
+                <div className="pb-3">
+                  <TableShell>
+                    <thead>
+                      <tr>
+                        <Th>Ngày</Th>
+                        <Th>Trạng thái</Th>
+                        <Th>Giờ điểm danh</Th>
+                        <Th>Nội dung bài</Th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-navy-100">
+                      {g.rows.map((a) => (
+                        <tr key={a.id} className="hover:bg-ivory-50 align-top">
+                          <td className="px-4 py-2.5 tabular text-ink-700 whitespace-nowrap">
+                            {a.session_date.slice(8, 10)}/{a.session_date.slice(5, 7)}
+                            {a.is_trial ? <span className="ml-1.5 text-[11px] text-wood-600 font-semibold">thử</span> : null}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <AttendanceStatusCell row={a} />
+                          </td>
+                          <td className="px-4 py-2.5 tabular text-ink-500 whitespace-nowrap">
+                            {a.check_in_time || "–"}
+                            {a.late_checkin ? <span className="block text-[11px] text-coral-600">điểm danh bù</span> : null}
+                          </td>
+                          <td className="px-4 py-2.5 text-sm text-ink-600 max-w-[320px]">
+                            {a.lesson_content || <span className="text-ink-300">–</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </TableShell>
+                  <Link
+                    href={`/admin/classes/${g.classId}`}
+                    className="inline-block mt-2 px-4 sm:px-5 text-sm font-semibold text-wood-600 hover:text-wood-700"
+                  >
+                    Mở trang lớp của học viên →
+                  </Link>
+                </div>
+              </details>
+            ))}
+          </div>
         )}
       </Card>
     </div>
