@@ -11,7 +11,7 @@ import {
   listPackagesNearingCompletion,
 } from "@/lib/queries";
 import { formatTimeRange, todayISO, toISODate, addDays, now } from "@/lib/format";
-import { DAY_LABELS, MANAGE_ROLES } from "@/lib/types";
+import { DAY_LABELS, MANAGE_ROLES, scheduleStart } from "@/lib/types";
 import {
   IconAlert,
   IconCalendarCheck,
@@ -59,7 +59,7 @@ function weeklyStats() {
       (c) =>
         c.schedule_type === "fixed" &&
         c.day_of_week === d.getDay() &&
-        c.created_at.slice(0, 10) <= date
+        scheduleStart(c) <= date
     ).length;
     const taught = (
       db.prepare("SELECT COUNT(*) as c FROM attendance WHERE session_date = ?").get(date) as {
@@ -98,7 +98,7 @@ export default async function AdminDashboard() {
   const todayStr = todayISO();
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
 
-  const todaysClasses = listClassesByDay(dow);
+  const todaysClasses = listClassesByDay(dow, todayStr);
   const confirmedToday = listConfirmedClassIdsOn(todayStr);
   // Buổi đã qua mà giáo viên chưa điểm danh — nợ cả điểm danh lẫn nội dung bài
   // cho khách, nên tô đậm cho giáo vụ nhắc.

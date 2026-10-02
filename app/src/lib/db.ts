@@ -422,6 +422,9 @@ function migrate() {
   // Tên giáo viên tự đặt cho học viên để dễ nhìn lịch — chỉ giáo viên đó thấy,
   // trung tâm vẫn quản lý bằng student_name.
   ensureColumn("classes", "teacher_label", "TEXT");
+  // Ngày buổi đầu tiên của lịch tuần (VD xếp học thử đúng thứ 2 ngày 13/10 dù
+  // hôm nay mới thứ 5). NULL thì lịch chạy từ ngày tạo lớp như trước.
+  ensureColumn("classes", "start_date", "TEXT");
   // Index phải tạo SAU ensureColumn: `code` là cột thêm sau, database mới toanh
   // chưa có nó lúc chạy khối CREATE TABLE ở trên.
   db.exec("CREATE INDEX IF NOT EXISTS idx_classes_code ON classes(code)");

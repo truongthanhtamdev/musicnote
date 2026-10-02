@@ -26,6 +26,7 @@ import {
   type TrialRequestRow,
   type TrialRequestStatus,
   type UserRow,
+  scheduleStart,
 } from "./types";
 
 export function listTeachers(includeInactive = true): UserRow[] {
@@ -101,8 +102,9 @@ export function listClassesForTeacher(teacherId: number): ClassWithTeacher[] {
   return listClasses({ teacherId });
 }
 
-export function listClassesByDay(dayOfWeek: number): ClassWithTeacher[] {
-  return db
+/** `onDate` (YYYY-MM-DD): bỏ lớp mà lịch chưa bắt đầu tới ngày đó. */
+export function listClassesByDay(dayOfWeek: number, onDate?: string): ClassWithTeacher[] {
+  const rows = db
     .prepare(
       `SELECT c.*, u.name as teacher_name
        FROM classes c LEFT JOIN users u ON u.id = c.teacher_id
@@ -110,6 +112,7 @@ export function listClassesByDay(dayOfWeek: number): ClassWithTeacher[] {
        ORDER BY c.start_time`
     )
     .all(dayOfWeek) as ClassWithTeacher[];
+  return onDate ? rows.filter((c) => scheduleStart(c) <= onDate) : rows;
 }
 
 /** Một buổi học có thật trên lịch của một ngày cụ thể. */
@@ -138,7 +141,7 @@ export function listSessionsOn(dateISO: string): ScheduledSession[] {
       `SELECT c.*, u.name AS teacher_name
        FROM classes c LEFT JOIN users u ON u.id = c.teacher_id
        WHERE c.status = 'active' AND c.schedule_type = 'fixed'
-         AND c.day_of_week = ? AND date(c.created_at) <= ?`
+         AND c.day_of_week = ? AND COALESCE(c.start_date, date(c.created_at)) <= ?`
     )
     .all(dayOfWeek, dateISO) as ClassWithTeacher[];
 
@@ -472,9 +475,13 @@ export function annotateSchedule(classes: ClassWithTeacher[]): ClassWithSchedule
     if (c.schedule_type === "flexible") {
       return { ...c, nextSessionDate: "", missedLastSession: false, lastDueDate: "" };
     }
-    const nextSessionDate = toISODate(nextOccurrence(c.day_of_week, today));
+    const startDate = scheduleStart(c);
+    const nextSessionDate =
+      startDate > todayStr
+        ? toISODate(nextOccurrence(c.day_of_week, new Date(`${startDate}T00:00:00`)))
+        : toISODate(nextOccurrence(c.day_of_week, today));
     const lastDueDate = toISODate(mostRecentOccurrence(c.day_of_week, today));
-    const createdDate = c.created_at.slice(0, 10);
+    const createdDate = startDate;
     let missedLastSession = false;
     if (c.status === "active" && lastDueDate < todayStr && lastDueDate >= createdDate) {
       missedLastSession = !getAttendance(c.id, lastDueDate);
@@ -755,6 +762,7 @@ export function listUpcomingSessionsForTeacher(
       const date = addDays(today, i);
       if (date.getDay() !== cls.day_of_week) continue;
       const iso = toISODate(date);
+      if (iso < scheduleStart(cls)) continue;
       const key = `${cls.id}|${iso}`;
       const rec = recorded.get(key) ?? null;
       // Buổi đã dạy xong thì thôi hiện; buổi đã ghi khác thì vẫn hiện để biết.
@@ -1162,6 +1170,7 @@ export function listUpcomingSessionsForStudent(
       const date = addDays(today, i);
       if (date.getDay() !== cls.day_of_week) continue;
       const iso = toISODate(date);
+      if (iso < scheduleStart(cls)) continue;
       const key = `${cls.id}|${iso}`;
       if (doneKeys.has(key)) continue;
       out.push({
@@ -1340,7 +1349,7 @@ export function listMissedCheckins(opts?: {
 
   const out: MissedCheckin[] = [];
   for (const cls of classes) {
-    const createdDate = cls.created_at.slice(0, 10);
+    const createdDate = scheduleStart(cls);
     for (let i = 1; i <= days; i++) {
       const date = addDays(today, -i);
       if (date.getDay() !== cls.day_of_week) continue;

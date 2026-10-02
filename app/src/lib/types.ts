@@ -1,4 +1,4 @@
-import { formatTimeRange, foldVietnamese } from "./format";
+import { formatTimeRange, foldVietnamese, todayISO } from "./format";
 
 export type Role = "admin" | "manager" | "coordinator" | "teacher" | "student";
 
@@ -101,6 +101,8 @@ export interface ClassRow {
   coordinator_id: number | null;
   /** Tên giáo viên tự đặt cho học viên, chỉ giáo viên thấy; null thì dùng student_name. */
   teacher_label: string | null;
+  /** YYYY-MM-DD — buổi đầu tiên của lịch tuần; null thì tính từ ngày tạo lớp. */
+  start_date: string | null;
   status: ClassStatus;
   notes: string | null;
   /** 1 while the class is still waiting on its first session, which counts as the trial ("buổi 0"). */
@@ -606,10 +608,16 @@ export const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
 
 /** Human-readable weekly slot, or "Linh động" for a class with no fixed day/time. */
 export function formatClassSchedule(
-  cls: Pick<ClassRow, "schedule_type" | "day_of_week" | "start_time" | "duration_minutes">
+  cls: Pick<ClassRow, "schedule_type" | "day_of_week" | "start_time" | "duration_minutes"> &
+    Partial<Pick<ClassRow, "start_date">>
 ): string {
   if (cls.schedule_type === "flexible") return "Linh động";
-  return `${DAY_LABELS[cls.day_of_week]} ${formatTimeRange(cls.start_time, cls.duration_minutes)}`;
+  const base = `${DAY_LABELS[cls.day_of_week]} ${formatTimeRange(cls.start_time, cls.duration_minutes)}`;
+  // Lịch chưa tới ngày bắt đầu thì ghi rõ, kẻo tưởng tuần này đã có buổi.
+  if (cls.start_date && cls.start_date > todayISO()) {
+    return `${base} · từ ${cls.start_date.slice(8, 10)}/${cls.start_date.slice(5, 7)}`;
+  }
+  return base;
 }
 
 /**
@@ -680,4 +688,12 @@ export function wheelPrizeNote(req: Pick<TrialRequestRow, "trial_sessions" | "wh
   if (req.trial_sessions > 1) return `🎁 Trúng ${req.trial_sessions} buổi học thử`;
   if (req.wheel_prize) return `🎁 Quay trúng +${req.wheel_prize} buổi tặng khi đăng ký khóa`;
   return null;
+}
+
+/**
+ * Ngày lịch tuần của lớp bắt đầu chạy: ngày đã xếp cụ thể, không thì ngày tạo
+ * lớp. Trước ngày này không có buổi nào — không nhắc, không tính quên điểm danh.
+ */
+export function scheduleStart(c: { start_date?: string | null; created_at: string }): string {
+  return c.start_date || c.created_at.slice(0, 10);
 }

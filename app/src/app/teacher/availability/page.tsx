@@ -13,7 +13,7 @@ export default async function TeacherAvailabilityPage() {
     <div className="space-y-5">
       <PageHeader
         title="Lịch tuần của tôi"
-        subtitle="Mặc định mọi khung giờ đều rảnh — bấm vào ô để đánh dấu khung giờ bạn bận (không nhận lớp được). Ô màu gỗ là lớp đang dạy — bấm vào để đổi tên học viên cho dễ nhìn (chỉ bạn thấy)."
+        subtitle="Mặc định mọi khung giờ đều rảnh — bấm vào ô để đánh dấu khung giờ bạn bận (không nhận lớp được). Ô màu gỗ là lớp đang dạy — bấm vào để đổi tên học viên cho dễ nhìn (chỉ bạn thấy). Đổi ngày giờ học thì vào Lịch dạy → Sửa."
       />
       <Card padded={false}>
         <div className="p-2.5 sm:p-5">

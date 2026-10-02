@@ -1,3 +1,4 @@
+import { scheduleStart } from "@/lib/types";
 import { requireRole } from "@/lib/guard";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import { NotificationsBanner } from "@/components/notifications-banner";
@@ -54,6 +55,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
       c.status === "active" &&
       c.schedule_type === "fixed" &&
       c.day_of_week === dow &&
+      scheduleStart(c) <= todayStr &&
       !getAttendance(c.id, todayStr)
   ).length;
   const unread = listUnreadNotifications(session.userId).length;

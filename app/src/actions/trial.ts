@@ -194,7 +194,12 @@ export async function bookTrialAction(
   const session = await assertRole(ADMIN_AREA_ROLES);
 
   const requestId = Number(formData.get("trial_request_id") || 0);
-  const dayOfWeek = Number(formData.get("day_of_week"));
+  // Ngày học thử cụ thể; thứ trong tuần suy ra từ ngày (form cũ gửi thứ thì vẫn nhận).
+  const startDateRaw = String(formData.get("start_date") || "");
+  const startDate = /^\d{4}-\d{2}-\d{2}$/.test(startDateRaw) ? startDateRaw : null;
+  const dayOfWeek = startDate
+    ? new Date(`${startDate}T00:00:00`).getDay()
+    : Number(formData.get("day_of_week"));
   const startTime = String(formData.get("start_time") || "");
   const subject = canonicalSubject(String(formData.get("subject") || ""));
   const note = String(formData.get("note") || "").trim().slice(0, 500);
@@ -233,8 +238,8 @@ export async function bookTrialAction(
     db.prepare(
       `INSERT INTO classes (student_name, student_phone, student_user_id, subject, language, source,
          schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id,
-         status, stage, trial_pending)
-       VALUES (?, ?, ?, ?, ?, 'center', 'fixed', ?, ?, 60, NULL, ?, ?, 'active', 'trial', 1)`
+         status, stage, trial_pending, start_date)
+       VALUES (?, ?, ?, ?, ?, 'center', 'fixed', ?, ?, 60, NULL, ?, ?, 'active', 'trial', 1, ?)`
     ).run(
       req.name,
       req.phone,
@@ -244,7 +249,8 @@ export async function bookTrialAction(
       dayOfWeek,
       startTime,
       noteParts.join(" · "),
-      session.userId
+      session.userId,
+      startDate
     );
     db.prepare("UPDATE trial_requests SET status = 'done' WHERE id = ?").run(requestId);
   })();
@@ -252,7 +258,7 @@ export async function bookTrialAction(
   logAudit(
     session,
     "lop_hoc",
-    `Đặt hẹn học thử ${req.name}: ${DAY_LABELS[dayOfWeek]} ${startTime}, ${subject || req.subject}`
+    `Đặt hẹn học thử ${req.name}: ${DAY_LABELS[dayOfWeek]}${startDate ? ` ${startDate}` : ""} ${startTime}, ${subject || req.subject}`
   );
   revalidatePath("/admin/trial-requests");
   revalidatePath("/admin/assign");

@@ -38,7 +38,7 @@ function overdueTodayCount(): number {
   const todayStr = todayISO();
   const marked = new Set(listAttendance({ from: todayStr, to: todayStr }).map((a) => a.class_id));
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
-  return listClassesByDay(today.getDay()).filter((c) => {
+  return listClassesByDay(today.getDay(), todayStr).filter((c) => {
     if (marked.has(c.id)) return false;
     const [h, m] = c.start_time.split(":").map(Number);
     return nowMinutes > h * 60 + m + c.duration_minutes;

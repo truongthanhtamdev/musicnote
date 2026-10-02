@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { bookTrialAction, type BookTrialState } from "@/actions/trial";
-import { DAY_LABELS, DAY_ORDER, SUBJECT_SUGGESTIONS } from "@/lib/types";
+import { DAY_LABELS, SUBJECT_SUGGESTIONS } from "@/lib/types";
+import { addDays, now, toISODate } from "@/lib/format";
 import { TimeSelect } from "@/components/time-select";
 import { btn, field, label } from "@/components/ui";
 
@@ -33,6 +34,7 @@ export default function BookTrialButton({
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(bookTrialAction, initialState);
+  const [date, setDate] = useState(() => toISODate(addDays(now(), 1)));
 
   return (
     <>
@@ -77,24 +79,23 @@ export default function BookTrialButton({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={label} htmlFor={`bt-day-${requestId}`}>
-                      Thứ
+                      Ngày học thử
                     </label>
-                    <select
+                    <input
                       id={`bt-day-${requestId}`}
-                      name="day_of_week"
+                      type="date"
+                      name="start_date"
                       required
-                      defaultValue=""
-                      className={field}
-                    >
-                      <option value="" disabled>
-                        -- Chọn thứ --
-                      </option>
-                      {DAY_ORDER.map((d) => (
-                        <option key={d} value={d}>
-                          {d === 0 ? "Chủ nhật" : `Thứ ${d + 1}`} ({DAY_LABELS[d]})
-                        </option>
-                      ))}
-                    </select>
+                      min={toISODate(now())}
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className={`${field} tabular`}
+                    />
+                    {date && (
+                      <p className="text-xs text-ink-500 mt-1">
+                        {DAY_LABELS[new Date(`${date}T00:00:00`).getDay()]}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className={label} htmlFor={`bt-time-${requestId}`}>

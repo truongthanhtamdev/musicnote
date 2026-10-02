@@ -30,14 +30,18 @@ type Cell =
   | { type: "free" }
   | { type: "busy" }
   | { type: "continuation" }
-  | { type: "start"; cls: ClassRow; span: number };
+  | { type: "start"; classes: ClassRow[]; span: number };
 
 /**
  * Lays classes and busy marks onto the 30-min grid: each class occupies the
  * slot its start_time falls into, spanning ceil(duration/30) rows via
- * rowSpan. A class always wins over a busy mark on the same slot (shouldn't
- * normally overlap, but the class is the more specific fact). Anything left
- * over defaults to free.
+ * rowSpan. A class always wins over a busy mark on the same slot. Anything
+ * left over defaults to free.
+ *
+ * Lớp trùng giờ (lớp sau bắt đầu trước khi lớp trước kết thúc) GỘP CHUNG một
+ * ô. Bảng HTML dùng rowSpan: nếu để lớp sau tự mở ô mới trong khoảng ô trên
+ * đang chiếm, hàng đó dư một ô và mọi ô bên phải bị đẩy lệch sang ngày kế
+ * tiếp — lịch nhìn như "nhảy loạn xạ" dù dữ liệu đúng.
  */
 function buildGrid(classes: ClassRow[], busySlots: BusySlotRow[]): Record<number, Cell[]> {
   const gridStartMinutes = toMinutes(TIME_SLOTS[0]);
@@ -47,18 +51,33 @@ function buildGrid(classes: ClassRow[], busySlots: BusySlotRow[]): Record<number
     grid[d] = TIME_SLOTS.map((time) =>
       busyKeys.has(`${d}-${time}`) ? { type: "busy" } : { type: "free" }
     );
-  }
 
-  for (const cls of classes) {
-    if (cls.schedule_type === "flexible" || cls.day_of_week < 0) continue;
-    const startIdx = Math.floor((toMinutes(cls.start_time) - gridStartMinutes) / SLOT_MINUTES);
-    const span = Math.max(1, Math.ceil(cls.duration_minutes / SLOT_MINUTES));
-    if (startIdx < 0 || startIdx >= TIME_SLOTS.length) continue;
-    const col = grid[cls.day_of_week];
-    if (!col) continue;
-    col[startIdx] = { type: "start", cls, span };
-    for (let i = 1; i < span && startIdx + i < TIME_SLOTS.length; i++) {
-      col[startIdx + i] = { type: "continuation" };
+    const placed = classes
+      .filter((c) => c.schedule_type !== "flexible" && c.day_of_week === d)
+      .map((cls) => {
+        const startIdx = Math.floor((toMinutes(cls.start_time) - gridStartMinutes) / SLOT_MINUTES);
+        const span = Math.max(1, Math.ceil(cls.duration_minutes / SLOT_MINUTES));
+        return { cls, startIdx, endIdx: Math.min(startIdx + span, TIME_SLOTS.length) };
+      })
+      .filter((p) => p.startIdx >= 0 && p.startIdx < TIME_SLOTS.length)
+      .sort((a, b) => a.startIdx - b.startIdx || a.cls.start_time.localeCompare(b.cls.start_time));
+
+    // Gom các lớp chồng giờ thành từng khối liền nhau.
+    const blocks: { startIdx: number; endIdx: number; classes: ClassRow[] }[] = [];
+    for (const p of placed) {
+      const last = blocks[blocks.length - 1];
+      if (last && p.startIdx < last.endIdx) {
+        last.classes.push(p.cls);
+        last.endIdx = Math.max(last.endIdx, p.endIdx);
+      } else {
+        blocks.push({ startIdx: p.startIdx, endIdx: p.endIdx, classes: [p.cls] });
+      }
+    }
+
+    const col = grid[d];
+    for (const b of blocks) {
+      col[b.startIdx] = { type: "start", classes: b.classes, span: b.endIdx - b.startIdx };
+      for (let i = b.startIdx + 1; i < b.endIdx; i++) col[i] = { type: "continuation" };
     }
   }
   return grid;
@@ -279,17 +298,20 @@ export function TeacherScheduleGrid({
                     if (cell.type === "continuation") return null;
 
                     if (cell.type === "start") {
-                      const content = (
+                      const clash = cell.classes.length > 1;
+                      const box = `block w-full text-left rounded-md px-1.5 py-1 leading-tight transition ${
+                        clash
+                          ? "bg-amber-50 hover:bg-amber-100 border border-amber-300 text-ink-900"
+                          : "bg-wood-100 hover:bg-wood-200 border border-wood-300 text-wood-900"
+                      }`;
+                      const label = (cls: ClassRow) => (
                         <>
                           <span className="flex items-center gap-1 font-semibold truncate">
-                            <SubjectIcon
-                              subject={cell.cls.subject}
-                              className="w-3 h-3 shrink-0 text-wood-600"
-                            />
-                            <span className="truncate">{cell.cls.student_name}</span>
+                            <SubjectIcon subject={cls.subject} className="w-3 h-3 shrink-0 text-wood-600" />
+                            <span className="truncate">{cls.student_name}</span>
                           </span>
                           <span className="block text-[10px] text-wood-700 truncate">
-                            {cell.cls.subject}
+                            {clash ? `${cls.start_time} · ${cls.subject}` : cls.subject}
                           </span>
                         </>
                       );
@@ -299,24 +321,33 @@ export function TeacherScheduleGrid({
                           rowSpan={cell.span}
                           className="p-0.5 align-top border-l border-navy-100"
                         >
-                          {mode === "admin" ? (
-                            <Link
-                              href={`/admin/classes/${cell.cls.id}`}
-                              className="block h-full rounded-md bg-wood-100 hover:bg-wood-200 border border-wood-300 px-1.5 py-1 text-wood-900 leading-tight transition"
-                            >
-                              {content}
-                            </Link>
-                          ) : (
-                            <button
-                              type="button"
-                              title="Bấm để đổi tên học viên cho dễ nhìn lịch"
-                              disabled={isPending}
-                              onClick={() => renameStudent(cell.cls)}
-                              className="block w-full h-full text-left rounded-md bg-wood-100 hover:bg-wood-200 border border-wood-300 px-1.5 py-1 text-wood-900 leading-tight transition"
-                            >
-                              {content}
-                            </button>
-                          )}
+                          <div className={`h-full flex flex-col gap-0.5 ${clash ? "rounded-md ring-1 ring-amber-300" : ""}`}>
+                            {clash && (
+                              <span className="text-[10px] font-semibold text-amber-700 px-1">⚠ Trùng giờ</span>
+                            )}
+                            {cell.classes.map((cls) =>
+                              mode === "admin" ? (
+                                <Link
+                                  key={cls.id}
+                                  href={`/admin/classes/${cls.id}`}
+                                  className={`${box} ${clash ? "" : "h-full"}`}
+                                >
+                                  {label(cls)}
+                                </Link>
+                              ) : (
+                                <button
+                                  key={cls.id}
+                                  type="button"
+                                  title="Bấm để đổi tên học viên cho dễ nhìn lịch"
+                                  disabled={isPending}
+                                  onClick={() => renameStudent(cls)}
+                                  className={`${box} ${clash ? "" : "h-full"}`}
+                                >
+                                  {label(cls)}
+                                </button>
+                              )
+                            )}
+                          </div>
                         </td>
                       );
                     }

@@ -671,7 +671,7 @@ export async function setClassStageAction(
   stage: string,
   pausedUntil?: string | null,
   /** Lịch học xếp luôn lúc cho lớp học lại; bỏ trống thì giữ nguyên lịch cũ. */
-  schedule?: { dayOfWeek: number; startTime: string } | null
+  schedule?: { dayOfWeek: number; startTime: string; startDate?: string } | null
 ) {
   await assertRole(MANAGE_ROLES);
   const info = classStage(stage);
@@ -701,10 +701,15 @@ export async function setClassStageAction(
   // Lớp Tạm OFF nhập từ Excel không có ngày/giờ. Chỉ bật lại trạng thái thôi
   // thì lớp "đang học" mà không nằm trong lịch tuần nào — giáo viên không thấy,
   // không ai điểm danh, lớp thành vô hình. Nên lúc cho học lại thì xếp lịch luôn.
-  if (schedule && schedule.startTime && !Number.isNaN(schedule.dayOfWeek)) {
-    db.prepare(
-      "UPDATE classes SET schedule_type = 'fixed', day_of_week = ?, start_time = ? WHERE id = ?"
-    ).run(schedule.dayOfWeek, schedule.startTime, classId);
+  if (schedule && schedule.startTime) {
+    // Chọn ngày cụ thể thì thứ lấy theo ngày đó, và lịch chỉ chạy từ ngày đó.
+    const startDate = schedule.startDate && /^\d{4}-\d{2}-\d{2}$/.test(schedule.startDate) ? schedule.startDate : null;
+    const dayOfWeek = startDate ? new Date(`${startDate}T00:00:00`).getDay() : schedule.dayOfWeek;
+    if (!Number.isNaN(dayOfWeek)) {
+      db.prepare(
+        "UPDATE classes SET schedule_type = 'fixed', day_of_week = ?, start_time = ?, start_date = ? WHERE id = ?"
+      ).run(dayOfWeek, schedule.startTime, startDate, classId);
+    }
   }
   revalidatePath("/admin/classes");
   revalidatePath(`/admin/classes/${classId}`);

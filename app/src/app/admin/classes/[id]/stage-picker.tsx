@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { setClassStageAction } from "@/actions/classes";
-import { CLASS_STAGES, DAY_LABELS, DAY_ORDER, classStage } from "@/lib/types";
+import { CLASS_STAGES, DAY_LABELS, classStage } from "@/lib/types";
+import { addDays, toISODate, now } from "@/lib/format";
 import { TimeSelect } from "@/components/time-select";
 import { btn, field } from "@/components/ui";
 import ClassStatusBadge from "../status-badge";
@@ -32,7 +33,8 @@ export default function ClassStagePicker({
   const [saved, setSaved] = useState(classStage(stage).value);
   const [value, setValue] = useState(saved);
   const [until, setUntil] = useState(pausedUntil ?? "");
-  const [day, setDay] = useState("1");
+  // Ngày cụ thể của buổi đầu tiên — thứ trong tuần tự suy ra từ ngày này.
+  const [date, setDate] = useState(() => toISODate(addDays(now(), 1)));
   const [time, setTime] = useState("");
   const info = classStage(value);
 
@@ -40,7 +42,11 @@ export default function ClassStagePicker({
   // thì bật lại là chạy tiếp như cũ.
   const needsSchedule = !hasSchedule && !info.paused && info.status === "active";
 
-  function commit(nextStage: string, nextUntil: string, schedule: { dayOfWeek: number; startTime: string } | null) {
+  function commit(
+    nextStage: string,
+    nextUntil: string,
+    schedule: { dayOfWeek: number; startTime: string; startDate?: string } | null
+  ) {
     startTransition(async () => {
       await setClassStageAction(classId, nextStage, nextUntil || null, schedule);
       setSaved(classStage(nextStage).value);
@@ -102,18 +108,19 @@ export default function ClassStagePicker({
           </p>
           <label className="text-sm text-ink-600">
             Ngày
-            <select
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              aria-label="Ngày học lại"
-              className={`${field} w-auto py-1.5 ml-1.5`}
-            >
-              {DAY_ORDER.map((d) => (
-                <option key={d} value={d}>
-                  {DAY_LABELS[d]}
-                </option>
-              ))}
-            </select>
+            <input
+              type="date"
+              value={date}
+              min={toISODate(now())}
+              onChange={(e) => setDate(e.target.value)}
+              aria-label="Ngày học buổi đầu"
+              className={`${field} w-auto py-1.5 ml-1.5 tabular`}
+            />
+            {date && (
+              <span className="ml-1.5 text-xs text-ink-500">
+                ({DAY_LABELS[new Date(`${date}T00:00:00`).getDay()]} hằng tuần)
+              </span>
+            )}
           </label>
           <label className="text-sm text-ink-600">
             Giờ
@@ -127,8 +134,14 @@ export default function ClassStagePicker({
           </label>
           <button
             type="button"
-            disabled={pending || !time}
-            onClick={() => commit(value, "", { dayOfWeek: Number(day), startTime: time })}
+            disabled={pending || !time || !date}
+            onClick={() =>
+              commit(value, "", {
+                dayOfWeek: new Date(`${date}T00:00:00`).getDay(),
+                startTime: time,
+                startDate: date,
+              })
+            }
             className={`${btn.primary} py-1.5 disabled:opacity-50`}
           >
             {pending ? "Đang lưu..." : "Xếp lịch & cho học lại"}
