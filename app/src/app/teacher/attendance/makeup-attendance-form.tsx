@@ -5,15 +5,15 @@ import { markAttendanceAction } from "@/actions/attendance";
 import type { FormState } from "@/actions/teachers";
 import {
   ATTENDANCE_STATUS_LABELS,
-  TRIAL_SESSION_RATE,
   hasRescheduleInfo,
   type AttendanceStatus,
 } from "@/lib/types";
-import { formatVND, todayISO } from "@/lib/format";
+import { todayISO } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { IconAlert, IconPlus } from "@/components/icons";
 import { btn, field, label } from "@/components/ui";
 import { TimeSelect } from "@/components/time-select";
+import { SessionNumberField } from "@/components/session-number-field";
 
 const initialState: FormState = {};
 
@@ -31,6 +31,7 @@ export default function MakeupAttendanceForm({
 }) {
   // Chọn lớp là ô "Buổi thứ mấy" tự điền số tiếp theo, giáo viên vẫn sửa được.
   const [sessionNumber, setSessionNumber] = useState("");
+  const [isTrial, setIsTrial] = useState(false);
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(markAttendanceAction, initialState);
   const [status, setStatus] = useState<AttendanceStatus>("completed");
@@ -70,7 +71,9 @@ export default function MakeupAttendanceForm({
                 className={field}
                 onChange={(e) => {
                   const next = classes.find((c) => String(c.id) === e.target.value)?.nextNumber;
-                  setSessionNumber(next !== undefined ? String(next) : "");
+                  // Lớp đang chờ buổi học thử: tick sẵn ô học thử.
+                  setIsTrial(next === 0);
+                  setSessionNumber(next !== undefined && next > 0 ? String(next) : "");
                 }}
               >
                 <option value="">-- Chọn lớp --</option>
@@ -96,28 +99,13 @@ export default function MakeupAttendanceForm({
             </div>
           </div>
 
-          <div>
-            <label className={label} htmlFor="m-session">
-              Buổi thứ mấy
-              <span className="font-normal text-ink-400"> — không bắt buộc</span>
-            </label>
-            <input
-              id="m-session"
-              name="session_number"
-              type="number"
-              min={0}
-              step={1}
-              inputMode="numeric"
-              value={sessionNumber}
-              onChange={(e) => setSessionNumber(e.target.value)}
-              placeholder="VD: 15"
-              className={`${field} sm:w-40 tabular`}
-            />
-            <p className="text-xs text-ink-400 mt-1.5">
-              Điền nếu lớp cũ đã học sẵn nhiều buổi — hệ thống lấy số này làm mốc rồi tự đếm tiếp.
-              Điền 0 nếu là buổi học thử (tính {formatVND(TRIAL_SESSION_RATE)}/tiết).
-            </p>
-          </div>
+          <SessionNumberField
+            idPrefix="m"
+            number={sessionNumber}
+            onNumberChange={setSessionNumber}
+            trial={isTrial}
+            onTrialChange={setIsTrial}
+          />
 
           <div>
             <p className={label}>Kết quả buổi học</p>

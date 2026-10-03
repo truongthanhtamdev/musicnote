@@ -5,15 +5,14 @@ import { markAttendanceAction } from "@/actions/attendance";
 import type { FormState } from "@/actions/teachers";
 import {
   ATTENDANCE_STATUS_LABELS,
-  TRIAL_SESSION_RATE,
   hasRescheduleInfo,
   type AttendanceRow,
   type AttendanceStatus,
 } from "@/lib/types";
-import { formatVND } from "@/lib/format";
 import { IconAlert, IconCheck } from "@/components/icons";
 import { btn, field, label } from "@/components/ui";
 import { TimeSelect } from "@/components/time-select";
+import { SessionNumberField } from "@/components/session-number-field";
 
 const initialState: FormState = {};
 
@@ -127,27 +126,11 @@ export default function AttendanceForm({
         )}
       </div>
 
-      <div>
-        <label className={label} htmlFor={`session-${classId}`}>
-          Buổi thứ mấy
-          <span className="font-normal text-ink-400"> — điền 0 nếu là buổi học thử</span>
-        </label>
-        <input
-          id={`session-${classId}`}
-          name="session_number"
-          type="number"
-          min={0}
-          step={1}
-          inputMode="numeric"
-          defaultValue={sessionNumber ?? ""}
-          placeholder="VD: 15"
-          className={`${field} tabular`}
-        />
-        <p className="text-xs text-ink-400 mt-1.5">
-          Số tự nhảy theo gói học, bạn vẫn sửa được. Buổi 0 tính lương{" "}
-          {formatVND(TRIAL_SESSION_RATE)}/tiết thay vì đơn giá thường.
-        </p>
-      </div>
+      <SessionNumberField
+        idPrefix={`att-${classId}`}
+        defaultTrial={existing ? !!existing.is_trial : sessionNumber === 0}
+        defaultNumber={sessionNumber && sessionNumber > 0 ? sessionNumber : ""}
+      />
 
       <label className="flex items-start gap-3 rounded-2xl border border-navy-100 bg-ivory-50 px-3.5 py-3 cursor-pointer">
         <input

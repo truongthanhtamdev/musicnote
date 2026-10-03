@@ -23,6 +23,24 @@ const VALID_STATUS: AttendanceStatus[] = [
  * Reads the "Buổi thứ mấy" box. Blank means "leave the counting alone";
  * a number (0 for a trial) is the teacher stating where this session sits.
  */
+/**
+ * Ô tick "Đây là buổi học thử": "1"/"0" khi form có ô này, null khi không có
+ * (form cũ) — lúc đó vẫn theo quy ước cũ "buổi thứ 0 là học thử".
+ */
+function readStatedTrial(formData: FormData): boolean | null {
+  const raw = formData.get("is_trial");
+  return raw === null ? null : raw === "1";
+}
+
+/** Gộp ô tick học thử với ô "buổi thứ mấy" thành một con số mốc (0 = học thử). */
+function effectiveSessionNumber(formData: FormData): number | null {
+  const trial = readStatedTrial(formData);
+  if (trial === true) return 0;
+  const n = readStatedSessionNumber(formData);
+  // Bỏ tick học thử mà vẫn để số 0 thì coi như chưa nói số buổi.
+  return trial === false && n === 0 ? null : n;
+}
+
 function readStatedSessionNumber(formData: FormData): number | null {
   const raw = String(formData.get("session_number") ?? "").trim();
   if (raw === "") return null;
@@ -39,6 +57,8 @@ function readStatedSessionNumber(formData: FormData): number | null {
  * plain automatic count rather than pinning a baseline on every check-in.
  */
 function applyStatedSessionNumber(classId: number, stated: number) {
+  // Buổi học thử (0) không phải mốc đếm gói: đặt mốc 0 là đếm lại cả khoá từ đầu.
+  if (stated === 0) return;
   const cls = getClass(classId);
   if (!cls) return;
   if (cls.package_id) {
@@ -49,8 +69,7 @@ function applyStatedSessionNumber(classId: number, stated: number) {
     return;
   }
   // Lớp không theo gói: ghi mốc ngay trên lớp, để buổi sau ô "Buổi thứ mấy"
-  // tự nhảy tiếp từ số giáo viên vừa điền. Buổi 0 (học thử) không đặt mốc.
-  if (stated === 0) return;
+  // tự nhảy tiếp từ số giáo viên vừa điền.
   const current = (nextSessionNumbers([cls]).get(cls.id) ?? 1) - 1;
   if (current === stated) return;
   db.prepare(
@@ -77,7 +96,8 @@ export async function markAttendanceAction(
   // "Buổi thứ mấy": prefilled with what the system counts, editable. 0 is how
   // the teacher says "this one is the trial". Left blank = keep counting
   // automatically and leave the trial flag alone.
-  const statedSessionNumber = readStatedSessionNumber(formData);
+  const statedSessionNumber = effectiveSessionNumber(formData);
+  const statedTrial = readStatedTrial(formData);
   // "Khách không báo trước" — chỉ hỏi khi học viên vắng, vì đó là lúc duy nhất
   // buổi vừa không dạy được vừa có thể tính tiết. Trạng thái khác luôn về 0 để
   // sửa từ "HS vắng" sang trạng thái khác là hết tính.
@@ -116,11 +136,10 @@ export async function markAttendanceAction(
       nowStr,
       existing.id
     );
-    if (statedSessionNumber !== null) {
-      db.prepare("UPDATE attendance SET is_trial = ? WHERE id = ?").run(
-        statedSessionNumber === 0 ? 1 : 0,
-        existing.id
-      );
+    if (statedTrial !== null || statedSessionNumber !== null) {
+      // Ô tick học thử quyết định; form cũ không có ô thì theo "buổi thứ 0".
+      const trial = statedTrial !== null ? statedTrial : statedSessionNumber === 0;
+      db.prepare("UPDATE attendance SET is_trial = ? WHERE id = ?").run(trial ? 1 : 0, existing.id);
     }
   } else {
     // Trial status isn't a manual checkbox. The teacher writing "buổi 0"
@@ -130,7 +149,17 @@ export async function markAttendanceAction(
     // self-added/backfilled classes). Either way the flag is consumed here,
     // so only one session per assignment can count as the trial.
     const isTrial =
-      statedSessionNumber !== null ? (statedSessionNumber === 0 ? 1 : 0) : owned.trial_pending ? 1 : 0;
+      statedTrial !== null
+        ? statedTrial
+          ? 1
+          : 0
+        : statedSessionNumber !== null
+          ? statedSessionNumber === 0
+            ? 1
+            : 0
+          : owned.trial_pending
+            ? 1
+            : 0;
     if (owned.trial_pending) {
       db.prepare("UPDATE classes SET trial_pending = 0 WHERE id = ?").run(classId);
     }
@@ -194,7 +223,8 @@ export async function correctAttendanceAction(
     hasRescheduleInfo(status) ? String(formData.get("rescheduled_to_date") || "").trim() : "";
   const rescheduledToTime =
     hasRescheduleInfo(status) ? String(formData.get("rescheduled_to_time") || "").trim() : "";
-  const statedSessionNumber = readStatedSessionNumber(formData);
+  const statedSessionNumber = effectiveSessionNumber(formData);
+  const statedTrial = readStatedTrial(formData);
   const countsAsUsed = status === "student_absent" && formData.get("counts_as_used") ? 1 : 0;
 
   if (!id || !VALID_STATUS.includes(status)) {
@@ -211,7 +241,15 @@ export async function correctAttendanceAction(
   // The session number is what says whether this is a trial: 0 means it is,
   // anything else means it isn't. Leaving the box blank keeps what was saved.
   const isTrial =
-    statedSessionNumber !== null ? (statedSessionNumber === 0 ? 1 : 0) : existing.is_trial;
+    statedTrial !== null
+      ? statedTrial
+        ? 1
+        : 0
+      : statedSessionNumber !== null
+        ? statedSessionNumber === 0
+          ? 1
+          : 0
+        : existing.is_trial;
 
   db.prepare(
     `UPDATE attendance SET status = ?, lesson_content = ?, is_trial = ?, note = ?, rescheduled_to_date = ?, rescheduled_to_time = ?, counts_as_used = ? WHERE id = ?`

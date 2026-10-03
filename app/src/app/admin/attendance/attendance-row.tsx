@@ -15,6 +15,7 @@ import { IconAlert } from "@/components/icons";
 import { Avatar, StatusChip, btn, field, inlineAction } from "@/components/ui";
 import { RatingLinkButton } from "@/components/rating-link-button";
 import { TimeSelect } from "@/components/time-select";
+import { SessionNumberField } from "@/components/session-number-field";
 
 const initialState: FormState = {};
 
@@ -98,20 +99,12 @@ export default function AttendanceRow({
               placeholder="Nội dung bài học"
               className={`${field} flex-1 min-w-[160px] py-1.5`}
             />
-            <label className="flex items-center gap-1.5 text-sm text-ink-700 whitespace-nowrap">
-              Buổi thứ
-              <input
-                name="session_number"
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                defaultValue={row.is_trial ? 0 : (sessionNumber ?? "")}
-                title="Số buổi đang tính — sửa lại nếu sai. Điền 0 nếu là buổi học thử."
-                className={`${field} w-20 py-1.5 tabular`}
-              />
-              <span className="text-ink-400">(0 = học thử)</span>
-            </label>
+            <SessionNumberField
+              idPrefix={`adm-${row.id}`}
+              compact
+              defaultTrial={!!row.is_trial}
+              defaultNumber={sessionNumber ?? ""}
+            />
             <input
               name="note"
               defaultValue={row.note || ""}
