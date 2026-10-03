@@ -24,7 +24,7 @@ export default async function AdminReschedulePage() {
             description="Học viên bấm 'Xin dời buổi này' trong trang học viên sẽ hiện ở đây."
           />
         ) : (
-          <TableShell>
+          <TableShell stackOnMobile>
             <thead>
               <tr>
                 <Th>Học viên</Th>

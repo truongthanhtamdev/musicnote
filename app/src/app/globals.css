@@ -164,3 +164,38 @@ body {
     font-size: 16px !important;
   }
 }
+
+/*
+ * Bảng danh sách tự xếp thành thẻ trên điện thoại (TableShell stackOnMobile).
+ *
+ * Bảng 6–8 cột trên màn 390px thì tên khách bị bóp thành bốn năm dòng chữ,
+ * còn nút thao tác (Đặt hẹn, Sửa...) bị đẩy khuất bên phải phải kéo mới thấy.
+ * Ở khổ điện thoại mỗi hàng thành một thẻ, các ô xếp dọc; ô nào đã ẩn trên
+ * điện thoại (lớp `hidden`) thì vẫn ẩn.
+ */
+@media (max-width: 639px) {
+  .stack-mobile table,
+  .stack-mobile tbody,
+  .stack-mobile tr {
+    display: block;
+    width: 100%;
+  }
+  .stack-mobile thead {
+    display: none;
+  }
+  .stack-mobile tr {
+    padding: 0.75rem 1rem;
+  }
+  .stack-mobile td:not(.hidden) {
+    display: block;
+    width: auto;
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 0.2rem 0 !important;
+    text-align: left;
+    white-space: normal;
+  }
+  .stack-mobile td:empty {
+    display: none;
+  }
+}

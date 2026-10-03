@@ -33,7 +33,7 @@ export default function RequestRow({
     <tr className={request.status === "new" ? "bg-coral-50/40" : "hover:bg-ivory-50"}>
       <td className="px-4 py-3">
         <p className="font-medium text-ink-900">{request.name}</p>
-        <p className="text-xs text-ink-400 tabular">{request.created_at.slice(0, 16)}</p>
+        <p className="text-xs text-ink-400 tabular">{request.created_at.slice(8, 10)}/{request.created_at.slice(5, 7)} {request.created_at.slice(11, 16)}</p>
       </td>
       <td className="px-4 py-3">
         <a

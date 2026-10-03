@@ -145,7 +145,7 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
             trong lịch của mình.
           </p>
         </div>
-        <div>
+        <div className="col-span-2">
           <label className="block text-xs text-ink-500 mb-1" htmlFor="cls-messenger">
             Link nhóm Messenger của lớp
           </label>

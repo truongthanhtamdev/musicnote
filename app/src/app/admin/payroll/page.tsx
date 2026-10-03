@@ -118,7 +118,7 @@ export default async function PayrollPage({
           <TableShell>
             <thead>
               <tr>
-                <Th>Giáo viên</Th>
+                <Th className="left-0 z-[2]">Giáo viên</Th>
                 <Th className="text-right">Đã dạy</Th>
                 <Th className="text-right">Khách chấm</Th>
                 <Th className="text-right">Buổi thử</Th>
@@ -132,13 +132,16 @@ export default async function PayrollPage({
             <tbody className="divide-y divide-navy-100">
               {rows.map((r) => (
                 <tr key={r.teacher_id} className="hover:bg-ivory-50">
-                  <td className="px-4 py-3">
+                  {/* Ghim cột tên khi kéo ngang bảng trên điện thoại. */}
+                  <td className="px-3 sm:px-4 py-3 sticky left-0 z-[1] bg-white">
                     <Link
                       href={`/admin/attendance?teacherId=${r.teacher_id}&from=${from}&to=${to}`}
                       title="Xem lịch sử điểm danh của giáo viên này trong cùng khoảng ngày"
-                      className="flex items-center gap-2.5 font-medium text-ink-900 hover:text-wood-700 max-w-[190px]"
+                      className="flex items-center gap-2.5 font-medium text-ink-900 hover:text-wood-700 whitespace-nowrap"
                     >
-                      <Avatar name={r.teacher_name} className="w-8 h-8 text-[11px] shrink-0" />
+                      <span className="hidden sm:inline-flex shrink-0">
+                        <Avatar name={r.teacher_name} className="w-8 h-8 text-[11px]" />
+                      </span>
                       {r.teacher_name}
                     </Link>
                   </td>

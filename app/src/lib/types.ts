@@ -726,3 +726,8 @@ export function sessionPoolKey(c: {
 }): string {
   return c.package_id ? `p${c.package_id}` : personKey(c);
 }
+
+/** "T3 29/09" — ngày ngắn kèm thứ, dễ đọc trên điện thoại hơn 2026-09-29. */
+export function shortDayLabel(iso: string): string {
+  return `${DAY_LABELS[new Date(`${iso}T00:00:00`).getDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}

@@ -34,7 +34,7 @@ export default async function StaffPage() {
       />
 
       <Card padded={false}>
-        <TableShell>
+        <TableShell stackOnMobile>
           <thead>
             <tr>
               <Th>Họ tên</Th>

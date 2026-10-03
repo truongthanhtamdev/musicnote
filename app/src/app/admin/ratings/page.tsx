@@ -155,7 +155,7 @@ export default async function RatingsPage({
             description="Gửi link chấm sao cho khách sau buổi học để có dữ liệu."
           />
         ) : (
-          <TableShell>
+          <TableShell stackOnMobile>
             <thead>
               <tr>
                 <Th>Giáo viên</Th>

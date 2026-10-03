@@ -13,7 +13,7 @@ export default function ClassesImportForm() {
     <form ref={formRef} action={formAction} className="space-y-3">
       <p className="text-xs text-ink-500">
         Cột theo thứ tự:{" "}
-        <code>
+        <code className="break-all">
           TenHocSinh,SDT,PhuHuynh,TrinhDo,MonHoc,NgonNgu,Thu,GioBatDau,ThoiLuongPhut,EmailGiaoVien,GhiChu
         </code>{" "}
         (dòng đầu là tiêu đề). PhuHuynh (tên người đóng tiền) để trống nếu học viên tự đóng.

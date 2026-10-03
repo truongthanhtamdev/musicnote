@@ -178,14 +178,14 @@ export default async function AttendancePage({
           <TableShell>
             <thead>
               <tr>
-                <Th>Ngày & giờ</Th>
+                <Th className="hidden sm:table-cell">Ngày & giờ</Th>
                 <Th>Học viên</Th>
-                <Th>Giáo viên</Th>
+                <Th className="hidden sm:table-cell">Giáo viên</Th>
                 <Th>Trạng thái</Th>
-                <Th>Check-in FB</Th>
-                <Th>Nội dung</Th>
-                <Th>Ghi chú</Th>
-                <Th>Khách chấm</Th>
+                <Th className="hidden sm:table-cell">Messenger</Th>
+                <Th className="hidden sm:table-cell">Nội dung</Th>
+                <Th className="hidden sm:table-cell">Ghi chú</Th>
+                <Th className="hidden sm:table-cell">Khách chấm</Th>
                 <Th />
               </tr>
             </thead>

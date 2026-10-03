@@ -8,7 +8,7 @@ import {
   getTuitionStatusForClasses,
   listStaff,
 } from "@/lib/queries";
-import { CLASS_STAGES, formatClassSchedule, MANAGE_ROLES } from "@/lib/types";
+import { CLASS_STAGES, formatClassSchedule, MANAGE_ROLES, shortDayLabel } from "@/lib/types";
 import { formatVND } from "@/lib/format";
 import { IconAlert, IconClasses, IconSearch, IconWallet, SubjectIcon } from "@/components/icons";
 import {
@@ -207,6 +207,78 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
             />}
           />
         ) : (
+          <>
+          {/* Điện thoại: mỗi lớp một thẻ bấm được — bảng 7 cột bóp tên xuống
+              ba dòng và phải kéo ngang mới thấy trạng thái. */}
+          <ul className="sm:hidden divide-y divide-navy-100">
+            {classes.map((c) => {
+              const progress = getPackageProgress(c);
+              const owed = tuition.get(c.id);
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/admin/classes/${c.id}`}
+                    className={`block px-4 py-3 ${
+                      c.missedLastSession ? "bg-coral-50/40" : owed?.needsFollowUp ? "bg-amber-50/40" : ""
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-ink-900">
+                          {c.student_name}
+                          {c.trial_pending === 1 && (
+                            <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-mint-50 text-mint-700 align-middle">
+                              HỌC THỬ
+                            </span>
+                          )}
+                        </p>
+                        {c.guardian_name && <p className="text-xs text-ink-400 truncate">KH: {c.guardian_name}</p>}
+                      </div>
+                      <span className="shrink-0">
+                        <ClassStatusBadge stage={c.stage} />
+                      </span>
+                    </div>
+                    <p className="text-sm text-ink-600 mt-1 flex items-center gap-1.5">
+                      <SubjectIcon subject={c.subject} className="w-4 h-4 shrink-0 text-wood-500" />
+                      <span className="tabular">{c.subject} · {formatClassSchedule(c)}</span>
+                    </p>
+                    <p className="text-xs text-ink-500 mt-0.5">
+                      GV: {c.teacher_name || <span className="text-amber-700 font-semibold">Chưa xếp</span>}
+                      {c.schedule_type !== "flexible" && c.nextSessionDate
+                        ? ` · Buổi tới ${shortDayLabel(c.nextSessionDate)}`
+                        : ""}
+                    </p>
+                    {progress && (
+                      <div className="mt-2">
+                        <span className="text-xs text-ink-500 tabular">
+                          {progress.used}/{progress.total} tiết · còn {progress.remaining}
+                        </span>
+                        <ProgressBar
+                          value={progress.used}
+                          max={progress.total}
+                          tone={packageTone(progress.remaining)}
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+                    {c.missedLastSession && (
+                      <p className="flex items-center gap-1 text-xs font-medium text-coral-600 mt-1">
+                        <IconAlert className="w-3.5 h-3.5" />
+                        Chưa điểm danh buổi {shortDayLabel(c.lastDueDate)}
+                      </p>
+                    )}
+                    {owed?.needsFollowUp && (
+                      <p className="flex items-center gap-1 text-xs font-medium text-amber-700 mt-1">
+                        <IconWallet className="w-3.5 h-3.5 shrink-0" />
+                        {owed.paid === 0 ? "Chưa đóng học phí" : `Còn thiếu ${formatVND(owed.outstanding)}`}
+                      </p>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hidden sm:block">
           <TableShell>
             <thead>
               <tr>
@@ -280,12 +352,12 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-ink-700 tabular">
-                        {c.schedule_type === "flexible" ? "–" : c.nextSessionDate}
+                        {c.schedule_type === "flexible" ? "–" : shortDayLabel(c.nextSessionDate)}
                       </span>
                       {c.missedLastSession && (
                         <span className="flex items-center gap-1 text-xs font-medium text-coral-600 mt-0.5">
                           <IconAlert className="w-3.5 h-3.5" />
-                          Chưa điểm danh buổi {c.lastDueDate}
+                          Chưa điểm danh buổi {shortDayLabel(c.lastDueDate)}
                         </span>
                       )}
                     </td>
@@ -328,6 +400,8 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
               })}
             </tbody>
           </TableShell>
+          </div>
+          </>
         )}
 
         {classes.length > 0 && (

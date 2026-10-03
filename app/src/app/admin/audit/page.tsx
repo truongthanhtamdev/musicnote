@@ -108,7 +108,7 @@ export default async function AuditPage({
             description="Nhật ký bắt đầu ghi từ lúc cập nhật bản này — các thao tác trước đó không có."
           />
         ) : (
-          <TableShell>
+          <TableShell stackOnMobile>
             <thead>
               <tr>
                 <Th>Thời điểm</Th>

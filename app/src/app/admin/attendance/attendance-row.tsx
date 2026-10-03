@@ -6,6 +6,7 @@ import type { FormState } from "@/actions/teachers";
 import {
   ATTENDANCE_STATUS_LABELS,
   hasRescheduleInfo,
+  shortDayLabel,
   type AttendanceStatus,
 } from "@/lib/types";
 import type { AttendanceWithContext } from "@/lib/queries";
@@ -40,9 +41,12 @@ export default function AttendanceRow({
   if (editing) {
     return (
       <tr className="bg-wood-50/50">
-        <td className="px-4 py-3 tabular whitespace-nowrap align-top">{row.session_date}</td>
-        <td className="px-4 py-3 font-medium text-ink-900 align-top">{row.student_name}</td>
-        <td className="px-4 py-3 text-ink-700 align-top whitespace-nowrap">{row.teacher_name}</td>
+        <td className="px-4 py-3 tabular whitespace-nowrap align-top hidden sm:table-cell">{shortDayLabel(row.session_date)}</td>
+        <td className="px-3 sm:px-4 py-3 font-medium text-ink-900 align-top">
+          {row.student_name}
+          <span className="sm:hidden block text-xs font-normal text-ink-500">{shortDayLabel(row.session_date)}</span>
+        </td>
+        <td className="px-4 py-3 text-ink-700 align-top whitespace-nowrap hidden sm:table-cell">{row.teacher_name}</td>
         <td colSpan={6} className="px-4 py-3">
           <form action={formAction} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="id" value={row.id} />
@@ -136,42 +140,57 @@ export default function AttendanceRow({
 
   return (
     <tr className={row.status === "completed" ? "hover:bg-ivory-50" : "bg-coral-50/30"}>
-      <td className="px-4 py-3 tabular whitespace-nowrap text-ink-700">
-        {row.session_date}
+      <td className="px-4 py-3 tabular whitespace-nowrap text-ink-700 hidden sm:table-cell">
+        {shortDayLabel(row.session_date)}
         {row.check_in_time && (
           <span className="block text-xs text-ink-400">{row.check_in_time}</span>
         )}
       </td>
-      <td className="px-4 py-3">
-        <span className="flex items-center gap-2 font-medium text-ink-900 whitespace-nowrap">
-          <Avatar name={row.student_name} className="w-7 h-7 text-[10px]" />
+      <td className="px-3 sm:px-4 py-3 min-w-0">
+        <span className="flex items-center gap-2 font-medium text-ink-900">
+          <span className="hidden sm:inline-flex">
+            <Avatar name={row.student_name} className="w-7 h-7 text-[10px]" />
+          </span>
           {row.student_name}
         </span>
+        {/* Điện thoại: các cột phụ gom vào dưới tên, khỏi kéo ngang. */}
+        <span className="sm:hidden block text-xs text-ink-500 tabular mt-0.5">
+          {shortDayLabel(row.session_date)}
+          {row.check_in_time ? ` · ${row.check_in_time}` : ""} · {row.teacher_name}
+        </span>
+        {missingFb && (
+          <span className="sm:hidden inline-block mt-1">
+            <StatusChip tone="amber">Chưa gửi Messenger</StatusChip>
+          </span>
+        )}
+        {row.lesson_content && (
+          <span className="sm:hidden block text-xs text-ink-600 mt-0.5 line-clamp-2">{row.lesson_content}</span>
+        )}
       </td>
-      <td className="px-4 py-3 text-ink-700 max-w-[130px]">{row.teacher_name}</td>
+      <td className="px-4 py-3 text-ink-700 max-w-[130px] hidden sm:table-cell">{row.teacher_name}</td>
       <td className="px-4 py-3">
         <AttendanceStatusCell row={row} sessionNumber={sessionNumber} />
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 hidden sm:table-cell">
         {row.fb_checkin_confirmed ? (
-          <StatusChip tone="mint">Đã check-in</StatusChip>
+          <StatusChip tone="mint">Đã gửi</StatusChip>
         ) : missingFb ? (
-          <StatusChip tone="amber">Thiếu FB</StatusChip>
+          <StatusChip tone="amber">Chưa gửi</StatusChip>
         ) : (
           <span className="text-ink-400">–</span>
         )}
       </td>
-      <td className="px-4 py-3 text-ink-600 max-w-[220px]">
+      <td className="px-4 py-3 text-ink-600 max-w-[220px] hidden sm:table-cell">
         <span className="block truncate" title={row.lesson_content || undefined}>
           {row.lesson_content || "–"}
         </span>
       </td>
-      <td className="px-4 py-3 text-ink-500 max-w-[160px]">
+      <td className="px-4 py-3 text-ink-500 max-w-[160px] hidden sm:table-cell">
         <span className="block truncate" title={row.note || undefined}>
           {row.note || "–"}
         </span>
       </td>
-      <td className="px-4 py-3 whitespace-nowrap">
+      <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
         {row.status === "completed" ? (
           <RatingLinkButton token={row.rating_token} stars={row.rating_stars} />
         ) : (

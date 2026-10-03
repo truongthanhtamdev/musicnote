@@ -223,7 +223,7 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
             }
           />
         ) : (
-          <TableShell>
+          <TableShell stackOnMobile>
             <thead>
               <tr>
                 <Th>Học viên</Th>

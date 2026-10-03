@@ -43,20 +43,22 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-3 px-5 py-3.5 border-b ${
+      className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-4 sm:px-5 py-3.5 border-b ${
         tone === "warning" ? "border-coral-100 bg-coral-50/60" : "border-navy-100"
       }`}
     >
+      {/* flex-wrap: trên điện thoại nút bên phải xuống dòng thay vì bóp tiêu
+          đề thành bốn năm dòng chữ. */}
       <h2
-        className={`font-semibold flex items-center gap-2 ${
+        className={`font-semibold flex items-center gap-2 min-w-0 ${
           tone === "warning" ? "text-coral-700" : "text-ink-900"
         }`}
       >
-        {icon}
-        {title}
+        {icon && <span className="shrink-0">{icon}</span>}
+        <span>{title}</span>
         {count !== undefined && (
           <span
-            className={`text-xs font-semibold rounded-full px-2 py-0.5 tabular ${
+            className={`shrink-0 text-xs font-semibold rounded-full px-2 py-0.5 tabular ${
               tone === "warning" ? "bg-coral-100 text-coral-700" : "bg-navy-50 text-navy-700"
             }`}
           >
@@ -316,9 +318,16 @@ export const label = "block text-sm font-medium text-ink-700 mb-1.5";
 
 /* --------------------------------- Table --------------------------------- */
 
-export function TableShell({ children }: { children: ReactNode }) {
+export function TableShell({
+  children,
+  stackOnMobile = false,
+}: {
+  children: ReactNode;
+  /** Điện thoại: mỗi hàng thành một thẻ xếp dọc thay vì bảng kéo ngang (xem globals.css). */
+  stackOnMobile?: boolean;
+}) {
   return (
-    <div className="overflow-x-auto scroll-thin scroll-shadow-x">
+    <div className={`overflow-x-auto scroll-thin scroll-shadow-x ${stackOnMobile ? "stack-mobile" : ""}`}>
       <table className="w-full text-sm border-collapse">{children}</table>
     </div>
   );

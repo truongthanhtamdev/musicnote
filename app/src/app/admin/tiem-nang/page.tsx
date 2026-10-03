@@ -104,7 +104,7 @@ export default async function LeadsPage({
             <tbody>
               {bySource.map((r) => (
                 <tr key={r.source} className="border-t border-navy-100">
-                  <td className="px-4 py-2.5 text-sm font-medium text-ink-900">{r.source}</td>
+                  <td className="px-4 py-2.5 text-sm font-medium text-ink-900 whitespace-nowrap">{r.source}</td>
                   <td className="px-4 py-2.5 text-sm text-ink-700 tabular text-right">{r.total}</td>
                   <td className="px-4 py-2.5 text-sm text-ink-700 tabular text-right">{r.trial}</td>
                   <td className="px-4 py-2.5 text-sm font-semibold text-mint-700 tabular text-right">
@@ -159,7 +159,7 @@ export default async function LeadsPage({
         </Card>
       ) : (
         <Card padded={false}>
-          <TableShell>
+          <TableShell stackOnMobile>
             <thead>
               <tr>
                 <Th>Khách</Th>

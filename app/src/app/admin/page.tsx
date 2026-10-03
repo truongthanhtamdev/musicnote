@@ -11,7 +11,7 @@ import {
   listPackagesNearingCompletion,
 } from "@/lib/queries";
 import { formatTimeRange, todayISO, toISODate, addDays, now } from "@/lib/format";
-import { DAY_LABELS, MANAGE_ROLES, scheduleStart } from "@/lib/types";
+import { DAY_LABELS, MANAGE_ROLES, scheduleStart, shortDayLabel } from "@/lib/types";
 import {
   IconAlert,
   IconCalendarCheck,
@@ -119,7 +119,7 @@ export default async function AdminDashboard() {
     <div className="space-y-6">
       <PageHeader
         title="Tổng quan"
-        subtitle={`Hôm nay là ${DAY_LABELS[dow]}, ${todayStr}`}
+        subtitle={`Hôm nay là ${DAY_LABELS[dow]}, ${todayStr.split("-").reverse().join("/")}`}
         action={
           <Link href="/admin/attendance" className={btn.secondary}>
             <IconCalendarCheck className="w-4 h-4" />
@@ -396,35 +396,43 @@ export default async function AdminDashboard() {
             action={<DetailLink href="/admin/payroll">Xem ảnh hưởng tới lương</DetailLink>}
           />
           <ul className="divide-y divide-coral-100">
-            {missed.slice(0, 12).map((m) => (
+            {missed.slice(0, 6).map((m) => (
               <li
                 key={`${m.cls.id}-${m.date}`}
-                className="px-4 sm:px-5 py-3 bg-coral-50/60 flex flex-wrap items-center gap-x-3 gap-y-1.5"
+                className="px-4 sm:px-5 py-3 bg-coral-50/60 flex items-center gap-3"
               >
-                <span className="text-sm font-bold text-coral-800 tabular w-24 shrink-0">
-                  {m.date}
+                <span className="hidden sm:block text-sm font-bold text-coral-800 tabular w-20 shrink-0">
+                  {shortDayLabel(m.date)}
                 </span>
-                <Avatar name={m.cls.student_name} className="w-8 h-8 text-[11px]" />
+                <span className="hidden sm:block shrink-0">
+                  <Avatar name={m.cls.student_name} className="w-8 h-8 text-[11px]" />
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-coral-800 truncate">
                     {m.cls.student_name}
                   </p>
-                  <p className="text-xs text-ink-600 flex items-center gap-1">
+                  <p className="text-xs text-ink-600 flex flex-wrap items-center gap-x-1">
                     <SubjectIcon subject={m.cls.subject} className="w-3.5 h-3.5" />
-                    {formatTimeRange(m.cls.start_time, m.cls.duration_minutes)} ·{" "}
-                    {m.cls.teacher_name || "Chưa có GV"}
+                    <span className="sm:hidden font-semibold tabular">{shortDayLabel(m.date)} ·</span>
+                    <span className="tabular">{formatTimeRange(m.cls.start_time, m.cls.duration_minutes)}</span>·
+                    <span>{m.cls.teacher_name || "Chưa có GV"}</span>
                   </p>
                 </div>
-                <StatusChip tone="coral" icon={<IconAlert className="w-3.5 h-3.5" />}>
-                  {m.daysLate === 0 ? "Quá giờ hôm nay" : `Trễ ${m.daysLate} ngày`}
-                </StatusChip>
+                <span className="shrink-0">
+                  <StatusChip tone="coral" icon={<IconAlert className="w-3.5 h-3.5" />}>
+                    Trễ {m.daysLate} ngày
+                  </StatusChip>
+                </span>
               </li>
             ))}
           </ul>
-          {missed.length > 12 && (
-            <p className="px-5 py-2.5 text-sm text-ink-500 border-t border-coral-100">
-              và {missed.length - 12} buổi khác.
-            </p>
+          {missed.length > 6 && (
+            <Link
+              href="/admin/attendance"
+              className="block px-5 py-2.5 text-sm font-semibold text-coral-700 border-t border-coral-100 hover:bg-coral-50"
+            >
+              và {missed.length - 6} buổi khác →
+            </Link>
           )}
           <p className="px-5 py-3 border-t border-coral-100 bg-white text-sm text-ink-600">
             Giáo viên thấy đúng danh sách này ở trang của mình kèm nút &ldquo;Điểm danh
@@ -455,37 +463,42 @@ export default async function AdminDashboard() {
               return (
                 <li
                   key={c.id}
-                  className={`px-4 sm:px-5 py-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 ${
-                    late ? "bg-amber-50/50" : ""
-                  }`}
+                  className={`px-4 sm:px-5 py-3 flex items-center gap-3 ${late ? "bg-amber-50/50" : ""}`}
                 >
-                  <span className="text-sm font-semibold text-ink-900 tabular w-20 sm:w-24 shrink-0">
+                  <span className="hidden sm:block text-sm font-semibold text-ink-900 tabular w-24 shrink-0">
                     {formatTimeRange(c.start_time, c.duration_minutes)}
                   </span>
-                  <Avatar name={c.student_name} className="w-8 h-8 text-[11px]" />
+                  <span className="hidden sm:block shrink-0">
+                    <Avatar name={c.student_name} className="w-8 h-8 text-[11px]" />
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink-900 truncate">{c.student_name}</p>
-                    <p className="text-xs text-ink-500 flex items-center gap-1">
+                    <p className="text-xs text-ink-500 flex flex-wrap items-center gap-x-1">
                       <SubjectIcon subject={c.subject} className="w-3.5 h-3.5" />
+                      <span className="sm:hidden font-semibold text-ink-700 tabular">
+                        {formatTimeRange(c.start_time, c.duration_minutes)} ·
+                      </span>
                       {c.subject} · {c.teacher_name || "Chưa có GV"}
                     </p>
+                    {!done && confirmedToday.has(c.id) && (
+                      <p className="text-xs text-mint-700 font-semibold mt-0.5">✓ HV đã xác nhận tham gia</p>
+                    )}
                   </div>
-                  {!done && confirmedToday.has(c.id) && (
-                    <StatusChip tone="mint">HV đã xác nhận</StatusChip>
-                  )}
+                  <span className="shrink-0">
                   {done ? (
                     <StatusChip tone="mint" icon={<IconCheckCircle className="w-3.5 h-3.5" />}>
                       Đã điểm danh
                     </StatusChip>
                   ) : late ? (
                     <StatusChip tone="amber" icon={<IconAlert className="w-3.5 h-3.5" />}>
-                      Đã học xong, chưa điểm danh
+                      Chưa điểm danh
                     </StatusChip>
                   ) : (
-                    <StatusChip tone="amber" icon={<IconClock className="w-3.5 h-3.5" />}>
+                    <StatusChip tone="neutral" icon={<IconClock className="w-3.5 h-3.5" />}>
                       Chưa điểm danh
                     </StatusChip>
                   )}
+                  </span>
                 </li>
               );
             })}

@@ -44,7 +44,7 @@ export default async function TrialRequestsPage() {
             description="Đăng ký từ nút 'Học thử miễn phí' ngoài trang chủ sẽ hiện ở đây."
           />
         ) : (
-          <TableShell>
+          <TableShell stackOnMobile>
             <thead>
               <tr>
                 <Th>Học viên</Th>

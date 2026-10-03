@@ -70,7 +70,7 @@ export default function TeacherTable({
           description={`Không có ai khớp với "${q}".`}
         />
       ) : (
-        <TableShell>
+        <TableShell stackOnMobile>
           <thead>
             <tr>
               <Th>Giáo viên</Th>

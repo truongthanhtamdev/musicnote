@@ -196,7 +196,7 @@ export default async function BonusPage({
               {s.manual_total !== 0 && <span>Ghi tay: {formatVND(s.manual_total)}</span>}
             </div>
             <div className="mt-3">
-              <TableShell>
+              <TableShell stackOnMobile>
                 <thead>
                   <tr>
                     <Th>Ngày</Th>

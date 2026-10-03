@@ -38,7 +38,7 @@ export default async function StudentsPage() {
             description="Tạo tài khoản đầu tiên ở biểu mẫu bên dưới."
           />
         ) : (
-          <TableShell>
+          <TableShell stackOnMobile>
             <thead>
               <tr>
                 <Th>Học viên</Th>
