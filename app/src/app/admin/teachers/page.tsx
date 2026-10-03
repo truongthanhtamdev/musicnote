@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/guard";
 import { listTeachers, listClasses } from "@/lib/queries";
 import { parseLanguages, parseSubjects, MANAGE_ROLES } from "@/lib/types";
 import { IconTeacher } from "@/components/icons";
-import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
+import { btn, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import NewTeacherForm from "./new-teacher-form";
 import TeacherTable, { type TeacherLine } from "./teacher-table";
 
@@ -23,7 +23,9 @@ export default async function TeachersPage() {
     phone: t.phone,
     subjects: parseSubjects(t.subjects),
     // Nhãn ngắn trong bảng: "Tiếng Việt, Tiếng Anh" chiếm gần 100px mỗi dòng.
-    languages: parseLanguages(t.languages).map((l) => (l === "en" ? "Anh" : "Việt")),
+    languages: parseLanguages(t.languages).map((l) =>
+      l === "en" ? "Anh" : "Việt",
+    ),
     classCount: activeClasses.filter((c) => c.teacher_id === t.id).length,
     payPerSession: isAdmin ? t.pay_per_session : null,
     active: !!t.active,
@@ -36,6 +38,13 @@ export default async function TeachersPage() {
         subtitle={`${teachers.length} giáo viên trong hệ thống · ${
           teachers.filter((t) => t.active).length
         } đang hoạt động`}
+        action={
+          isAdmin && (
+            <a href="#them-giao-vien" className={btn.primary}>
+              + Thêm giáo viên
+            </a>
+          )
+        }
       />
 
       <Card padded={false}>
@@ -51,12 +60,17 @@ export default async function TeachersPage() {
       </Card>
 
       {isAdmin && (
-        <Card padded={false} className="max-w-2xl">
-          <CardHeader title="Thêm giáo viên mới" icon={<IconTeacher className="w-4.5 h-4.5 text-wood-500" />} />
-          <div className="p-5">
-            <NewTeacherForm />
-          </div>
-        </Card>
+        <div id="them-giao-vien" className="scroll-mt-20">
+          <Card padded={false} className="max-w-2xl">
+            <CardHeader
+              title="Thêm giáo viên mới"
+              icon={<IconTeacher className="w-4.5 h-4.5 text-wood-500" />}
+            />
+            <div className="p-5">
+              <NewTeacherForm />
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );

@@ -11,6 +11,8 @@ import { getUserByEmail, getUserById } from "@/lib/auth";
 export interface FormState {
   error?: string;
   success?: boolean;
+  /** Thông tin đăng nhập vừa tạo — hiện ra để chép gửi cho giáo viên. */
+  newTeacher?: { name: string; email: string; phone: string; password: string };
 }
 
 function formatSubjects(formData: FormData): string {
@@ -60,7 +62,7 @@ export async function createTeacherAction(
   );
 
   revalidatePath("/admin/teachers");
-  return { success: true };
+  return { success: true, newTeacher: { name, email, phone, password } };
 }
 
 export async function updateTeacherAction(
