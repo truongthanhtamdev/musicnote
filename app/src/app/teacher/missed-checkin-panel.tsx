@@ -42,7 +42,11 @@ export default function MissedCheckinPanel({
   quota: number;
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // Danh sách dài thì chỉ hiện 3 buổi trễ gần nhất, còn lại bấm "Xem thêm" —
+  // để lớp hôm nay không bị đẩy xuống tít cuối trang.
+  const [showAll, setShowAll] = useState(false);
   if (rows.length === 0) return null;
+  const visible = showAll ? rows : rows.slice(0, 3);
 
   const active = openIndex === null ? null : rows[openIndex];
 
@@ -56,7 +60,7 @@ export default function MissedCheckinPanel({
       />
 
       <ul className="divide-y divide-coral-100">
-        {rows.map((r, i) => (
+        {visible.map((r, i) => (
           <li
             key={`${r.classId}-${r.date}`}
             className="px-5 py-4 bg-coral-50/60 flex flex-wrap items-center justify-between gap-3"
@@ -67,9 +71,6 @@ export default function MissedCheckinPanel({
                 <span className="truncate">
                   {r.studentName} · {r.dayLabel} · {r.timeRange}
                 </span>
-              </p>
-              <p className="text-sm text-ink-600 mt-1">
-                Cần ghi kết quả buổi học và nội dung bài để khách hàng theo dõi.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 ml-auto">
@@ -87,6 +88,16 @@ export default function MissedCheckinPanel({
           </li>
         ))}
       </ul>
+
+      {rows.length > 3 && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="w-full px-5 py-2.5 border-t border-coral-100 bg-white text-sm font-semibold text-coral-700 hover:bg-coral-50"
+        >
+          {showAll ? "Thu gọn" : `Xem thêm ${rows.length - 3} buổi`}
+        </button>
+      )}
 
       <p className="px-5 py-3 border-t border-coral-100 bg-white text-sm text-ink-600 leading-relaxed">
         Điểm danh và ghi nội dung bài học ngay trong buổi là việc bắt buộc — phụ huynh đọc phần

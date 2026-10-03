@@ -1,10 +1,17 @@
 import { getSession } from "@/lib/auth";
 import { computePayroll, listAttendance, listRecentRatings, ratingsByTeacher } from "@/lib/queries";
-import { firstDayOfMonth, formatVND, lastDayOfMonth } from "@/lib/format";
+import { firstDayOfMonth, formatVND, lastDayOfMonth, monthRangeOf, todayISO } from "@/lib/format";
+import { MonthSelect } from "@/components/month-select";
+import { db } from "@/lib/db";
 import { MonthNav } from "@/components/month-nav";
-import { TRIAL_SESSION_RATE, teacherSees } from "@/lib/types";
+import { DAY_LABELS, TRIAL_SESSION_RATE, personKey, teacherSees } from "@/lib/types";
 import { IconCheckCircle, IconFilter, IconWallet } from "@/components/icons";
 import { Card, MetricCard, PageHeader, btn, field, label } from "@/components/ui";
+
+/** "T2 28/09" */
+function dayLabel(iso: string): string {
+  return `${DAY_LABELS[new Date(`${iso}T00:00:00`).getDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
 
 export default async function TeacherEarningsPage({
   searchParams,
@@ -22,6 +29,37 @@ export default async function TeacherEarningsPage({
   const rows = listAttendance({ teacherId: session!.userId, from, to })
     .filter((a) => a.status === "completed")
     .map(teacherSees);
+
+  // Các tháng để chọn nhanh: từ buổi điểm danh đầu tiên tới tháng này.
+  const thisMonth = monthRangeOf(todayISO()).from.slice(0, 7);
+  const first = (
+    db.prepare("SELECT MIN(session_date) AS d FROM attendance WHERE teacher_id = ?").get(session!.userId) as {
+      d: string | null;
+    }
+  ).d;
+  const months: string[] = [];
+  for (let m = thisMonth; months.length < 36; ) {
+    months.push(m);
+    if (!first || m <= first.slice(0, 7)) break;
+    m = monthRangeOf(`${m}-01`, -1).from.slice(0, 7);
+  }
+
+  // Công theo từng học viên (gộp các lịch trong tuần của cùng một khách).
+  const rate = mine?.pay_per_session || 0;
+  const perStudent = new Map<string, { name: string; taught: number; trial: number; amount: number }>();
+  for (const a of rows) {
+    const key = personKey(a);
+    const g = perStudent.get(key) ?? { name: a.student_name, taught: 0, trial: 0, amount: 0 };
+    if (a.is_trial) {
+      g.trial++;
+      g.amount += TRIAL_SESSION_RATE;
+    } else {
+      g.taught++;
+      g.amount += rate;
+    }
+    perStudent.set(key, g);
+  }
+  const studentRows = [...perStudent.values()].sort((a, b) => b.amount - a.amount);
 
   return (
     <div className="space-y-5">
@@ -55,7 +93,8 @@ export default async function TeacherEarningsPage({
             Xem
           </button>
         </form>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <MonthSelect months={months} from={from} to={to} />
           <MonthNav from={from} />
         </div>
       </Card>
@@ -120,10 +159,31 @@ export default async function TeacherEarningsPage({
                     <span className="text-ink-200">{"★".repeat(5 - r.stars)}</span>
                   </span>{" "}
                   <span className="text-ink-500 tabular">
-                    {r.student_name} · {r.session_date}
+                    {r.student_name} · {dayLabel(r.session_date)}
                   </span>
                 </p>
                 <p className="text-sm text-ink-700 mt-0.5">{r.comment}</p>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {studentRows.length > 0 && (
+        <Card padded={false}>
+          <div className="px-5 py-3.5 border-b border-navy-100">
+            <h2 className="font-semibold text-ink-900">Công theo từng học viên</h2>
+          </div>
+          <ul className="divide-y divide-navy-100">
+            {studentRows.map((g) => (
+              <li key={g.name} className="px-5 py-2.5 flex items-center justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="font-medium text-ink-900">{g.name}</span>
+                  <span className="block text-xs text-ink-500 tabular">
+                    {g.taught} tiết{g.trial ? ` · ${g.trial} học thử` : ""}
+                  </span>
+                </span>
+                <span className="text-sm font-semibold text-ink-900 tabular shrink-0">{formatVND(g.amount)}</span>
               </li>
             ))}
           </ul>
@@ -134,7 +194,7 @@ export default async function TeacherEarningsPage({
         <div className="px-5 py-3.5 border-b border-navy-100">
           <h2 className="font-semibold text-ink-900">Chi tiết các buổi đã dạy</h2>
           <p className="text-sm text-ink-500 mt-0.5 tabular">
-            {rows.length} buổi từ {from} đến {to}
+            {rows.length} buổi từ {from.split("-").reverse().join("/")} đến {to.split("-").reverse().join("/")}
           </p>
         </div>
         {rows.length === 0 ? (
@@ -146,7 +206,7 @@ export default async function TeacherEarningsPage({
             {rows.map((a) => (
               <li key={a.id} className="px-5 py-2.5 flex items-center justify-between gap-3">
                 <span className="text-sm text-ink-700 min-w-0 truncate">
-                  <span className="tabular text-ink-500">{a.session_date}</span> ·{" "}
+                  <span className="tabular text-ink-500">{dayLabel(a.session_date)}</span> ·{" "}
                   <span className="font-medium text-ink-900">{a.student_name}</span>
                   {a.is_trial ? <span className="text-wood-700"> · buổi học thử</span> : null}
                 </span>

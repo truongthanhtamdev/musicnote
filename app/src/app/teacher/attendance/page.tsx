@@ -142,7 +142,7 @@ export default async function TeacherAttendanceHistoryPage({
           <TableShell>
             <thead>
               <tr>
-                <Th>Ngày</Th>
+                <Th className="hidden sm:table-cell">Ngày</Th>
                 <Th>Học viên</Th>
                 <Th>Trạng thái</Th>
                 <Th className="hidden sm:table-cell">Giờ điểm danh</Th>

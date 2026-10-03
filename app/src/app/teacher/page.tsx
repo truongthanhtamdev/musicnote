@@ -17,7 +17,6 @@ import MessengerBackupList, { type BackupItem } from "./messenger-backup";
 import { IconCalendarCheck, IconChat, IconCheckCircle, IconClock, IconMusic } from "@/components/icons";
 import { Card, CardHeader, EmptyState, TableShell, Th, btn } from "@/components/ui";
 import RescheduleRow from "@/components/reschedule-row";
-import FbReminder from "./fb-reminder";
 import TodayClassCard from "./today-class-card";
 import MissedCheckinPanel from "./missed-checkin-panel";
 import { missedRowsForTeacher } from "./missed-rows";
@@ -84,7 +83,7 @@ export default async function TeacherTodayPage() {
       <section className="rounded-2xl bg-navy-950 text-white px-5 py-6 sm:px-7 sm:py-7">
         <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight">Xin chào, {firstName}</h1>
         <p className="text-navy-200 text-sm mt-1">
-          {DAY_LABELS[dow]}, {todayStr} · Bạn có{" "}
+          {DAY_LABELS[dow]} {todayStr.slice(8, 10)}/{todayStr.slice(5, 7)}/{todayStr.slice(0, 4)} · Bạn có{" "}
           <span className="font-semibold text-white tabular">{classes.length} tiết</span> hôm nay
         </p>
 
@@ -105,53 +104,6 @@ export default async function TeacherTodayPage() {
           </div>
         )}
       </section>
-
-      {backupItems.length > 0 && (
-        <Card padded={false} className="border-[#A033FF]/25">
-          <CardHeader
-            title="Gửi bản sao điểm danh lên Messenger"
-            count={backupItems.length}
-            icon={<IconChat className="w-5 h-5 text-[#A033FF]" />}
-          />
-          <p className="px-4 sm:px-5 pt-3 text-sm text-ink-500">
-            Buổi đã điểm danh trên web. Bấm <b>Copy &amp; mở nhóm</b>, dán vào nhóm Messenger của lớp rồi bấm{" "}
-            <b>Đã gửi</b>.
-          </p>
-          <MessengerBackupList items={backupItems} />
-        </Card>
-      )}
-
-      <MissedCheckinPanel rows={missedRows} quota={getLateCheckinQuota()} />
-
-      <FbReminder today={todayStr} />
-
-      {pendingReschedules.length > 0 && (
-        <Card padded={false} className="border-amber-200">
-          <CardHeader
-            title="Học viên xin dời lịch"
-            count={pendingReschedules.length}
-            icon={<IconClock className="w-5 h-5" />}
-            tone="warning"
-          />
-          <TableShell>
-            <thead>
-              <tr>
-                <Th>Học viên</Th>
-                <Th>Buổi gốc</Th>
-                <Th>Xin dời sang</Th>
-                <Th>Lý do</Th>
-                <Th>Trạng thái</Th>
-                <Th />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-navy-100">
-              {pendingReschedules.map((r) => (
-                <RescheduleRow key={r.id} request={r} />
-              ))}
-            </tbody>
-          </TableShell>
-        </Card>
-      )}
 
       {classes.length === 0 ? (
         <Card padded={false}>
@@ -205,6 +157,57 @@ export default async function TeacherTodayPage() {
             })}
           </ol>
         </section>
+      )}
+
+      {backupItems.length > 0 && (
+        <Card padded={false} className="border-[#A033FF]/25">
+          <CardHeader
+            title="Gửi bản sao điểm danh lên Messenger"
+            count={backupItems.length}
+            icon={<IconChat className="w-5 h-5 text-[#A033FF]" />}
+          />
+          <p className="px-4 sm:px-5 pt-3 text-sm text-ink-500">
+            Buổi đã điểm danh trên web. Bấm <b>Copy &amp; mở nhóm</b>, dán vào nhóm Messenger của lớp rồi bấm{" "}
+            <b>Đã gửi</b>.
+          </p>
+          {backupItems.some((it) => !it.messengerUrl) && (
+            <p className="px-4 sm:px-5 pt-1 text-xs text-ink-400">
+              Lớp nào chưa gắn link nhóm Messenger thì nút chỉ chép tin — gắn link ở Lịch dạy → Sửa để lần
+              sau bấm là mở đúng nhóm.
+            </p>
+          )}
+          <MessengerBackupList items={backupItems} />
+        </Card>
+      )}
+
+      <MissedCheckinPanel rows={missedRows} quota={getLateCheckinQuota()} />
+
+      {pendingReschedules.length > 0 && (
+        <Card padded={false} className="border-amber-200">
+          <CardHeader
+            title="Học viên xin dời lịch"
+            count={pendingReschedules.length}
+            icon={<IconClock className="w-5 h-5" />}
+            tone="warning"
+          />
+          <TableShell>
+            <thead>
+              <tr>
+                <Th>Học viên</Th>
+                <Th>Buổi gốc</Th>
+                <Th>Xin dời sang</Th>
+                <Th>Lý do</Th>
+                <Th>Trạng thái</Th>
+                <Th />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-navy-100">
+              {pendingReschedules.map((r) => (
+                <RescheduleRow key={r.id} request={r} />
+              ))}
+            </tbody>
+          </TableShell>
+        </Card>
       )}
 
       {doneCount > 0 && pendingClasses.length > 0 && (

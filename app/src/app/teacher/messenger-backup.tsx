@@ -99,11 +99,6 @@ function BackupRow({ item }: { item: BackupItem }) {
       {copied && (
         <p className="text-xs text-mint-700 mt-1">Đã chép tin — dán vào nhóm Messenger, gửi xong bấm “Đã gửi”.</p>
       )}
-      {!item.messengerUrl && (
-        <p className="text-xs text-ink-400 mt-1">
-          Lớp chưa gắn link nhóm Messenger — gắn ở Lịch dạy → Sửa để lần sau bấm là mở đúng nhóm.
-        </p>
-      )}
     </li>
   );
 }

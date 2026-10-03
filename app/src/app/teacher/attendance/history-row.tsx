@@ -4,7 +4,12 @@ import { useState } from "react";
 import AttendanceForm from "../attendance-form";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 import { Avatar, btn, inlineAction } from "@/components/ui";
-import type { AttendanceRow } from "@/lib/types";
+import { DAY_LABELS, type AttendanceRow } from "@/lib/types";
+
+/** "T2 28/09" */
+function dayLabel(iso: string): string {
+  return `${DAY_LABELS[new Date(`${iso}T00:00:00`).getDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
 
 export default function TeacherAttendanceHistoryRow({
   row,
@@ -19,8 +24,13 @@ export default function TeacherAttendanceHistoryRow({
   if (editing) {
     return (
       <tr className="bg-wood-50/50">
-        <td className="px-2.5 sm:px-4 py-3 tabular whitespace-nowrap align-top">{row.session_date}</td>
-        <td className="px-2.5 sm:px-4 py-3 font-medium text-ink-900 align-top">{row.student_name}</td>
+        <td className="px-2.5 sm:px-4 py-3 tabular whitespace-nowrap align-top hidden sm:table-cell">
+          {dayLabel(row.session_date)}
+        </td>
+        <td className="px-2.5 sm:px-4 py-3 font-medium text-ink-900 align-top">
+          {row.student_name}
+          <span className="sm:hidden block text-xs font-normal text-ink-500 tabular">{dayLabel(row.session_date)}</span>
+        </td>
         <td colSpan={5} className="px-2.5 sm:px-4 py-3">
           <div className="max-w-xl">
             <AttendanceForm
@@ -40,12 +50,21 @@ export default function TeacherAttendanceHistoryRow({
 
   return (
     <tr className="hover:bg-ivory-50">
-      <td className="px-2.5 sm:px-4 py-3 tabular text-ink-700 whitespace-nowrap">{row.session_date}</td>
-      <td className="px-2.5 sm:px-4 py-3">
-        <span className="flex items-center gap-2 font-medium text-ink-900 whitespace-nowrap">
-          <Avatar name={row.student_name} className="w-7 h-7 text-[10px]" />
+      <td className="px-2.5 sm:px-4 py-3 tabular text-ink-700 whitespace-nowrap hidden sm:table-cell">
+        {dayLabel(row.session_date)}
+      </td>
+      <td className="px-2.5 sm:px-4 py-3 min-w-0">
+        <span className="flex items-center gap-2 font-medium text-ink-900">
+          <span className="hidden sm:inline-flex">
+            <Avatar name={row.student_name} className="w-7 h-7 text-[10px]" />
+          </span>
           {row.student_name}
         </span>
+        {/* Điện thoại: ngày + nội dung bài nằm ngay dưới tên, khỏi cuộn ngang. */}
+        <span className="sm:hidden block text-xs text-ink-500 tabular mt-0.5">{dayLabel(row.session_date)}</span>
+        {row.lesson_content && (
+          <span className="sm:hidden block text-xs text-ink-600 mt-0.5 line-clamp-2">{row.lesson_content}</span>
+        )}
       </td>
       <td className="px-2.5 sm:px-4 py-3">
         <AttendanceStatusCell row={row} sessionNumber={sessionNumber} />

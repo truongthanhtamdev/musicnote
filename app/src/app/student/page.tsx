@@ -8,8 +8,11 @@ import {
   listUpcomingSessionsForStudent,
   type FreeSlotOption,
   getCenterContact,
+  getTuitionStatusForClasses,
+  sessionNumberMap,
 } from "@/lib/queries";
-import { toISODate, nextOccurrence, formatTimeRange, now } from "@/lib/format";
+import { wheelBonusForPhone } from "@/lib/wheel-state";
+import { toISODate, nextOccurrence, formatTimeRange, formatVND, now, todayISO } from "@/lib/format";
 import {
   ATTENDANCE_STATUS_LABELS,
   CANCEL_NOTICE_HOURS,
@@ -18,6 +21,8 @@ import {
   REMINDER_DAYS,
   formatClassSchedule,
   isNoticeInTime,
+  personKey,
+  scheduleStart,
 } from "@/lib/types";
 import { IconClock, IconGuitar, IconMusic, IconPiano, IconUser, SubjectIcon } from "@/components/icons";
 import {
@@ -36,6 +41,11 @@ import { JoinClassLink } from "@/components/join-class-link";
 import ExtraTrialForm from "./extra-trial-form";
 import SessionActions from "./session-actions";
 
+/** "T2 28/09" — ngày kèm thứ, dễ đọc hơn 2026-09-28. */
+function dayLabel(iso: string): string {
+  return `${DAY_LABELS[new Date(`${iso}T00:00:00`).getDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
 function countdownLabel(daysAway: number): string {
   if (daysAway <= 0) return "Hôm nay";
   if (daysAway === 1) return "Ngày mai";
@@ -50,6 +60,21 @@ export default async function StudentHomePage() {
   const classes = listClassesForStudent(session!.userId);
   const upcoming = listUpcomingSessionsForStudent(session!.userId);
   const rightNow = now();
+  const todayStr = todayISO();
+
+  // Một khoá học = một gói (hoặc cùng môn nếu không theo gói). Học 2 buổi/tuần
+  // là 2 dòng lớp nhưng chỉ hiện một ô, lịch sử bài học cũng liền một mạch.
+  const courseMap = new Map<string, typeof classes>();
+  for (const c of classes) {
+    const key = c.package_id ? `p${c.package_id}` : `s${c.subject}|${personKey(c)}`;
+    courseMap.set(key, [...(courseMap.get(key) ?? []), c]);
+  }
+  const courses = [...courseMap.values()];
+  const tuition = getTuitionStatusForClasses(classes);
+  // Ưu đãi vòng quay: chỉ nhắc khi khách chưa đăng ký khoá (chưa có gói nào).
+  const wheelBonus = classes.some((c) => c.package_id)
+    ? null
+    : wheelBonusForPhone(me?.phone ?? classes[0]?.student_phone ?? null);
 
   // Khung trống của mỗi giáo viên chỉ cần lấy một lần cho cả trang, dù học viên
   // có nhiều buổi sắp tới cùng một giáo viên.
@@ -93,6 +118,12 @@ export default async function StudentHomePage() {
           khoảng 30 giây.
         </Banner>
       )}
+
+      {wheelBonus ? (
+        <Banner tone="mint" title={`🎁 Bạn có ưu đãi +${wheelBonus} buổi tặng khi đăng ký khóa học`}>
+          Phần thưởng từ vòng quay may mắn — trung tâm cộng thêm vào gói khi bạn đăng ký khóa.
+        </Banner>
+      ) : null}
 
       {classes.length > 0 && (
         <Card padded={false}>
@@ -192,13 +223,27 @@ export default async function StudentHomePage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {classes.map((c) => {
+          {courses.map((group) => {
+            const c = group[0];
             const progress = getPackageProgress(c);
-            const history = listAttendance({ classId: c.id })
-              .filter((a) => a.lesson_content)
+            const fee = tuition.get(c.id);
+            const ids = group.map((g) => g.id);
+            const numbers = sessionNumberMap(ids);
+            // Lịch sử gộp mọi lịch trong tuần của khoá này, mới nhất trước.
+            const history = ids
+              .flatMap((id) => listAttendance({ classId: id }))
+              .filter((a) => a.lesson_content || a.status !== "completed")
+              .sort((a, b) => b.session_date.localeCompare(a.session_date) || b.id - a.id)
               .slice(0, 8);
-            const nextDate =
-              c.schedule_type === "fixed" ? toISODate(nextOccurrence(c.day_of_week)) : null;
+            const nextDates = group
+              .filter((g) => g.schedule_type === "fixed")
+              .map((g) => {
+                const start = scheduleStart(g);
+                const from = start > todayStr ? new Date(`${start}T00:00:00`) : now();
+                return toISODate(nextOccurrence(g.day_of_week, from));
+              })
+              .sort();
+            const teachers = [...new Set(group.map((g) => g.teacher_name || "Chưa xếp"))].join(", ");
             return (
               <Card key={c.id} padded={false}>
                 <div className="p-5 flex flex-wrap items-start justify-between gap-3 border-b border-navy-100">
@@ -209,11 +254,12 @@ export default async function StudentHomePage() {
                       {c.level ? ` · ${c.level}` : ""}
                     </p>
                     <p className="text-sm text-ink-500 mt-1 tabular">
-                      {formatClassSchedule(c)} · Giáo viên: {c.teacher_name || "Chưa xếp"}
+                      {group.map((g) => formatClassSchedule(g)).join(" · ")}
                     </p>
+                    <p className="text-sm text-ink-500 tabular">Giáo viên: {teachers}</p>
                   </div>
-                  {nextDate ? (
-                    <StatusChip tone="navy">Buổi tới: {nextDate}</StatusChip>
+                  {nextDates.length ? (
+                    <StatusChip tone="navy">Buổi tới: {dayLabel(nextDates[0])}</StatusChip>
                   ) : (
                     <StatusChip tone="neutral">Lịch linh động</StatusChip>
                   )}
@@ -225,6 +271,7 @@ export default async function StudentHomePage() {
                       <span className="text-sm text-ink-600 tabular">
                         Đã học <span className="font-semibold text-ink-900">{progress.used}</span> /{" "}
                         {progress.total} tiết
+                        {progress.bonus > 0 ? <span className="text-ink-400"> (gồm {progress.bonus} buổi tặng)</span> : null}
                       </span>
                       <span
                         className={`text-sm font-semibold tabular ${
@@ -251,6 +298,21 @@ export default async function StudentHomePage() {
                   </div>
                 )}
 
+                {/* Học phí: phụ huynh hỏi nhiều nhất — đã đóng bao nhiêu, còn thiếu không. */}
+                {fee && (fee.paid > 0 || fee.expected) ? (
+                  <div className="px-5 py-3 border-b border-navy-100 text-sm flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-ink-500">Học phí:</span>
+                    <span className="font-semibold text-ink-900 tabular">Đã đóng {formatVND(fee.paid)}</span>
+                    {fee.expected ? (
+                      fee.outstanding > 0 ? (
+                        <StatusChip tone="amber">Còn {formatVND(fee.outstanding)}</StatusChip>
+                      ) : (
+                        <StatusChip tone="mint">Đã đóng đủ</StatusChip>
+                      )
+                    ) : null}
+                  </div>
+                ) : null}
+
                 <div className="p-5">
                   <h3 className="text-sm font-semibold text-ink-700 mb-3">
                     Nội dung các buổi học gần đây
@@ -259,14 +321,18 @@ export default async function StudentHomePage() {
                     <p className="text-sm text-ink-400">Chưa có nội dung nào được ghi lại.</p>
                   ) : (
                     <ul className="space-y-3">
-                      {history.map((a) => (
-                        <li key={a.id} className="text-sm border-l-2 border-wood-200 pl-3.5">
-                          <p className="text-ink-400 text-xs tabular">
-                            {a.session_date} · {ATTENDANCE_STATUS_LABELS[a.status]}
-                          </p>
-                          <p className="text-ink-700 mt-0.5">{a.lesson_content}</p>
-                        </li>
-                      ))}
+                      {history.map((a) => {
+                        const n = a.is_trial ? "Buổi học thử" : numbers.get(a.id) ? `Buổi ${numbers.get(a.id)}` : null;
+                        return (
+                          <li key={a.id} className="text-sm border-l-2 border-wood-200 pl-3.5">
+                            <p className="text-ink-400 text-xs tabular">
+                              {n ? <span className="font-semibold text-wood-700">{n} · </span> : null}
+                              {dayLabel(a.session_date)} · {ATTENDANCE_STATUS_LABELS[a.status]}
+                            </p>
+                            {a.lesson_content && <p className="text-ink-700 mt-0.5">{a.lesson_content}</p>}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>
