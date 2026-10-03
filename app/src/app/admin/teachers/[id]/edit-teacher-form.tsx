@@ -26,7 +26,20 @@ export default function EditTeacherForm({ teacher }: { teacher: UserRow }) {
         />
       </div>
       <div>
-        <label className="block text-xs text-ink-500 mb-1">Số điện thoại</label>
+        <label className="block text-xs text-ink-500 mb-1">Email đăng nhập</label>
+        <input
+          name="email"
+          type="text"
+          autoCapitalize="none"
+          defaultValue={teacher.email}
+          required
+          className="w-full rounded-xl border border-navy-200 px-3 py-2 text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-ink-500 mb-1">
+          Số điện thoại <span className="text-ink-400">(cũng dùng để đăng nhập được)</span>
+        </label>
         <input
           name="phone"
           defaultValue={teacher.phone || ""}

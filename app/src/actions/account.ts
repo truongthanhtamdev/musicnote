@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { adminGuardError, assertRole, assertSession } from "@/lib/guard";
 import { MANAGE_ROLES } from "@/lib/types";
-import { getUserById } from "@/lib/auth";
+import { getUserById, revokeSessions, setSessionCookie } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { normalizeFacebookUrl } from "@/lib/format";
 
@@ -42,6 +42,9 @@ export async function changeOwnPasswordAction(
     bcrypt.hashSync(newPassword, 10),
     user.id
   );
+  // Máy khác đang đăng nhập bằng mật khẩu cũ bị đẩy ra; máy này giữ lại.
+  revokeSessions(user.id);
+  await setSessionCookie(user);
 
   return { success: true };
 }
@@ -71,6 +74,10 @@ export async function adminResetPasswordAction(
     bcrypt.hashSync(newPassword, 10),
     userId
   );
+  // Ai đang đăng nhập tài khoản đó (kể cả người đã lấy được mật khẩu cũ) bị
+  // đẩy ra ngay, phải vào lại bằng mật khẩu mới.
+  revokeSessions(userId);
+  if (userId === session.userId) await setSessionCookie(target);
 
   logAudit(session, "tai_khoan", `Đặt lại mật khẩu cho ${target.name}`);
   return { success: true };

@@ -67,10 +67,13 @@ export async function updateTeacherAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await assertRole(MANAGE_ROLES);
+  const session = await assertRole(MANAGE_ROLES);
 
   const id = Number(formData.get("id"));
   const name = String(formData.get("name") || "").trim();
+  // Không có ô email (form cũ) thì giữ nguyên email đang dùng.
+  const emailRaw = formData.get("email");
+  const email = emailRaw === null ? null : String(emailRaw).trim().toLowerCase();
   const phone = String(formData.get("phone") || "").trim();
   const payPerSession = Number(formData.get("pay_per_session") || 0);
   const languages = formData.getAll("languages").join(",") || "vi";
@@ -78,9 +81,28 @@ export async function updateTeacherAction(
 
   if (!id || !name) return { error: "Thiếu thông tin" };
 
+  const teacher = db
+    .prepare("SELECT email FROM users WHERE id = ? AND role = 'teacher'")
+    .get(id) as { email: string } | undefined;
+  if (!teacher) return { error: "Không tìm thấy giáo viên này" };
+
+  // Email là tên đăng nhập — gõ nhầm lúc tạo thì giáo viên không vào được,
+  // nên phải sửa được ở đây.
+  const newEmail = email ?? teacher.email;
+  if (!newEmail || /\s/.test(newEmail)) {
+    return { error: "Email đăng nhập không được để trống hay có khoảng trắng" };
+  }
+  if (newEmail !== teacher.email.toLowerCase()) {
+    const taken = getUserByEmail(newEmail);
+    if (taken && taken.id !== id) return { error: "Email này đã có người khác dùng" };
+  }
+
   db.prepare(
-    `UPDATE users SET name = ?, phone = ?, pay_per_session = ?, languages = ?, subjects = ? WHERE id = ? AND role = 'teacher'`
-  ).run(name, phone || null, payPerSession || null, languages, subjects, id);
+    `UPDATE users SET name = ?, email = ?, phone = ?, pay_per_session = ?, languages = ?, subjects = ? WHERE id = ? AND role = 'teacher'`
+  ).run(name, newEmail, phone || null, payPerSession || null, languages, subjects, id);
+  if (newEmail !== teacher.email) {
+    logAudit(session, "tai_khoan", `Đổi email đăng nhập của ${name}: ${teacher.email} → ${newEmail}`);
+  }
 
   revalidatePath("/admin/teachers");
   revalidatePath(`/admin/teachers/${id}`);

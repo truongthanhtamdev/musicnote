@@ -451,6 +451,9 @@ function migrate() {
   ensureColumn("trial_requests", "email", "TEXT");
   // Email nhận thư của tài khoản (users.email là tên đăng nhập, thường là SĐT).
   ensureColumn("users", "contact_email", "TEXT");
+  // Tăng lên mỗi khi đặt lại / đổi mật khẩu — mọi phiên đăng nhập cũ (ký với
+  // số cũ) hết hiệu lực ngay, kể cả trên máy người khác.
+  ensureColumn("users", "session_version", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("packages", "bonus_sessions", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("packages", "course_count", "INTEGER NOT NULL DEFAULT 1");
   backfillClassStages();

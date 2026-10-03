@@ -19,6 +19,11 @@ export interface SessionPayload {
   userId: number;
   role: "admin" | "manager" | "coordinator" | "teacher" | "student";
   name: string;
+  /**
+   * users.session_version lúc đăng nhập. Phiên cũ (trước khi có trường này)
+   * không có `v` — coi như 0 để cập nhật xong không ai bị đăng xuất oan.
+   */
+  v?: number;
 }
 
 /** Payload đọc từ token, kèm mốc hết hạn để biết khi nào cần gia hạn. */
@@ -27,9 +32,9 @@ export interface VerifiedSession extends SessionPayload {
 }
 
 export function signSession(payload: SessionPayload): string {
-  // Chỉ ký đúng ba trường; nhận cả iat/exp cũ vào đây là jsonwebtoken báo lỗi.
-  const { userId, role, name } = payload;
-  return jwt.sign({ userId, role, name }, SECRET, { expiresIn: SESSION_SECONDS });
+  // Chỉ ký đúng các trường này; nhận cả iat/exp cũ vào đây là jsonwebtoken báo lỗi.
+  const { userId, role, name, v } = payload;
+  return jwt.sign({ userId, role, name, v: v ?? 0 }, SECRET, { expiresIn: SESSION_SECONDS });
 }
 
 export function verifySession(token: string): VerifiedSession | null {

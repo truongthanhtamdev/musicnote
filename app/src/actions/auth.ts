@@ -2,7 +2,8 @@
 
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
-import { clearSessionCookie, findLoginUser, setSessionCookie } from "@/lib/auth";
+import { clearSessionCookie, findLoginCandidates, setSessionCookie } from "@/lib/auth";
+import { clearLoginFailures, loginLockedMinutes, recordLoginFailure } from "@/lib/login-throttle";
 import { roleHomePath } from "@/lib/types";
 
 export interface LoginState {
@@ -21,19 +22,26 @@ export async function loginAction(
     return { error: "Vui lòng nhập tên đăng nhập và mật khẩu" };
   }
 
-  const user = findLoginUser(email);
-  if (!user || !user.active) {
-    return { error: "Email hoặc mật khẩu không đúng" };
+  const locked = await loginLockedMinutes(email);
+  if (locked > 0) {
+    return {
+      error: `Nhập sai quá nhiều lần — thử lại sau ${locked} phút, hoặc nhắn trung tâm để được đặt lại mật khẩu.`,
+    };
   }
 
-  const ok = bcrypt.compareSync(password, user.password_hash);
-  if (!ok) {
-    return { error: "Email hoặc mật khẩu không đúng" };
+  const user = findLoginCandidates(email).find(
+    (u) => u.active && bcrypt.compareSync(password, u.password_hash)
+  );
+  if (!user) {
+    await recordLoginFailure(email);
+    return { error: "Tên đăng nhập hoặc mật khẩu không đúng" };
   }
 
-  await setSessionCookie({ userId: user.id, role: user.role, name: user.name });
+  clearLoginFailures(email);
+  await setSessionCookie(user);
 
-  if (next && next.startsWith("/")) {
+  // "//trang-khac.com" cũng bắt đầu bằng "/" nhưng là sang tên miền khác.
+  if (next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")) {
     redirect(next);
   }
   redirect(roleHomePath(user.role));
