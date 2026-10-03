@@ -54,7 +54,19 @@ export function isPublicPath(pathname: string): boolean {
 declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;
+    /** Pixel quảng cáo OpenAI — chỉ có trên trang công khai (xem oai-pixel.tsx). */
+    oaiq?: (...args: unknown[]) => void;
   }
+}
+
+/**
+ * Báo cho pixel quảng cáo OpenAI biết khách vừa đặt lịch học thử — lệnh lấy
+ * nguyên văn từ Ads Manager (Sự kiện chuyển đổi → Appointment Scheduled).
+ * Không có pixel (trang nội bộ, máy lập trình) thì tự bỏ qua.
+ */
+export function trackAppointmentScheduled() {
+  if (typeof window === "undefined") return;
+  window.oaiq?.("measure", "appointment_scheduled", { type: "customer_action" });
 }
 
 /**

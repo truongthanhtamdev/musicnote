@@ -5,7 +5,7 @@ import Link from "next/link";
 import { submitTrialRequestAction, type TrialFormState } from "@/actions/trial";
 import { LANGUAGE_LABELS, SUBJECT_SUGGESTIONS } from "@/lib/types";
 import { IconCheckCircle } from "@/components/icons";
-import { trackEvent } from "@/lib/analytics";
+import { trackAppointmentScheduled, trackEvent } from "@/lib/analytics";
 import { FacebookSteps } from "@/components/facebook-steps";
 
 const initialState: TrialFormState = {};
@@ -50,6 +50,7 @@ export function TrialForm({
   useEffect(() => {
     if (!state.success) return;
     trackEvent("dang_ky_hoc_thu");
+    trackAppointmentScheduled();
     onSubmitted?.(!!state.wheelOpen);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy một lần cho mỗi lượt gửi
   }, [state]);
