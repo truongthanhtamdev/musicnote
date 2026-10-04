@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useActionState } from "react";
-import { createClassAction, setTeacherLabelAction } from "@/actions/classes";
+import { createClassAction } from "@/actions/classes";
 import { toggleBusySlotAction, clearDayBusyAction } from "@/actions/availability";
 import type { FormState } from "@/actions/teachers";
 import {
@@ -225,19 +225,6 @@ export function TeacherScheduleGrid({
     (c) => c.status === "active" && c.schedule_type === "flexible"
   );
 
-  // Tên chỉ giáo viên thấy — trung tâm vẫn thấy tên thật của khách.
-  function renameStudent(cls: ClassRow) {
-    const name = window.prompt(
-      "Tên bạn muốn thấy cho học viên này (chỉ bạn thấy, để trống để dùng lại tên gốc):",
-      cls.student_name
-    );
-    if (name === null) return;
-    startTransition(async () => {
-      const res = await setTeacherLabelAction(cls.id, name);
-      if (res.error) window.alert(res.error);
-    });
-  }
-
   return (
     <div>
       {/* Chú giải */}
@@ -335,16 +322,14 @@ export function TeacherScheduleGrid({
                                   {label(cls)}
                                 </Link>
                               ) : (
-                                <button
+                                <Link
                                   key={cls.id}
-                                  type="button"
-                                  title="Bấm để đổi tên học viên cho dễ nhìn lịch"
-                                  disabled={isPending}
-                                  onClick={() => renameStudent(cls)}
+                                  href={`/teacher/schedule?edit=${cls.id}#class-${cls.id}`}
+                                  title="Bấm để sửa lịch, tên hiển thị, link Google Meet"
                                   className={`${box} ${clash ? "" : "h-full"}`}
                                 >
                                   {label(cls)}
-                                </button>
+                                </Link>
                               )
                             )}
                           </div>

@@ -395,6 +395,12 @@ export async function updateClassAction(
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
   }
 
+  if (meetingUrl && /meet\.google\.com\/new\/?$/i.test(meetingUrl)) {
+    return {
+      error:
+        "Đây là link TẠO phòng, mỗi lần bấm ra một phòng khác. Mở phòng xong, chép link dạng meet.google.com/abc-defg-hij rồi dán vào nhé.",
+    };
+  }
   // Trung tâm quản lý bằng tên thật, nên giáo viên sửa tên chỉ đổi tên riêng
   // giáo viên thấy (teacher_label) — student_name giữ nguyên.
   const isTeacher = session.role === "teacher";
@@ -404,8 +410,8 @@ export async function updateClassAction(
     .get(id) as
     | { meeting_url: string | null; student_user_id: number | null; student_name: string; subject: string }
     | undefined;
-  // Form của giáo viên không có ô link phòng học — không có ô thì giữ link cũ,
-  // đừng xoá trắng link Meet mỗi lần giáo viên sửa lớp.
+  // Form nào không có ô link phòng học thì giữ link cũ, đừng xoá trắng link
+  // Meet mỗi lần sửa lớp.
   const nextMeetingUrl = formData.has("meeting_url") ? meetingUrl : (before?.meeting_url ?? null);
   if (formData.has("messenger_url")) {
     const raw = String(formData.get("messenger_url") || "").trim().slice(0, 300);
@@ -475,16 +481,6 @@ function setTeacherLabel(classId: number, teacherId: number, label: string): num
   let changed = 0;
   for (const id of customerClassIds(classId)) changed += stmt.run(value, id, teacherId).changes;
   return changed;
-}
-
-/** Giáo viên đổi tên hiển thị của học viên ngay trên lưới "Lịch tuần". */
-export async function setTeacherLabelAction(classId: number, label: string): Promise<{ error?: string }> {
-  const session = await assertRole(["teacher"]);
-  if (setTeacherLabel(classId, session.userId, label) === 0) {
-    return { error: "Không tìm thấy lớp của bạn" };
-  }
-  revalidatePath("/teacher", "layout");
-  return {};
 }
 
 /**

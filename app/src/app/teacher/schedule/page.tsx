@@ -13,8 +13,13 @@ import NewClassForm from "./new-class-form";
 import TeacherClassRow from "./class-row";
 import ReschedulePanel from "../reschedule-panel";
 
-export default async function TeacherSchedulePage() {
+export default async function TeacherSchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>;
+}) {
   const session = await getSession();
+  const editId = Number((await searchParams).edit) || 0;
   const activeClasses = listClassesForTeacher(session!.userId)
     .filter((c) => c.status === "active")
     .map(teacherSees);
@@ -87,7 +92,7 @@ export default async function TeacherSchedulePage() {
               </p>
               <ul className="divide-y divide-navy-100 mt-1">
                 {flexibleClasses.map((c) => (
-                  <TeacherClassRow key={c.id} cls={c} progress={c.progress} />
+                  <TeacherClassRow key={c.id} cls={c} progress={c.progress} autoEdit={c.id === editId} />
                 ))}
               </ul>
             </Card>
@@ -121,7 +126,7 @@ export default async function TeacherSchedulePage() {
                   ) : (
                     <ul className="divide-y divide-navy-100">
                       {dayClasses.map((c) => (
-                        <TeacherClassRow key={c.id} cls={c} progress={c.progress} />
+                        <TeacherClassRow key={c.id} cls={c} progress={c.progress} autoEdit={c.id === editId} />
                       ))}
                     </ul>
                   )}

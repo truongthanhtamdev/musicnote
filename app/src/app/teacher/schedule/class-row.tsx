@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { updateClassAction, deleteClassAction, endWeeklySlotAction } from "@/actions/classes";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
@@ -26,11 +26,21 @@ const initialState: FormState = {};
 export default function TeacherClassRow({
   cls,
   progress,
+  autoEdit = false,
 }: {
   cls: ClassRow;
   progress?: PackageProgress | null;
+  /** Mở sẵn form sửa — khi giáo viên bấm vào ô lớp trên lưới "Lịch tuần". */
+  autoEdit?: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(autoEdit);
+  const [copied, setCopied] = useState(false);
+
+  // Mở từ lưới "Lịch tuần" (?edit=…): bỏ tham số khỏi URL ngay, không thì lưu
+  // xong đổi sang thứ khác, lớp hiện ở cột mới lại tự mở form sửa lần nữa.
+  useEffect(() => {
+    if (autoEdit) window.history.replaceState(null, "", `${window.location.pathname}#class-${cls.id}`);
+  }, [autoEdit, cls.id]);
   const [scheduleType, setScheduleType] = useState<ClassScheduleType>(cls.schedule_type);
   const [state, formAction, pending] = useActionState(updateClassAction, initialState);
   const [isDeleting, startDeleteTransition] = useTransition();
@@ -43,7 +53,7 @@ export default function TeacherClassRow({
 
   if (!editing) {
     return (
-      <li className="px-4 py-3">
+      <li id={`class-${cls.id}`} className="px-4 py-3 scroll-mt-20">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="font-medium text-ink-900 truncate">
@@ -60,6 +70,34 @@ export default function TeacherClassRow({
               <span className="text-ink-300">·</span>
               {cls.subject}
             </p>
+            {cls.meeting_url ? (
+              <p className="text-xs mt-1 flex flex-wrap items-center gap-x-2">
+                <a
+                  href={cls.meeting_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-navy-700 hover:underline"
+                >
+                  🎥 Link Google Meet
+                </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(cls.meeting_url!);
+                      setCopied(true);
+                    } catch {
+                      window.prompt("Chép link này gửi cho khách:", cls.meeting_url!);
+                    }
+                  }}
+                  className="text-wood-600 hover:text-wood-700 font-semibold"
+                >
+                  {copied ? "Đã chép ✓" : "Chép gửi khách"}
+                </button>
+              </p>
+            ) : (
+              <p className="text-xs mt-1 text-ink-400">Chưa có link Google Meet — bấm Sửa để gắn.</p>
+            )}
             {progress && (
               <div className="mt-2 max-w-[220px]">
                 <p className="text-xs text-ink-500 mb-1">
@@ -102,7 +140,7 @@ export default function TeacherClassRow({
   }
 
   return (
-    <li className="px-4 py-3 bg-ivory-50">
+    <li id={`class-${cls.id}`} className="px-4 py-3 bg-ivory-50 scroll-mt-20">
       <form action={formAction} className="space-y-3">
         <input type="hidden" name="id" value={cls.id} />
         <input
@@ -234,6 +272,29 @@ export default function TeacherClassRow({
             className={`${field} col-span-2`}
             aria-label="Ghi chú"
           />
+          <div className="col-span-2 space-y-1">
+            <div className="flex gap-2">
+              <input
+                name="meeting_url"
+                defaultValue={cls.meeting_url || ""}
+                placeholder="Link Google Meet (meet.google.com/...)"
+                className={`${field} min-w-0 flex-1`}
+                aria-label="Link Google Meet"
+              />
+              <a
+                href="https://meet.google.com/new"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${btn.secondary} shrink-0 px-3`}
+              >
+                Tạo phòng
+              </a>
+            </div>
+            <p className="text-xs text-ink-400">
+              Bấm &quot;Tạo phòng&quot; → Google Meet mở phòng mới → chép link trên thanh địa chỉ dán
+              vào đây rồi Lưu. Khách thấy link ngay trong tài khoản của họ, nút &quot;Vào lớp&quot;.
+            </p>
+          </div>
           <input
             name="messenger_url"
             defaultValue={cls.messenger_url || ""}
