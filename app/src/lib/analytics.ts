@@ -56,17 +56,25 @@ declare global {
     gtag?: (...args: unknown[]) => void;
     /** Pixel quảng cáo OpenAI — chỉ có trên trang công khai (xem oai-pixel.tsx). */
     oaiq?: (...args: unknown[]) => void;
+    /** Meta Pixel (Facebook) — chỉ có trên trang công khai (xem meta-pixel.tsx). */
+    fbq?: (...args: unknown[]) => void;
   }
 }
 
+/** Nút liên hệ trung tâm → sự kiện chuẩn "Contact" của Meta. */
+const META_CONTACT_EVENTS = new Set(["nhan_messenger", "nhan_zalo", "ket_ban_facebook"]);
+
 /**
- * Báo cho pixel quảng cáo OpenAI biết khách vừa đặt lịch học thử — lệnh lấy
- * nguyên văn từ Ads Manager (Sự kiện chuyển đổi → Appointment Scheduled).
+ * Báo cho các pixel quảng cáo biết khách vừa đăng ký học thử:
+ *  - OpenAI: lệnh lấy nguyên văn từ Ads Manager (Appointment Scheduled);
+ *  - Meta: sự kiện chuẩn "Lead" — chọn làm chuyển đổi khi chạy quảng cáo
+ *    Facebook để tối ưu ra người đăng ký, không chỉ người bấm xem.
  * Không có pixel (trang nội bộ, máy lập trình) thì tự bỏ qua.
  */
 export function trackAppointmentScheduled() {
   if (typeof window === "undefined") return;
   window.oaiq?.("measure", "appointment_scheduled", { type: "customer_action" });
+  window.fbq?.("track", "Lead", { content_name: "Đăng ký học thử" });
 }
 
 /**
@@ -76,4 +84,5 @@ export function trackAppointmentScheduled() {
 export function trackEvent(name: string, params: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
   window.gtag?.("event", name, params);
+  if (META_CONTACT_EVENTS.has(name)) window.fbq?.("track", "Contact", { content_name: name });
 }
