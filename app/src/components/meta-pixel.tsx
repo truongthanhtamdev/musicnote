@@ -16,7 +16,7 @@ import { isPublicPath } from "@/lib/analytics";
  * PageView cho trang đầu tiên — những trang khách bấm sang sau phải tự báo.
  */
 // Khai nhiều mã thì sự kiện fbq("track", …) tự gửi tới tất cả pixel đã init.
-const DEFAULT_PIXEL_IDS = "1474158190921102";
+const DEFAULT_PIXEL_IDS = "1474158190921102,2927316544293818";
 const PIXEL_IDS =
   process.env.NODE_ENV === "development"
     ? []
