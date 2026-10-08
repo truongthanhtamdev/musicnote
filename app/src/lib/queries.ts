@@ -28,6 +28,7 @@ import {
   type UserRow,
   scheduleStart,
   sessionPoolKey,
+  personKey,
 } from "./types";
 
 export function listTeachers(includeInactive = true): UserRow[] {
@@ -553,6 +554,94 @@ export function sessionNumberMap(classIds: number[]): Map<number, number> {
     after.forEach((r, i) => out.set(r.id, base.value + i + 1));
   }
   return out;
+}
+
+/**
+ * Mốc "đã học tới buổi mấy" cần ghi để buổi điểm danh `attendanceId` mang
+ * đúng số `stated` — hoặc null nếu buổi đó đã đúng số / không được đánh số.
+ *
+ * Mốc luôn nói về BUỔI MỚI NHẤT của nhóm (theo ngày học). Trước đây số giáo
+ * viên điền khi sửa một buổi cũ, hay khi điểm danh bù một ngày đã qua, bị
+ * hiểu luôn là số của buổi mới nhất: sửa buổi 5 trong khi đã học tới buổi 8
+ * là cả dãy lùi về 5, gói học cũng tụt về 5/20 — số buổi "nhảy tùm lum", sửa
+ * chỗ này lệch chỗ khác. Giờ đổi số buổi được sửa thành số buổi mới nhất
+ * bằng cách cộng thêm số buổi học SAU nó.
+ */
+export function baselineForStatedNumber(
+  attendanceId: number,
+  stated: number
+): { packageId: number | null; classId: number; value: number } | null {
+  const row = db
+    .prepare("SELECT id, class_id, session_date, is_trial, status, counts_as_used FROM attendance WHERE id = ?")
+    .get(attendanceId) as
+    | { id: number; class_id: number; session_date: string; is_trial: number; status: string; counts_as_used: number }
+    | undefined;
+  if (!row || row.is_trial || (row.status !== "completed" && !row.counts_as_used)) return null;
+  if (sessionNumberMap([row.class_id]).get(row.id) === stated) return null;
+
+  const cls = getClass(row.class_id);
+  if (!cls) return null;
+  const ids = [...sessionPools([row.class_id]).classPool.keys()];
+  const ph = ids.map(() => "?").join(",");
+  // Cùng thứ tự sessionNumberMap đánh số: theo ngày học, rồi theo id.
+  const { n } = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM attendance
+        WHERE class_id IN (${ph}) AND is_trial = 0 AND (status = 'completed' OR counts_as_used = 1)
+          AND (session_date > ? OR (session_date = ? AND id > ?))`
+    )
+    .get(...ids, row.session_date, row.session_date, row.id) as { n: number };
+  return { packageId: cls.package_id, classId: cls.id, value: stated + n };
+}
+
+/** Các lớp cùng nhóm đếm buổi với lớp này (kể cả chính nó). */
+export function sessionPoolClassIds(classId: number): number[] {
+  return [...sessionPools([classId]).classPool.keys()];
+}
+
+/** "Cùng khách, cùng giờ học" — hai lớp chung khoá này là một buổi bị nhập hai lần. */
+function slotKeyOf(c: { student_user_id?: number | null; student_name: string; start_time: string }): string {
+  return `${personKey(c)}|${c.start_time}`;
+}
+
+/**
+ * Các "khách|giờ|ngày" đã có điểm danh trong khoảng ngày — để không bắt giáo
+ * viên điểm danh lần hai khi một khách bị nhập thành hai lớp trùng giờ (hay
+ * gặp: lớp học thử và lớp khoá học, hoặc giáo viên tự thêm lại lớp trung tâm
+ * đã giao). Điểm danh cả hai là một tiết bị tính thành hai.
+ */
+export function checkedInSlots(from: string, to: string): Set<string> {
+  const rows = db
+    .prepare(
+      `SELECT c.student_user_id, c.student_name, c.start_time, a.session_date
+         FROM attendance a JOIN classes c ON c.id = a.class_id
+        WHERE a.session_date BETWEEN ? AND ?`
+    )
+    .all(from, to) as { student_user_id: number | null; student_name: string; start_time: string; session_date: string }[];
+  return new Set(rows.map((r) => `${slotKeyOf(r)}|${r.session_date}`));
+}
+
+/** Buổi của khách này, cùng giờ, cùng ngày đã được điểm danh ở MỘT LỚP KHÁC chưa. */
+export function findTwinCheckin(
+  classId: number,
+  date: string
+): { class_id: number; teacher_name: string | null } | undefined {
+  const cls = getClass(classId);
+  if (!cls) return undefined;
+  const key = slotKeyOf(cls);
+  const twins = (
+    db
+      .prepare("SELECT id, student_user_id, student_name, start_time FROM classes WHERE id != ? AND start_time = ?")
+      .all(classId, cls.start_time) as { id: number; student_user_id: number | null; student_name: string; start_time: string }[]
+  ).filter((c) => slotKeyOf(c) === key);
+  if (twins.length === 0) return undefined;
+  const ph = twins.map(() => "?").join(",");
+  return db
+    .prepare(
+      `SELECT a.class_id, u.name AS teacher_name FROM attendance a LEFT JOIN users u ON u.id = a.teacher_id
+        WHERE a.session_date = ? AND a.class_id IN (${ph}) LIMIT 1`
+    )
+    .get(date, ...twins.map((t) => t.id)) as { class_id: number; teacher_name: string | null } | undefined;
 }
 
 /**
@@ -1425,6 +1514,9 @@ export function listMissedCheckins(opts?: {
     ).map((a) => `${a.class_id}|${a.session_date}`)
   );
 
+  // Khách bị nhập thành hai lớp trùng giờ: một lớp đã điểm danh là đủ.
+  const slotsDone = checkedInSlots(fromStr, todayISO());
+
   const out: MissedCheckin[] = [];
   for (const cls of classes) {
     const createdDate = scheduleStart(cls);
@@ -1434,6 +1526,7 @@ export function listMissedCheckins(opts?: {
       const iso = toISODate(date);
       if (iso < fromStr || iso < createdDate) continue;
       if (marked.has(`${cls.id}|${iso}`)) continue;
+      if (slotsDone.has(`${slotKeyOf(cls)}|${iso}`)) continue;
       out.push({ cls, date: iso, daysLate: i });
     }
     // Buổi hôm nay chưa tính là quên: tiết ngày nào điểm danh trong ngày đó là

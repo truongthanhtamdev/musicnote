@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { correctAttendanceAction } from "@/actions/attendance";
+import { useActionState, useState, useTransition } from "react";
+import { correctAttendanceAction, deleteAttendanceAction } from "@/actions/attendance";
 import type { FormState } from "@/actions/teachers";
 import {
   ATTENDANCE_STATUS_LABELS,
@@ -30,6 +30,7 @@ export default function AttendanceRow({
   const [editing, setEditing] = useState(false);
   const [status, setStatus] = useState<AttendanceStatus>(row.status);
   const [state, formAction, pending] = useActionState(correctAttendanceAction, initialState);
+  const [deleting, startDelete] = useTransition();
 
   // Close the edit form once a save succeeds. Adjusting state during render
   // (rather than in an effect) avoids an extra commit-then-rerender pass.
@@ -116,6 +117,25 @@ export default function AttendanceRow({
             </button>
             <button type="button" onClick={() => setEditing(false)} className={btn.ghost}>
               Huỷ
+            </button>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => {
+                if (
+                  !confirm(
+                    `Xoá hẳn buổi điểm danh ngày ${row.session_date.split("-").reverse().join("/")} của ${row.student_name}? Dùng khi buổi này bị điểm danh trùng — tiền công và số tiết của khách sẽ trừ đi buổi này.`
+                  )
+                )
+                  return;
+                startDelete(async () => {
+                  const res = await deleteAttendanceAction(row.id);
+                  if (res.error) alert(res.error);
+                });
+              }}
+              className={`${btn.danger} py-1.5 ml-auto`}
+            >
+              {deleting ? "Đang xoá..." : "Xoá buổi trùng"}
             </button>
             {state.error && (
               <p className="text-xs text-coral-700 w-full flex items-center gap-1.5">

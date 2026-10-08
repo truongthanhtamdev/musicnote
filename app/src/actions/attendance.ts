@@ -6,7 +6,13 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { nowHHMM, todayISO } from "@/lib/format";
 import { assertRole } from "@/lib/guard";
-import { getAttendance, getClass, getPackageProgress, nextSessionNumbers } from "@/lib/queries";
+import {
+  baselineForStatedNumber,
+  findTwinCheckin,
+  getAttendance,
+  getClass,
+  sessionPoolClassIds,
+} from "@/lib/queries";
 import { ATTENDANCE_STATUS_LABELS, hasRescheduleInfo, type AttendanceStatus, MANAGE_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import { awardTrialBonus } from "@/lib/bonus";
@@ -49,32 +55,25 @@ function readStatedSessionNumber(formData: FormData): number | null {
 }
 
 /**
- * A stated "buổi thứ mấy" that doesn't match what the system counts becomes
- * the package's new baseline — the count picks up from there and keeps
- * counting itself afterwards (the session being saved is already recorded,
- * and its created_at isn't after the baseline, so it isn't counted twice).
- * A matching number changes nothing, which keeps the common case on the
- * plain automatic count rather than pinning a baseline on every check-in.
+ * Giáo viên/giáo vụ điền "buổi thứ mấy" cho một buổi điểm danh: ghi mốc đếm
+ * sao cho đúng buổi đó mang số này, các buổi sau tự nhảy tiếp từ đây.
  */
-function applyStatedSessionNumber(classId: number, stated: number) {
+function applyStatedSessionNumber(attendanceId: number, stated: number) {
   // Buổi học thử (0) không phải mốc đếm gói: đặt mốc 0 là đếm lại cả khoá từ đầu.
   if (stated === 0) return;
-  const cls = getClass(classId);
-  if (!cls) return;
-  if (cls.package_id) {
-    if (getPackageProgress(cls)?.used === stated) return;
+  const target = baselineForStatedNumber(attendanceId, stated);
+  if (!target) return;
+  if (target.packageId) {
     db.prepare(
       "UPDATE packages SET used_override = ?, used_override_set_at = datetime('now') WHERE id = ?"
-    ).run(stated, cls.package_id);
-    return;
+    ).run(target.value, target.packageId);
+  } else {
+    // Lớp không theo gói: ghi mốc ngay trên lớp, để buổi sau ô "Buổi thứ mấy"
+    // tự nhảy tiếp từ số giáo viên vừa điền.
+    db.prepare(
+      "UPDATE classes SET used_override = ?, used_override_set_at = datetime('now') WHERE id = ?"
+    ).run(target.value, target.classId);
   }
-  // Lớp không theo gói: ghi mốc ngay trên lớp, để buổi sau ô "Buổi thứ mấy"
-  // tự nhảy tiếp từ số giáo viên vừa điền.
-  const current = (nextSessionNumbers([cls]).get(cls.id) ?? 1) - 1;
-  if (current === stated) return;
-  db.prepare(
-    "UPDATE classes SET used_override = ?, used_override_set_at = datetime('now') WHERE id = ?"
-  ).run(stated, classId);
 }
 
 export async function markAttendanceAction(
@@ -142,6 +141,17 @@ export async function markAttendanceAction(
       db.prepare("UPDATE attendance SET is_trial = ? WHERE id = ?").run(trial ? 1 : 0, existing.id);
     }
   } else {
+    // Một khách bị nhập thành hai lớp trùng giờ (lớp học thử + lớp khoá, hay
+    // giáo viên tự thêm lại lớp trung tâm đã giao): điểm danh cả hai là một
+    // tiết bị tính thành hai tiết lương và trừ hai tiết của khách.
+    const twin = findTwinCheckin(classId, sessionDate);
+    if (twin) {
+      return {
+        error: `Buổi này của khách đã được điểm danh ở một lớp khác cùng giờ${
+          twin.teacher_name ? ` (${twin.teacher_name})` : ""
+        } — không cần điểm danh lần nữa. Nếu đây là lớp bị trùng, báo trung tâm để gỡ bớt.`,
+      };
+    }
     // Trial status isn't a manual checkbox. The teacher writing "buổi 0"
     // says so outright; otherwise it auto-fires for a class's very first
     // recorded session, but only when trial_pending was set by the center
@@ -198,7 +208,7 @@ export async function markAttendanceAction(
     .get(classId, sessionDate) as { id: number } | undefined;
   if (saved) awardTrialBonus(saved.id);
 
-  if (statedSessionNumber !== null) applyStatedSessionNumber(classId, statedSessionNumber);
+  if (saved && statedSessionNumber !== null) applyStatedSessionNumber(saved.id, statedSessionNumber);
 
   revalidatePath("/teacher");
   revalidatePath("/teacher/attendance");
@@ -265,7 +275,7 @@ export async function correctAttendanceAction(
   );
 
   if (statedSessionNumber !== null) {
-    applyStatedSessionNumber(existing.class_id, statedSessionNumber);
+    applyStatedSessionNumber(id, statedSessionNumber);
   }
 
   // Sửa thành buổi học thử đã dạy xong thì cũng phải ghi thưởng — trước đây
@@ -305,4 +315,56 @@ export async function confirmMessengerBackupAction(classId: number, sessionDate:
   revalidatePath("/teacher");
   revalidatePath("/teacher/attendance");
   revalidatePath("/admin/attendance");
+}
+
+/**
+ * Xoá một dòng điểm danh — để gỡ buổi bị điểm danh trùng (một khách nhập
+ * thành hai lớp, giáo viên điểm danh cả hai). Chỉ Quản lý trở lên.
+ *
+ * Nếu buổi đó đã nằm trong mốc "đã học tới buổi mấy" thì mốc cũng lùi đi một,
+ * không thì xoá xong gói học vẫn đếm thừa đúng buổi vừa gỡ.
+ */
+export async function deleteAttendanceAction(id: number): Promise<{ error?: string }> {
+  const session = await assertRole(MANAGE_ROLES);
+  const row = db
+    .prepare("SELECT id, class_id, session_date, status, is_trial, counts_as_used, created_at FROM attendance WHERE id = ?")
+    .get(id) as
+    | { id: number; class_id: number; session_date: string; status: string; is_trial: number; counts_as_used: number; created_at: string }
+    | undefined;
+  if (!row) return { error: "Không tìm thấy buổi điểm danh này" };
+  const cls = getClass(row.class_id);
+
+  const counted = !row.is_trial && (row.status === "completed" || row.counts_as_used);
+  db.transaction(() => {
+    if (counted && cls) {
+      if (cls.package_id) {
+        db.prepare(
+          `UPDATE packages SET used_override = MAX(0, used_override - 1)
+            WHERE id = ? AND used_override IS NOT NULL AND used_override_set_at >= ?`
+        ).run(cls.package_id, row.created_at);
+      } else {
+        const ids = sessionPoolClassIds(row.class_id);
+        db.prepare(
+          `UPDATE classes SET used_override = MAX(0, used_override - 1)
+            WHERE id IN (${ids.map(() => "?").join(",")}) AND used_override IS NOT NULL AND used_override_set_at >= ?`
+        ).run(...ids, row.created_at);
+      }
+    }
+    // Thưởng học thử neo vào dòng điểm danh — dòng trùng thì thưởng cũng trùng.
+    db.prepare("DELETE FROM staff_bonuses WHERE ref_type = 'attendance' AND ref_id = ?").run(id);
+    db.prepare("DELETE FROM attendance WHERE id = ?").run(id);
+  })();
+
+  logAudit(
+    session,
+    "diem_danh",
+    `Xoá điểm danh ngày ${row.session_date} của ${cls?.student_name ?? `lớp #${row.class_id}`}` +
+      ` (${ATTENDANCE_STATUS_LABELS[row.status as AttendanceStatus] ?? row.status})`
+  );
+  revalidatePath("/admin/attendance");
+  revalidatePath("/admin/classes");
+  revalidatePath("/admin/payroll");
+  revalidatePath("/admin");
+  revalidatePath("/teacher", "layout");
+  return {};
 }

@@ -9,9 +9,10 @@ import {
   getLateCheckinQuota,
   nextSessionNumbers,
   sessionNumberMap,
+  checkedInSlots,
 } from "@/lib/queries";
 import { addDays, toISODate, todayISO, now } from "@/lib/format";
-import { ATTENDANCE_STATUS_LABELS, DAY_LABELS, teacherSees, scheduleStart } from "@/lib/types";
+import { ATTENDANCE_STATUS_LABELS, DAY_LABELS, personKey, teacherSees, scheduleStart } from "@/lib/types";
 import { buildBackupMessage } from "@/lib/messenger-backup";
 import MessengerBackupList, { type BackupItem } from "./messenger-backup";
 import { IconCalendarCheck, IconChat, IconCheckCircle, IconClock, IconMusic } from "@/components/icons";
@@ -40,10 +41,16 @@ export default async function TeacherTodayPage() {
   const classes = listClassesForTeacher(teacherId)
     .filter((c) => c.day_of_week === dow && c.status === "active" && scheduleStart(c) <= todayStr)
     .sort((a, b) => a.start_time.localeCompare(b.start_time))
-    .map((c) => ({ ...teacherSees(c), existing: attendanceByClassId.get(c.id) }));
+    // Khoá "khách|giờ" lấy từ tên thật, trước khi đổi sang tên giáo viên đặt.
+    .map((c) => ({ ...teacherSees(c), existing: attendanceByClassId.get(c.id), slot: `${personKey(c)}|${c.start_time}` }));
   // Already-checked-in classes drop off "Hôm nay" — the teacher has
   // finished that session; corrections go through "Lịch sử điểm danh".
-  const pendingClasses = classes.filter((c) => !c.existing);
+  // Khách bị nhập thành hai lớp trùng giờ: một lớp điểm danh rồi thì lớp kia
+  // không hiện ra bắt điểm danh lần nữa (điểm danh cả hai = 1 tiết tính 2).
+  const slotsDone = checkedInSlots(todayStr, todayStr);
+  const pendingClasses = classes.filter(
+    (c) => !c.existing && !slotsDone.has(`${c.slot}|${todayStr}`)
+  );
   // Số gợi ý cho ô "Buổi thứ mấy": tự nhảy tiếp từ số giáo viên điền lần trước.
   const nextNumbers = nextSessionNumbers(pendingClasses);
   const doneCount = classes.length - pendingClasses.length;
