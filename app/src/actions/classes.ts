@@ -856,3 +856,46 @@ export async function awardMissingForClassAction(classId: number): Promise<{ tri
   revalidatePath("/admin/thuong");
   return r;
 }
+
+/**
+ * Giáo viên gỡ lịch khách học thử xong mà không học tiếp: chuyển khách sang
+ * "Rớt lớp" (đã kết thúc), cả các buổi khác trong tuần của khách — lịch dạy,
+ * nhắc lịch, "quên điểm danh" đều thôi hiện. Lịch sử buổi học thử (và tiền
+ * công 50k) vẫn giữ nguyên.
+ *
+ * Chỉ cho khách đang ở bước học thử, hoặc đã có buổi học thử mà chưa học buổi
+ * chính thức nào — khách đã học chính thức thì cho nghỉ là việc của trung tâm.
+ */
+export async function teacherDropTrialAction(classId: number): Promise<{ error?: string }> {
+  const session = await assertRole(["teacher"]);
+  const cls = getClass(classId);
+  if (!cls || cls.teacher_id !== session.userId) return { error: "Không tìm thấy lớp của bạn" };
+
+  const ids = [classId, ...stageSiblingIds(classId)];
+  const ph = ids.map(() => "?").join(",");
+  const { trials, regular } = db
+    .prepare(
+      `SELECT SUM(CASE WHEN is_trial = 1 AND status = 'completed' THEN 1 ELSE 0 END) AS trials,
+              SUM(CASE WHEN is_trial = 0 AND (status = 'completed' OR counts_as_used = 1) THEN 1 ELSE 0 END) AS regular
+         FROM attendance WHERE class_id IN (${ph})`
+    )
+    .get(...ids) as { trials: number | null; regular: number | null };
+  const eligible = TRIAL_STAGES.includes(cls.stage) || ((trials ?? 0) > 0 && !regular);
+  if (!eligible) {
+    return { error: "Khách đã học buổi chính thức — nhắn trung tâm để cho khách nghỉ nhé." };
+  }
+
+  const info = classStage("dropped");
+  const update = db.prepare(
+    "UPDATE classes SET stage = ?, status = ?, paused_until = NULL WHERE id = ? AND teacher_id = ?"
+  );
+  for (const id of ids) update.run(info.value, info.status, id, session.userId);
+  logAudit(
+    session,
+    "lop_hoc",
+    `Giáo viên gỡ lịch ${cls.student_name} (${cls.subject}) — học thử xong không học tiếp`
+  );
+  revalidateClassViews(classId);
+  revalidatePath("/teacher", "layout");
+  return {};
+}

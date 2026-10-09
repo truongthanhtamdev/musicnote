@@ -47,6 +47,23 @@ export default async function TeacherStudentsPage() {
   }
   const numbers = sessionNumberMap(ids);
 
+  // Buổi học thử / buổi chính thức của từng lớp (mọi giáo viên) — để biết
+  // khách nào mới chỉ học thử, giáo viên được tự gỡ lịch nếu khách không học tiếp.
+  const trialStats = new Map<number, { trials: number; regular: number }>();
+  if (ids.length) {
+    const rows = db
+      .prepare(
+        `SELECT class_id,
+                SUM(CASE WHEN is_trial = 1 AND status = 'completed' THEN 1 ELSE 0 END) AS trials,
+                SUM(CASE WHEN is_trial = 0 AND (status = 'completed' OR counts_as_used = 1) THEN 1 ELSE 0 END) AS regular
+           FROM attendance WHERE class_id IN (${ids.map(() => "?").join(",")})
+          GROUP BY class_id`
+      )
+      .all(...ids) as { class_id: number; trials: number; regular: number }[];
+    for (const r of rows) trialStats.set(r.class_id, { trials: r.trials, regular: r.regular });
+  }
+  const trialOnly = new Map<string, { trialStage: boolean; trials: number; regular: number }>();
+
   const groups = new Map<string, StudentGroup>();
   for (const raw of classes) {
     const key = `${personKey(raw)}|${raw.subject}`;
@@ -75,6 +92,7 @@ export default async function TeacherStudentsPage() {
         nextDate: null,
         editClassId: null,
         flexibleClassId: null,
+        dropTrialClassId: null,
         historyClassId: c.id,
       } satisfies StudentGroup);
 
@@ -95,6 +113,16 @@ export default async function TeacherStudentsPage() {
     g.messengerUrl ||= c.messenger_url ?? null;
     if (c.status === "active" && !g.editClassId) g.editClassId = c.id;
     if (tab === "flexible" && !g.flexibleClassId) g.flexibleClassId = c.id;
+    if (c.status === "active") {
+      const t = trialOnly.get(key) ?? { trialStage: false, trials: 0, regular: 0 };
+      const ts = trialStats.get(c.id);
+      t.trialStage ||= c.stage === "trial" || c.stage === "trial_awaiting_fee";
+      t.trials += ts?.trials ?? 0;
+      t.regular += ts?.regular ?? 0;
+      trialOnly.set(key, t);
+      if ((t.trialStage || (t.trials > 0 && t.regular === 0)) && !g.dropTrialClassId) g.dropTrialClassId = c.id;
+      if (!t.trialStage && t.regular > 0) g.dropTrialClassId = null;
+    }
     if (c.package_id && !g.progress) {
       const p = progressByPackage.get(c.package_id);
       if (p) g.progress = { used: p.used, total: p.total, remaining: p.remaining };

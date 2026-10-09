@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { teacherDropTrialAction } from "@/actions/classes";
 import Link from "next/link";
 import { foldVietnamese } from "@/lib/format";
 import { IconChat, IconFacebook, IconSearch, IconUsers, IconVideo, SubjectIcon } from "@/components/icons";
@@ -32,6 +33,8 @@ export interface StudentGroup {
   editClassId: number | null;
   /** Lớp linh động đang chạy — để mở sẵn form điểm danh đúng lớp. */
   flexibleClassId: number | null;
+  /** Khách mới học thử, chưa học buổi chính thức — giáo viên tự gỡ lịch được. */
+  dropTrialClassId: number | null;
   historyClassId: number;
 }
 
@@ -203,6 +206,8 @@ export default function StudentList({ students }: { students: Row[] }) {
                 )}
               </div>
 
+              {s.dropTrialClassId && <DropTrialButton classId={s.dropTrialClassId} name={s.name} />}
+
               <div className="flex flex-wrap items-center gap-3 border-t border-navy-100 pt-2.5 text-sm">
                 <Link href={`/teacher/attendance?classId=${s.historyClassId}`} className="font-semibold text-ink-500 hover:text-wood-600">
                   Lịch sử điểm danh
@@ -229,5 +234,31 @@ export default function StudentList({ students }: { students: Row[] }) {
         </ul>
       )}
     </div>
+  );
+}
+
+/** Khách học thử xong không học tiếp: giáo viên tự gỡ khỏi lịch. */
+function DropTrialButton({ classId, name }: { classId: number; name: string }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() => {
+        if (
+          !confirm(
+            `${name} học thử xong không học tiếp? Khách sẽ được gỡ khỏi lịch dạy của bạn (chuyển sang "Rớt lớp"). Buổi học thử đã dạy vẫn được tính công.`
+          )
+        )
+          return;
+        startTransition(async () => {
+          const res = await teacherDropTrialAction(classId);
+          if (res.error) alert(res.error);
+        });
+      }}
+      className="w-full rounded-xl border border-coral-200 bg-coral-50 px-3 py-2 text-sm font-semibold text-coral-700 hover:bg-coral-100 disabled:opacity-60"
+    >
+      {pending ? "Đang gỡ..." : "Học thử xong, không học tiếp — gỡ lịch"}
+    </button>
   );
 }
