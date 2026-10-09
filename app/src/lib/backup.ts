@@ -6,8 +6,15 @@ import { db, DATA_DIR } from "./db";
 /** Where daily snapshots live — inside DATA_DIR so one folder holds everything worth backing up. */
 export const BACKUP_DIR = path.join(DATA_DIR, "backups");
 
-/** Daily snapshots kept on the server; older ones are pruned automatically. */
-export const KEEP_BACKUPS = 30;
+/**
+ * Số bản giữ lại trên máy chủ; tạo bản mới xong thì xoá các bản cũ hơn.
+ * Giữ 2 chứ không 1: lỡ dữ liệu hỏng ngay trước lần sao lưu thì bản mới cũng
+ * hỏng theo — vẫn còn bản tuần trước để cứu.
+ */
+export const KEEP_BACKUPS = 2;
+
+/** Bao lâu sao lưu tự động một lần. */
+export const BACKUP_EVERY_DAYS = 7;
 
 export interface BackupFile {
   name: string;

@@ -1,16 +1,17 @@
-import { backupFileName, listBackups, runBackup } from "./backup";
+import { BACKUP_EVERY_DAYS, listBackups, runBackup } from "./backup";
 
 /**
- * Sao lưu hằng ngày do chính app chạy, không cần cài cron trên máy chủ.
+ * Sao lưu hằng tuần do chính app chạy, không cần cài cron trên máy chủ.
  *
  * Trung tâm chỉ có một VPS và không ai quản trị máy chủ thường xuyên — bắt
  * cài cron tay là chuyện dễ quên nhất, mà quên thì toàn bộ dữ liệu nằm trên
  * đúng một file không có bản dự phòng nào. Để app tự lo thì cài đặt xong là
  * chạy, khởi động lại vẫn chạy.
  *
- * Cách làm đơn giản nhất mà vẫn đúng: cứ mỗi giờ nhìn xem hôm nay đã có bản
- * sao lưu chưa, chưa thì tạo. Không cần canh đúng nửa đêm, và app có tắt
- * ngang qua đêm thì sáng bật lên vẫn có bản của ngày hôm đó.
+ * Cách làm đơn giản nhất mà vẫn đúng: cứ mỗi giờ nhìn xem bản sao lưu mới
+ * nhất đã đủ 7 ngày chưa, đủ rồi (hoặc chưa có bản nào) thì tạo bản mới — và
+ * tạo xong là tự xoá bớt bản cũ. App có tắt đúng lúc tới hạn thì bật lên vẫn
+ * tạo bù.
  */
 const CHECK_EVERY_MS = 60 * 60 * 1000;
 const FIRST_CHECK_MS = 30 * 1000;
@@ -19,10 +20,11 @@ declare global {
   var __musicnoteAutoBackup: boolean | undefined;
 }
 
-function backupIfMissingToday() {
+function backupIfDue() {
   try {
-    const wanted = backupFileName();
-    if (listBackups().some((b) => b.name === wanted)) return;
+    const newest = listBackups()[0];
+    const dueMs = BACKUP_EVERY_DAYS * 24 * 60 * 60 * 1000;
+    if (newest && Date.now() - newest.createdAt.getTime() < dueMs) return;
     const file = runBackup();
     console.log(`[sao-luu] đã tạo ${file.name}`);
   } catch (e) {
@@ -40,6 +42,6 @@ export function startAutoBackup() {
   globalThis.__musicnoteAutoBackup = true;
 
   // unref: bộ hẹn giờ không được giữ tiến trình sống, máy chủ HTTP lo việc đó.
-  setTimeout(backupIfMissingToday, FIRST_CHECK_MS).unref();
-  setInterval(backupIfMissingToday, CHECK_EVERY_MS).unref();
+  setTimeout(backupIfDue, FIRST_CHECK_MS).unref();
+  setInterval(backupIfDue, CHECK_EVERY_MS).unref();
 }

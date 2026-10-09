@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/guard";
 import { MANAGE_ROLES } from "@/lib/types";
-import { listBackups, formatBytes, BACKUP_DIR, KEEP_BACKUPS, backupFileName } from "@/lib/backup";
+import { listBackups, formatBytes, BACKUP_DIR, BACKUP_EVERY_DAYS, KEEP_BACKUPS } from "@/lib/backup";
 import { } from "@/lib/format";
 import { IconAlert, IconCheckCircle, IconDownload, IconPackage } from "@/components/icons";
 import { Banner, Card, CardHeader, EmptyState, PageHeader, TableShell, Th, btn } from "@/components/ui";
@@ -14,7 +14,9 @@ export default async function BackupPage() {
   // So theo TÊN TỆP chứ không theo giờ tạo: tên tệp đặt theo ngày giờ Việt
   // Nam, còn toISOString() trả ngày theo giờ quốc tế — lệch 7 tiếng, nên từ
   // 0h tới 7h sáng bản sao lưu của hôm nay bị báo nhầm là của hôm qua.
-  const hasToday = backups.some((b) => b.name === backupFileName());
+  // Sao lưu hằng tuần: bản mới nhất chưa quá hạn (thêm 1 ngày dư) là ổn.
+  // eslint-disable-next-line react-hooks/purity -- trang máy chủ, đọc giờ lúc render là đúng ý
+  const fresh = !!latest && Date.now() - latest.createdAt.getTime() < (BACKUP_EVERY_DAYS + 1) * 86_400_000;
   // Có bản sao lưu rồi vẫn nhắc tải về: bản nằm cùng máy chủ với dữ liệu gốc
   // thì không cứu được trường hợp mất nguyên máy chủ.
   const offsiteWarning = backups.length > 0;
@@ -23,17 +25,17 @@ export default async function BackupPage() {
     <div className="space-y-5">
       <PageHeader
         title="Sao lưu & xuất dữ liệu"
-        subtitle="Tải toàn bộ dữ liệu (giáo viên, lớp học, điểm danh, học phí) về máy thành 1 file, và xem các bản sao lưu tự động hàng ngày trên máy chủ."
+        subtitle="Tải toàn bộ dữ liệu (giáo viên, lớp học, điểm danh, học phí) về máy thành 1 file, và xem các bản sao lưu tự động hằng tuần trên máy chủ."
       />
 
-      {hasToday ? (
-        <Banner tone="mint" icon={<IconCheckCircle className="w-5 h-5" />} title="Đã có bản sao lưu hôm nay">
+      {fresh ? (
+        <Banner tone="mint" icon={<IconCheckCircle className="w-5 h-5" />} title="Dữ liệu đã được sao lưu trong tuần">
           Bản mới nhất: {latest.name} · {formatBytes(latest.bytes)}
         </Banner>
       ) : (
-        <Banner tone="amber" icon={<IconAlert className="w-5 h-5" />} title="Chưa có bản sao lưu hôm nay">
+        <Banner tone="amber" icon={<IconAlert className="w-5 h-5" />} title="Đã hơn 1 tuần chưa có bản sao lưu mới">
           {latest
-            ? `Bản gần nhất là ${latest.name}. App tự sao lưu mỗi ngày, nếu mãi không thấy bản mới thì bấm "Sao lưu ngay" bên dưới.`
+            ? `Bản gần nhất là ${latest.name}. App tự sao lưu mỗi tuần, nếu quá 1 tuần không thấy bản mới thì bấm "Sao lưu ngay" bên dưới.`
             : "Chưa có bản sao lưu nào. Bấm \"Sao lưu ngay\" để tạo bản đầu tiên."}
         </Banner>
       )}
@@ -71,7 +73,8 @@ export default async function BackupPage() {
       <Card padded={false}>
         <CardHeader title="Bản sao lưu tự động trên máy chủ" count={backups.length} />
         <p className="text-xs text-ink-400 px-5 pt-3">
-          App tự sao lưu mỗi ngày một bản, giữ lại {KEEP_BACKUPS} bản gần nhất tại{" "}
+          App tự sao lưu {BACKUP_EVERY_DAYS} ngày một bản; có bản mới thì tự xoá bản cũ, chỉ giữ{" "}
+          {KEEP_BACKUPS} bản gần nhất tại{" "}
           <code className="text-ink-600 break-all">{BACKUP_DIR}</code>
         </p>
         {backups.length === 0 ? (
