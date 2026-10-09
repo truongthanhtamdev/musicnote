@@ -20,11 +20,13 @@ import ClassStatusBadge from "../status-badge";
 export default function ClassStagePicker({
   classId,
   stage,
+  siblingSlots = [],
   pausedUntil,
   hasSchedule,
 }: {
   classId: number;
   stage: string;
+  siblingSlots?: string[];
   pausedUntil: string | null;
   /** Lớp đã có ngày/giờ cố định chưa. */
   hasSchedule: boolean;
@@ -82,6 +84,13 @@ export default function ClassStagePicker({
           bị bg-white của class `field` đè, và nhiều trình duyệt (macOS, iOS)
           cũng không cho đổi màu nền select. */}
       <ClassStatusBadge stage={saved} />
+
+      {siblingSlots.length > 0 && (
+        <p className="basis-full text-right text-xs text-ink-500">
+          Đổi trạng thái là đổi luôn {siblingSlots.length === 1 ? "buổi" : `${siblingSlots.length} buổi`} khác
+          của khách: {siblingSlots.join(", ")}
+        </p>
+      )}
 
       {info.paused && (
         <label className="flex items-center gap-1.5 text-sm text-ink-600 whitespace-nowrap">

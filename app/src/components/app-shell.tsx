@@ -231,8 +231,11 @@ export function AppShell({
       {/* Bottom navigation — mobile, vai trò giáo viên */}
       {bottomNav && (
         <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-navy-100 pb-[env(safe-area-inset-bottom)]">
-          <div className="grid grid-cols-5">
-            {bottomNav.slice(0, 5).map((l) => {
+          <div
+            className="grid"
+            style={{ gridTemplateColumns: `repeat(${Math.min(bottomNav.length, 6)}, minmax(0, 1fr))` }}
+          >
+            {bottomNav.slice(0, 6).map((l) => {
               const active = isActive(pathname, l.href, roots);
               return (
                 <Link

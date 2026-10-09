@@ -15,6 +15,7 @@ import {
   IconClock,
   IconHome,
   IconTelegram,
+  IconUsers,
   IconWallet,
 } from "@/components/icons";
 import { telegramEnabled } from "@/lib/telegram";
@@ -27,6 +28,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
   const links: NavItem[] = [
     { href: "/teacher", label: "Hôm nay", icon: <IconHome className={ICON} /> },
     { href: "/teacher/schedule", label: "Lịch dạy", icon: <IconClasses className={ICON} /> },
+    { href: "/teacher/hoc-vien", label: "Học viên", icon: <IconUsers className={ICON} /> },
     {
       href: "/teacher/attendance",
       label: "Điểm danh",

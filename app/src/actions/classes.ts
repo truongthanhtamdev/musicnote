@@ -9,6 +9,7 @@ import {
   getClass,
   getPackageProgressBatch,
   isTeacherAvailable,
+  listSiblingClasses,
 } from "@/lib/queries";
 import { classStage, formatClassSchedule, type ClassRow, MANAGE_ROLES, canonicalSubject, ADMIN_AREA_ROLES } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
@@ -685,6 +686,19 @@ export async function assignTeacherAction(classId: number, teacherId: number | n
  * Ngày học lại chỉ giữ khi stage đúng là một trạng thái Tạm OFF — chuyển sang
  * trạng thái khác thì xoá luôn, khỏi còn cảnh báo mồ côi.
  */
+/**
+ * Các buổi khác trong tuần của cùng khách, cùng môn, đang cùng trạng thái với
+ * lớp này — đổi trạng thái thì đổi cả nhóm. Buổi đã bị "Ngừng" riêng (khách
+ * bỏ một buổi trong tuần) có trạng thái khác nên không bị kéo theo.
+ */
+function stageSiblingIds(classId: number): number[] {
+  const cls = getClass(classId);
+  if (!cls) return [];
+  return listSiblingClasses(cls)
+    .filter((s) => s.subject === cls.subject && s.stage === cls.stage)
+    .map((s) => s.id);
+}
+
 /** Hai bước "đang thử" của một khách mới. */
 const TRIAL_STAGES = ["trial", "trial_awaiting_fee"];
 
@@ -700,12 +714,14 @@ export async function setClassStageAction(
   const before = db.prepare("SELECT stage FROM classes WHERE id = ?").get(classId) as
     | { stage: string }
     | undefined;
-  db.prepare("UPDATE classes SET stage = ?, status = ?, paused_until = ? WHERE id = ?").run(
-    info.value,
-    info.status,
-    info.paused ? pausedUntil || null : null,
-    classId
-  );
+  // Khách học nhiều buổi/tuần là nhiều dòng lớp. Cho Tạm OFF mà chỉ đổi đúng
+  // một buổi thì các buổi kia vẫn nằm trong lịch giáo viên. Nên đổi luôn các
+  // buổi cùng khách, cùng môn đang chung trạng thái với buổi này.
+  const ids = [classId, ...stageSiblingIds(classId)];
+  const update = db.prepare("UPDATE classes SET stage = ?, status = ?, paused_until = ? WHERE id = ?");
+  for (const id of ids) {
+    update.run(info.value, info.status, info.paused ? pausedUntil || null : null, id);
+  }
   // "Chốt lớp": khách đang ở bước học thử chuyển sang đi học chính thức. Quy
   // tắc thưởng là chốt lớp HOẶC đóng tiền, nên đổi trạng thái thôi cũng đủ —
   // khách đóng tiền sau thì cùng khoá chống trùng, không ghi lần hai. Chỉ tính

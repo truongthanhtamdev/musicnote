@@ -30,7 +30,7 @@ import { missedRowsForTeacher } from "../missed-rows";
 export default async function TeacherAttendanceHistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; classId?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; classId?: string; bu?: string }>;
 }) {
   const session = await getSession();
   const sp = await searchParams;
@@ -83,7 +83,7 @@ export default async function TeacherAttendanceHistoryPage({
             "Toàn bộ buổi bạn đã ghi nhận, kể cả buổi học bù và buổi học thử."
           )
         }
-        action={<MakeupAttendanceForm classes={myClasses} />}
+        action={<MakeupAttendanceForm classes={myClasses} preselect={sp.bu ? Number(sp.bu) : undefined} />}
       />
 
       <MissedCheckinPanel rows={missedRows} quota={getLateCheckinQuota()} />

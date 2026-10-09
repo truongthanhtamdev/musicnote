@@ -14,6 +14,7 @@ interface TeacherOption {
 export default function ClassActions({
   classId,
   stage,
+  siblingSlots,
   pausedUntil,
   hasSchedule,
   teacherId,
@@ -22,6 +23,8 @@ export default function ClassActions({
 }: {
   classId: number;
   stage: string;
+  /** Các buổi khác trong tuần của khách — đổi trạng thái là đổi cả những buổi này. */
+  siblingSlots: string[];
   pausedUntil: string | null;
   hasSchedule: boolean;
   teacherId: number | null;
@@ -53,6 +56,7 @@ export default function ClassActions({
       <ClassStagePicker
         classId={classId}
         stage={stage}
+        siblingSlots={siblingSlots}
         pausedUntil={pausedUntil}
         hasSchedule={hasSchedule}
       />

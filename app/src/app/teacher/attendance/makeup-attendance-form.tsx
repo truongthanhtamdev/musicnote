@@ -26,13 +26,19 @@ const STATUS_STYLE: Record<AttendanceStatus, string> = {
 
 export default function MakeupAttendanceForm({
   classes,
+  preselect,
 }: {
   classes: { id: number; label: string; nextNumber?: number }[];
+  /** Mở sẵn form cho lớp này — bấm "Điểm danh buổi vừa học" từ trang Học viên. */
+  preselect?: number;
 }) {
+  const pre = preselect ? classes.find((c) => c.id === preselect) : undefined;
   // Chọn lớp là ô "Buổi thứ mấy" tự điền số tiếp theo, giáo viên vẫn sửa được.
-  const [sessionNumber, setSessionNumber] = useState("");
-  const [isTrial, setIsTrial] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [sessionNumber, setSessionNumber] = useState(
+    pre?.nextNumber !== undefined && pre.nextNumber > 0 ? String(pre.nextNumber) : ""
+  );
+  const [isTrial, setIsTrial] = useState(pre?.nextNumber === 0);
+  const [open, setOpen] = useState(!!pre);
   const [state, formAction, pending] = useActionState(markAttendanceAction, initialState);
   const [status, setStatus] = useState<AttendanceStatus>("completed");
 
@@ -68,6 +74,7 @@ export default function MakeupAttendanceForm({
                 id="m-class"
                 name="class_id"
                 required
+                defaultValue={pre ? String(pre.id) : ""}
                 className={field}
                 onChange={(e) => {
                   const next = classes.find((c) => String(c.id) === e.target.value)?.nextNumber;

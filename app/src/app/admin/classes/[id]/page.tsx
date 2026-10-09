@@ -124,6 +124,9 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
         <ClassActions
           classId={cls.id}
           stage={cls.stage}
+          siblingSlots={listSiblingClasses(cls)
+            .filter((s) => s.subject === cls.subject && s.stage === cls.stage)
+            .map((s) => formatClassSchedule(s))}
           pausedUntil={cls.paused_until}
           hasSchedule={cls.schedule_type === "fixed" && !!cls.start_time}
           teacherId={cls.teacher_id}
