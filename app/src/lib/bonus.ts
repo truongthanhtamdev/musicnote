@@ -61,6 +61,10 @@ export interface BonusRow {
   ref_id: number;
   note: string | null;
   earned_at: string;
+  /** Lớp của khách ứng với khoản thưởng — để bấm vào chăm lại khách. */
+  class_id: number | null;
+  class_stage: string | null;
+  student_phone: string | null;
 }
 
 /**
@@ -432,11 +436,20 @@ export interface BonusSummary {
 export function listBonuses(from: string, to: string): BonusSummary[] {
   const rows = db
     .prepare(
-      `SELECT b.id, b.staff_id, u.name as staff_name, b.kind, b.amount, b.ref_type, b.ref_id,
-              b.note, b.earned_at
-       FROM staff_bonuses b JOIN users u ON u.id = b.staff_id
-       WHERE b.earned_at >= ? AND b.earned_at <= ?
-       ORDER BY b.earned_at DESC, b.id DESC`
+      `SELECT x.*, c.stage AS class_stage, c.student_phone
+       FROM (
+         SELECT b.id, b.staff_id, u.name as staff_name, b.kind, b.amount, b.ref_type, b.ref_id,
+                b.note, b.earned_at,
+                CASE b.ref_type
+                  WHEN 'attendance' THEN (SELECT a.class_id FROM attendance a WHERE a.id = b.ref_id)
+                  WHEN 'class' THEN b.ref_id
+                  WHEN 'package' THEN (SELECT MIN(c2.id) FROM classes c2 WHERE c2.package_id = b.ref_id)
+                END AS class_id
+         FROM staff_bonuses b JOIN users u ON u.id = b.staff_id
+         WHERE b.earned_at >= ? AND b.earned_at <= ?
+       ) x
+       LEFT JOIN classes c ON c.id = x.class_id
+       ORDER BY x.earned_at DESC, x.id DESC`
     )
     .all(from, to) as BonusRow[];
 

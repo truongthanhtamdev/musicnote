@@ -24,6 +24,7 @@ import { IconWallet } from "@/components/icons";
 import DeleteBonusButton from "./delete-bonus-button";
 import RescanButton from "./rescan-button";
 import Link from "next/link";
+import ClassStatusBadge from "../classes/status-badge";
 
 const KIND_LABEL: Record<BonusRow["kind"], string> = {
   trial: "Học thử",
@@ -225,7 +226,32 @@ export default async function BonusPage({
                           {KIND_LABEL[r.kind]}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-sm text-ink-600">{r.note ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-sm text-ink-600">
+                        {r.class_id ? (
+                          <Link
+                            href={`/admin/classes/${r.class_id}`}
+                            className="text-navy-700 hover:text-wood-600 hover:underline"
+                            title="Mở trang khách để chăm lại"
+                          >
+                            {r.note ?? "Xem khách"}
+                          </Link>
+                        ) : (
+                          (r.note ?? "—")
+                        )}
+                        {(r.class_stage || r.student_phone) && (
+                          <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                            {r.class_stage && <ClassStatusBadge stage={r.class_stage} />}
+                            {r.student_phone && (
+                              <a
+                                href={`tel:${r.student_phone.replace(/[^\d+]/g, "")}`}
+                                className="tabular text-ink-500 hover:text-navy-700"
+                              >
+                                📞 {r.student_phone}
+                              </a>
+                            )}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5 text-sm font-semibold text-ink-900 tabular text-right whitespace-nowrap">
                         {formatVND(r.amount)}
                       </td>
