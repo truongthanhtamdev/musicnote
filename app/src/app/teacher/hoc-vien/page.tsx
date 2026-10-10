@@ -4,10 +4,12 @@ import {
   annotateSchedule,
   getPackageProgressForClasses,
   listClassesForTeacher,
+  listPlannedSessions,
   sessionNumberMap,
 } from "@/lib/queries";
 import { classStage, formatClassSchedule, personKey, shortDayLabel, teacherSees } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
+import { toISODate, todayISO } from "@/lib/format";
 import StudentList, { type StudentGroup, type StudentTab } from "./student-list";
 
 /**
@@ -140,9 +142,17 @@ export default async function TeacherStudentsPage() {
     groups.set(key, g);
   }
 
+  // Buổi hẹn của lớp linh động: từ đầu tháng này tới hết tháng sau.
+  const today = todayISO();
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const nextMonth = new Date(`${monthStart}T00:00:00`);
+  nextMonth.setMonth(nextMonth.getMonth() + 2, 0);
+  const rangeEnd = toISODate(nextMonth);
+
   const list = [...groups.values()]
     .map((g) => ({
       ...g,
+      planned: g.flexibleClassId ? listPlannedSessions(g.flexibleClassId, monthStart, rangeEnd) : [],
       stageLabel: classStage(g.stage).label,
       stageClass: classStage(g.stage).className,
       lastLabel: g.lastDate ? shortDayLabel(g.lastDate) : null,
@@ -157,7 +167,7 @@ export default async function TeacherStudentsPage() {
         title="Học viên của tôi"
         subtitle="Tất cả khách bạn đang dạy và đã dạy — kể cả khách học linh động, đang tạm nghỉ."
       />
-      <StudentList students={list} />
+      <StudentList students={list} today={today} />
     </div>
   );
 }

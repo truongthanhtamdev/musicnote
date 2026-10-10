@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { teacherDropTrialAction } from "@/actions/classes";
+import { MonthPlanner } from "@/components/month-planner";
 import Link from "next/link";
 import { foldVietnamese } from "@/lib/format";
 import { IconChat, IconFacebook, IconSearch, IconUsers, IconVideo, SubjectIcon } from "@/components/icons";
@@ -39,6 +40,7 @@ export interface StudentGroup {
 }
 
 type Row = StudentGroup & {
+  planned: { session_date: string; start_time: string }[];
   stageLabel: string;
   stageClass: string;
   lastLabel: string | null;
@@ -57,7 +59,7 @@ const TABS: { value: StudentTab; label: string; hint: string }[] = [
   { value: "ended", label: "Đã nghỉ", hint: "Đã kết thúc hoặc ngừng học." },
 ];
 
-export default function StudentList({ students }: { students: Row[] }) {
+export default function StudentList({ students, today }: { students: Row[]; today: string }) {
   const [tab, setTab] = useState<StudentTab>("active");
   const [q, setQ] = useState("");
 
@@ -205,6 +207,29 @@ export default function StudentList({ students }: { students: Row[] }) {
                   </a>
                 )}
               </div>
+
+              {s.tab === "flexible" && s.flexibleClassId && (
+                <div className="space-y-1.5">
+                  {s.planned.filter((p) => p.session_date >= today).length > 0 && (
+                    <p className="text-xs text-ink-600 tabular">
+                      Lịch hẹn:{" "}
+                      {s.planned
+                        .filter((p) => p.session_date >= today)
+                        .slice(0, 6)
+                        .map((p) => `${p.session_date.slice(8)}/${p.session_date.slice(5, 7)} ${p.start_time}`)
+                        .join(" · ")}
+                      {s.planned.filter((p) => p.session_date >= today).length > 6 ? " …" : ""}
+                    </p>
+                  )}
+                  <MonthPlanner
+                    classId={s.flexibleClassId}
+                    name={s.name}
+                    today={today}
+                    planned={s.planned}
+                    defaultTime={s.planned.at(-1)?.start_time ?? "19:00"}
+                  />
+                </div>
+              )}
 
               {s.dropTrialClassId && <DropTrialButton classId={s.dropTrialClassId} name={s.name} />}
 

@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { updateClassAction, deleteClassAction, endWeeklySlotAction } from "@/actions/classes";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
+import { MonthPlanner } from "@/components/month-planner";
 import type { FormState } from "@/actions/teachers";
 import {
   DAY_LABELS,
@@ -27,9 +28,14 @@ export default function TeacherClassRow({
   cls,
   progress,
   autoEdit = false,
+  planned,
+  today,
 }: {
   cls: ClassRow;
   progress?: PackageProgress | null;
+  /** Lớp linh động: buổi hẹn đầu tháng này → cuối tháng sau, để xếp lịch tháng. */
+  planned?: { session_date: string; start_time: string }[];
+  today?: string;
   /** Mở sẵn form sửa — khi giáo viên bấm vào ô lớp trên lưới "Lịch tuần". */
   autoEdit?: boolean;
 }) {
@@ -120,6 +126,16 @@ export default function TeacherClassRow({
             )}
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            {planned && today && (
+              <MonthPlanner
+                classId={cls.id}
+                name={cls.student_name}
+                today={today}
+                planned={planned}
+                defaultTime={planned.at(-1)?.start_time ?? "19:00"}
+                compact
+              />
+            )}
             <Link
               href={`/teacher/attendance?classId=${cls.id}`}
               className={`${inlineAction} text-sm font-semibold text-ink-500 hover:text-wood-600`}

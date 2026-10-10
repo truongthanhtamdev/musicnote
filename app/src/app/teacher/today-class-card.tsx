@@ -145,7 +145,7 @@ export default function TodayClassCard({
             )}
           </div>
 
-          <div className="w-full sm:w-auto sm:ml-auto shrink-0 flex sm:flex-col items-center sm:items-end justify-between gap-2">
+          <div className="w-full sm:w-auto sm:ml-auto shrink-0 flex flex-wrap sm:flex-col items-center sm:items-end justify-between gap-2 min-w-0">
             {confirmed && (
               <StatusChip tone="mint" icon={<IconCheckCircle className="w-3.5 h-3.5" />}>
                 HV đã xác nhận

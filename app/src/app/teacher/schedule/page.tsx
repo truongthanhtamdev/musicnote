@@ -1,10 +1,11 @@
 import { getSession } from "@/lib/auth";
-import { now } from "@/lib/format";
+import { now, toISODate, todayISO } from "@/lib/format";
 import {
   listClassesForTeacher,
   getPackageProgressForClasses,
   listTeacherFreeSlots,
   listUpcomingSessionsForTeacher,
+  listPlannedSessions,
 } from "@/lib/queries";
 import { DAY_LABELS, DAY_ORDER, MAKEUP_WINDOW_DAYS, teacherSees } from "@/lib/types";
 import { IconClasses, IconClock } from "@/components/icons";
@@ -29,6 +30,12 @@ export default async function TeacherSchedulePage({
     progress: c.package_id ? (progressByPackage.get(c.package_id) ?? null) : null,
   }));
   const flexibleClasses = classes.filter((c) => c.schedule_type === "flexible");
+  // Lịch tháng của lớp linh động: đầu tháng này → hết tháng sau.
+  const todayStr = todayISO();
+  const monthStart = `${todayStr.slice(0, 7)}-01`;
+  const end = new Date(`${monthStart}T00:00:00`);
+  end.setMonth(end.getMonth() + 2, 0);
+  const rangeEnd = toISODate(end);
   const todayDow = now().getDay();
 
   // Buổi sắp tới + khung còn trống, để giáo viên dời giúp khách ngay tại đây.
@@ -92,7 +99,14 @@ export default async function TeacherSchedulePage({
               </p>
               <ul className="divide-y divide-navy-100 mt-1">
                 {flexibleClasses.map((c) => (
-                  <TeacherClassRow key={c.id} cls={c} progress={c.progress} autoEdit={c.id === editId} />
+                  <TeacherClassRow
+                    key={c.id}
+                    cls={c}
+                    progress={c.progress}
+                    autoEdit={c.id === editId}
+                    planned={listPlannedSessions(c.id, monthStart, rangeEnd)}
+                    today={todayStr}
+                  />
                 ))}
               </ul>
             </Card>

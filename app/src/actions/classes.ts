@@ -900,3 +900,47 @@ export async function teacherDropTrialAction(classId: number): Promise<{ error?:
   revalidatePath("/teacher", "layout");
   return {};
 }
+
+/**
+ * Giáo viên xếp lịch theo tháng cho lớp linh động: thay toàn bộ buổi hẹn từ
+ * hôm nay tới cuối tháng `month` (YYYY-MM) bằng danh sách mới. Buổi đã qua
+ * giữ nguyên làm lịch sử. Buổi hẹn hiện ở "Hôm nay", nhắc lịch, trang khách,
+ * và nhắc "quên điểm danh" nếu qua ngày mà chưa điểm danh.
+ */
+export async function savePlannedSessionsAction(
+  classId: number,
+  month: string,
+  entries: { date: string; time: string }[]
+): Promise<{ error?: string }> {
+  const session = await assertRole([...MANAGE_ROLES, "teacher"]);
+  const cls = getClass(classId);
+  if (!cls || (session.role === "teacher" && cls.teacher_id !== session.userId)) {
+    return { error: "Không tìm thấy lớp của bạn" };
+  }
+  if (cls.schedule_type !== "flexible") return { error: "Chỉ xếp lịch tháng cho lớp linh động" };
+  if (!/^\d{4}-\d{2}$/.test(month)) return { error: "Tháng không hợp lệ" };
+
+  const today = todayISO();
+  const clean = new Map<string, string>();
+  for (const e of entries) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date) || !e.date.startsWith(month) || e.date < today) continue;
+    if (Number.isNaN(new Date(`${e.date}T00:00:00`).getTime())) continue;
+    if (!/^\d{2}:\d{2}$/.test(e.time)) return { error: `Chọn giờ học cho ngày ${e.date.split("-").reverse().join("/")}` };
+    clean.set(e.date, e.time);
+  }
+
+  db.transaction(() => {
+    db.prepare(
+      "DELETE FROM planned_sessions WHERE class_id = ? AND session_date LIKE ? AND session_date >= ?"
+    ).run(classId, `${month}-%`, today);
+    const ins = db.prepare("INSERT INTO planned_sessions (class_id, session_date, start_time) VALUES (?, ?, ?)");
+    for (const [date, time] of clean) ins.run(classId, date, time);
+  })();
+
+  logAudit(session, "lop_hoc", `Xếp lịch tháng ${month.slice(5)}/${month.slice(0, 4)} cho ${cls.student_name}: ${clean.size} buổi`);
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/admin");
+  revalidatePath(`/admin/classes/${classId}`);
+  revalidatePath("/student");
+  return {};
+}

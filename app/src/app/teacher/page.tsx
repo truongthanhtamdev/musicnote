@@ -10,6 +10,7 @@ import {
   nextSessionNumbers,
   sessionNumberMap,
   checkedInSlots,
+  plannedClassesOn,
 } from "@/lib/queries";
 import { addDays, toISODate, todayISO, now } from "@/lib/format";
 import { ATTENDANCE_STATUS_LABELS, DAY_LABELS, personKey, teacherSees, scheduleStart } from "@/lib/types";
@@ -38,8 +39,13 @@ export default async function TeacherTodayPage() {
 
   const todaysAttendance = listAttendance({ teacherId, from: todayStr, to: todayStr });
   const attendanceByClassId = new Map(todaysAttendance.map((a) => [a.class_id, a]));
-  const classes = listClassesForTeacher(teacherId)
-    .filter((c) => c.day_of_week === dow && c.status === "active" && scheduleStart(c) <= todayStr)
+  const classes = [
+    ...listClassesForTeacher(teacherId).filter(
+      (c) => c.schedule_type === "fixed" && c.day_of_week === dow && c.status === "active" && scheduleStart(c) <= todayStr
+    ),
+    // Lớp linh động có buổi hẹn hôm nay (giáo viên xếp theo tháng).
+    ...plannedClassesOn(todayStr, teacherId),
+  ]
     .sort((a, b) => a.start_time.localeCompare(b.start_time))
     // Khoá "khách|giờ" lấy từ tên thật, trước khi đổi sang tên giáo viên đặt.
     .map((c) => ({ ...teacherSees(c), existing: attendanceByClassId.get(c.id), slot: `${personKey(c)}|${c.start_time}` }));

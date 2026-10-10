@@ -115,7 +115,11 @@ export function listClassesByDay(dayOfWeek: number, onDate?: string): ClassWithT
        ORDER BY c.start_time`
     )
     .all(dayOfWeek) as ClassWithTeacher[];
-  return onDate ? rows.filter((c) => scheduleStart(c) <= onDate) : rows;
+  if (!onDate) return rows;
+  // Có ngày cụ thể thì kèm luôn buổi hẹn của lớp linh động trong ngày đó.
+  return [...rows.filter((c) => scheduleStart(c) <= onDate), ...plannedClassesOn(onDate)].sort((a, b) =>
+    a.start_time.localeCompare(b.start_time)
+  );
 }
 
 /** Một buổi học có thật trên lịch của một ngày cụ thể. */
@@ -125,6 +129,38 @@ export interface ScheduledSession {
   time: string;
   /** Buổi được dời TỚI ngày này, không phải buổi cố định hằng tuần. */
   moved: boolean;
+  /** Buổi hẹn trước của lớp linh động (giáo viên xếp theo tháng). */
+  planned?: boolean;
+}
+
+/**
+ * Lớp linh động có buổi hẹn trong ngày — trả về như lớp có giờ học đúng ngày
+ * đó (start_time = giờ hẹn), để mọi chỗ đang xử lý lớp cố định dùng lại được.
+ */
+export function plannedClassesOn(dateISO: string, teacherId?: number): ClassWithTeacher[] {
+  return db
+    .prepare(
+      `SELECT c.*, u.name AS teacher_name, p.start_time AS planned_time
+         FROM planned_sessions p
+         JOIN classes c ON c.id = p.class_id
+         LEFT JOIN users u ON u.id = c.teacher_id
+        WHERE p.session_date = ? AND c.status = 'active' AND c.schedule_type = 'flexible'
+          ${teacherId ? "AND c.teacher_id = ?" : ""}`
+    )
+    .all(...(teacherId ? [dateISO, teacherId] : [dateISO]))
+    .map((r) => {
+      const { planned_time, ...cls } = r as ClassWithTeacher & { planned_time: string };
+      return { ...cls, start_time: planned_time };
+    });
+}
+
+/** Các buổi hẹn của một lớp trong khoảng ngày. */
+export function listPlannedSessions(classId: number, from: string, to: string): { session_date: string; start_time: string }[] {
+  return db
+    .prepare(
+      "SELECT session_date, start_time FROM planned_sessions WHERE class_id = ? AND session_date BETWEEN ? AND ? ORDER BY session_date"
+    )
+    .all(classId, from, to) as { session_date: string; start_time: string }[];
 }
 
 /**
@@ -175,6 +211,11 @@ export function listSessionsOn(dateISO: string): ScheduledSession[] {
   for (const row of movedIn) {
     const { moved_time, ...cls } = row;
     sessions.push({ cls, date: dateISO, time: moved_time || cls.start_time, moved: true });
+  }
+
+  for (const cls of plannedClassesOn(dateISO)) {
+    if (handled.has(cls.id)) continue;
+    sessions.push({ cls, date: dateISO, time: cls.start_time, moved: false, planned: true });
   }
 
   return sessions.sort((a, b) => a.time.localeCompare(b.time));
@@ -1356,6 +1397,31 @@ export function listUpcomingSessionsForStudent(
     }
   }
 
+  // Buổi hẹn của lớp linh động.
+  for (const p of db
+    .prepare(
+      `SELECT class_id, session_date, start_time FROM planned_sessions
+        WHERE class_id IN (${placeholders}) AND session_date >= ? AND session_date <= ?`
+    )
+    .all(...classIds, todayStr, lastStr) as { class_id: number; session_date: string; start_time: string }[]) {
+    const cls = classes.find((c) => c.id === p.class_id);
+    if (!cls || cls.schedule_type !== "flexible") continue;
+    const key = `${p.class_id}|${p.session_date}`;
+    if (doneKeys.has(key)) continue;
+    out.push({
+      cls,
+      date: p.session_date,
+      time: p.start_time,
+      daysAway: Math.round(
+        (new Date(`${p.session_date}T00:00:00`).getTime() - new Date(`${todayStr}T00:00:00`).getTime()) / 86_400_000
+      ),
+      isMakeup: false,
+      pendingRequest: pendingByKey.get(key) ?? null,
+      confirmed: confirmed.has(key),
+      recorded: recordedByKey.get(key) ?? null,
+    });
+  }
+
   // Buổi bù đã chốt: nằm trong chính bản ghi điểm danh của buổi bị dời.
   const makeups = db
     .prepare(
@@ -1500,25 +1566,51 @@ export function listMissedCheckins(opts?: {
   const classes = (
     opts?.teacherId ? listClassesForTeacher(opts.teacherId) : listClasses()
   ).filter((c) => c.status === "active" && c.schedule_type === "fixed" && c.teacher_id);
-  if (classes.length === 0) return [];
+  // Không return sớm khi không có lớp cố định: lớp linh động có buổi hẹn vẫn
+  // phải được nhắc quên điểm danh (xem phần planned_sessions bên dưới).
 
   const classIds = classes.map((c) => c.id);
   const placeholders = classIds.map(() => "?").join(",");
   const marked = new Set(
-    (
-      db
-        .prepare(
-          `SELECT class_id, session_date FROM attendance
-           WHERE class_id IN (${placeholders}) AND session_date >= ?`
-        )
-        .all(...classIds, fromStr) as { class_id: number; session_date: string }[]
-    ).map((a) => `${a.class_id}|${a.session_date}`)
+    classIds.length === 0
+      ? []
+      : (
+          db
+            .prepare(
+              `SELECT class_id, session_date FROM attendance
+               WHERE class_id IN (${placeholders}) AND session_date >= ?`
+            )
+            .all(...classIds, fromStr) as { class_id: number; session_date: string }[]
+        ).map((a) => `${a.class_id}|${a.session_date}`)
   );
 
   // Khách bị nhập thành hai lớp trùng giờ: một lớp đã điểm danh là đủ.
   const slotsDone = checkedInSlots(fromStr, todayISO());
 
   const out: MissedCheckin[] = [];
+  // Buổi hẹn của lớp linh động đã qua ngày mà chưa điểm danh.
+  const flexIds = (opts?.teacherId ? listClassesForTeacher(opts.teacherId) : listClasses())
+    .filter((c) => c.status === "active" && c.schedule_type === "flexible" && c.teacher_id)
+    .map((c) => [c.id, c] as const);
+  if (flexIds.length) {
+    const byId = new Map(flexIds);
+    const todayStr = todayISO();
+    const rows = db
+      .prepare(
+        `SELECT p.class_id, p.session_date, p.start_time FROM planned_sessions p
+          WHERE p.class_id IN (${flexIds.map(() => "?").join(",")})
+            AND p.session_date >= ? AND p.session_date < ?
+            AND NOT EXISTS (SELECT 1 FROM attendance a WHERE a.class_id = p.class_id AND a.session_date = p.session_date)`
+      )
+      .all(...flexIds.map(([id]) => id), fromStr, todayStr) as { class_id: number; session_date: string; start_time: string }[];
+    for (const r of rows) {
+      const cls = { ...byId.get(r.class_id)!, start_time: r.start_time };
+      const daysLate = Math.round(
+        (new Date(`${todayStr}T00:00:00`).getTime() - new Date(`${r.session_date}T00:00:00`).getTime()) / 86_400_000
+      );
+      out.push({ cls, date: r.session_date, daysLate });
+    }
+  }
   for (const cls of classes) {
     const createdDate = scheduleStart(cls);
     for (let i = 1; i <= days; i++) {

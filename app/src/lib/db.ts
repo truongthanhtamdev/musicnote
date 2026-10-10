@@ -342,6 +342,18 @@ function migrate() {
 
     CREATE INDEX IF NOT EXISTS idx_telegram_log_sent ON telegram_log(sent_at);
 
+    -- Lịch hẹn từng buổi của lớp linh động (không có thứ/giờ cố định):
+    -- giáo viên xếp trước theo tháng, mỗi dòng là một buổi dự kiến.
+    CREATE TABLE IF NOT EXISTS planned_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      session_date TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(class_id, session_date)
+    );
+    CREATE INDEX IF NOT EXISTS idx_planned_sessions_date ON planned_sessions(session_date);
+
     -- Clip học viên hiện ở trang chủ. Chỉ lưu link (YouTube/TikTok/Facebook),
     -- không lưu file video: máy chủ nhỏ, và clip đăng lên kênh còn kéo thêm
     -- lượt xem cho kênh của trung tâm.
