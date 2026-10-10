@@ -5,6 +5,7 @@ import {
   listMissedCheckins,
   countNewTrialRequests,
   countPendingRescheduleRequests,
+  countPaymentFollowUps,
 } from "@/lib/queries";
 import { countDueLeads } from "@/lib/leads";
 import {
@@ -46,6 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const newTrialRequests = countNewTrialRequests();
   const dueLeads = countDueLeads();
   const pendingReschedules = countPendingRescheduleRequests();
+  const paymentFollowUps = countPaymentFollowUps();
 
   const links: NavItem[] = [
     { href: "/admin", label: "Tổng quan", icon: <IconHome className={ICON} /> },
@@ -76,6 +78,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       label: "Đăng ký học thử",
       icon: <IconBell className={ICON} />,
       badge: newTrialRequests || undefined,
+    },
+    {
+      href: "/admin/cham-khach",
+      label: "Chăm khách đóng phí",
+      icon: <IconWallet className={ICON} />,
+      badge: paymentFollowUps || undefined,
     },
     {
       href: "/admin/reschedule",

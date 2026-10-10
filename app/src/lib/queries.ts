@@ -9,6 +9,7 @@ import {
   MISSED_CHECKIN_DAYS,
   PAUSE_RETURN_WARNING_DAYS,
   NEW_CLASS_DAYS,
+  formatClassSchedule,
   REMINDER_DAYS,
   TIME_SLOTS,
   TRIAL_SESSION_RATE,
@@ -2115,4 +2116,151 @@ export function listAccountCandidates(): AccountCandidate[] {
   return out.sort(
     (a, b) => rank[a.status] - rank[b.status] || a.customerName.localeCompare(b.customerName, "vi")
   );
+}
+
+export type FollowUpKind = "trial_done" | "trial_upcoming" | "unpaid";
+
+export interface PaymentFollowUp {
+  kind: FollowUpKind;
+  /** Lớp đại diện để mở trang khách. */
+  classId: number;
+  name: string;
+  guardian: string | null;
+  phone: string | null;
+  facebook: string | null;
+  subject: string;
+  stage: string;
+  teacherName: string | null;
+  coordinatorName: string | null;
+  schedule: string;
+  /** Ngày học thử đã dạy (trial_done) hoặc buổi học thử sắp tới (trial_upcoming). */
+  trialDate: string | null;
+  nextDate: string | null;
+  createdAt: string;
+  /** Số buổi chính thức đã học. */
+  regularSessions: number;
+  paid: number;
+  expected: number | null;
+}
+
+const TRIAL_STAGE_VALUES = ["trial", "trial_awaiting_fee"];
+/** Trạng thái nói thẳng là khách còn nợ / sắp phải đóng học phí. */
+const UNPAID_STAGE_VALUES = ["studying_unpaid", "studying_partial", "new_course_announced", "new_course_awaiting"];
+
+/**
+ * Khách cần chăm để đóng học phí: đã học thử chờ chốt, sắp học thử, và lớp
+ * mới / đang ở trạng thái nợ học phí mà chưa đóng đủ. Gộp các buổi trong tuần
+ * của cùng khách, cùng môn thành một dòng.
+ *
+ * Lớp cũ chưa ghi khoản thu nào trong hệ thống (dữ liệu nhập từ Excel, thu
+ * tiền ngoài) không bị kéo vào — chỉ lớp tạo trong NEW_CLASS_DAYS ngày, hoặc
+ * lớp có trạng thái nợ học phí rõ ràng.
+ */
+export function listPaymentFollowUps(): PaymentFollowUp[] {
+  const active = listClasses({ status: "active" });
+  if (active.length === 0) return [];
+  const tuition = getTuitionStatusForClasses(active);
+  const scheduled = new Map(annotateSchedule(active).map((c) => [c.id, c]));
+  const ids = active.map((c) => c.id);
+  const ph = ids.map(() => "?").join(",");
+  const att = new Map(
+    (
+      db
+        .prepare(
+          `SELECT class_id,
+                  MAX(CASE WHEN is_trial = 1 AND status = 'completed' THEN session_date END) AS trial_date,
+                  SUM(CASE WHEN is_trial = 0 AND (status = 'completed' OR counts_as_used = 1) THEN 1 ELSE 0 END) AS regular
+             FROM attendance WHERE class_id IN (${ph}) GROUP BY class_id`
+        )
+        .all(...ids) as { class_id: number; trial_date: string | null; regular: number }[]
+    ).map((r) => [r.class_id, r])
+  );
+  const coordinators = new Map(
+    (db.prepare("SELECT id, name FROM users WHERE role != 'student'").all() as { id: number; name: string }[]).map(
+      (u) => [u.id, u.name]
+    )
+  );
+  const cutoff = toISODate(addDays(now(), -NEW_CLASS_DAYS));
+
+  const groups = new Map<string, PaymentFollowUp & { slots: string[]; needsPay: boolean; trialStage: boolean }>();
+  for (const c of active) {
+    const key = `${personKey(c)}|${c.subject}`;
+    const a = att.get(c.id);
+    const t = tuition.get(c.id);
+    const next = scheduled.get(c.id)?.nextSessionDate || null;
+    const g =
+      groups.get(key) ??
+      {
+        kind: "unpaid" as FollowUpKind,
+        classId: c.id,
+        name: c.student_name,
+        guardian: c.guardian_name,
+        phone: c.student_phone,
+        facebook: c.facebook_url,
+        subject: c.subject,
+        stage: c.stage,
+        teacherName: c.teacher_name,
+        coordinatorName: c.coordinator_id ? (coordinators.get(c.coordinator_id) ?? null) : null,
+        schedule: "",
+        trialDate: null,
+        nextDate: null,
+        createdAt: c.created_at,
+        regularSessions: 0,
+        paid: 0,
+        expected: null,
+        slots: [],
+        needsPay: false,
+        trialStage: false,
+      };
+    g.slots.push(formatClassSchedule(c));
+    g.phone ||= c.student_phone;
+    g.guardian ||= c.guardian_name;
+    g.facebook ||= c.facebook_url;
+    if (c.created_at < g.createdAt) g.createdAt = c.created_at;
+    if (a?.trial_date && (!g.trialDate || a.trial_date > g.trialDate)) g.trialDate = a.trial_date;
+    g.regularSessions += a?.regular ?? 0;
+    if (next && (!g.nextDate || next < g.nextDate)) g.nextDate = next;
+    // Tiền đã thu tính theo gói — các buổi cùng gói thấy cùng một số, lấy lớn nhất.
+    if (t) {
+      g.paid = Math.max(g.paid, t.paid);
+      if (t.expected != null) g.expected = Math.max(g.expected ?? 0, t.expected);
+    }
+    if (TRIAL_STAGE_VALUES.includes(c.stage)) {
+      g.trialStage = true;
+      g.stage = c.stage;
+    } else if (UNPAID_STAGE_VALUES.includes(c.stage) && !g.trialStage) {
+      g.stage = c.stage;
+    }
+    const isNew = c.created_at.slice(0, 10) >= cutoff;
+    if (UNPAID_STAGE_VALUES.includes(c.stage) || (isNew && t?.needsFollowUp)) g.needsPay = true;
+    groups.set(key, g);
+  }
+
+  const out: PaymentFollowUp[] = [];
+  for (const g of groups.values()) {
+    const fullyPaid = g.expected != null ? g.paid >= g.expected : g.paid > 0;
+    let kind: FollowUpKind | null = null;
+    if (g.trialStage && fullyPaid) kind = null;
+    else if (g.trialStage) kind = g.trialDate ? "trial_done" : "trial_upcoming";
+    else if (g.trialDate && g.regularSessions === 0 && g.paid === 0) kind = "trial_done";
+    else if (g.needsPay && !fullyPaid) kind = "unpaid";
+    if (!kind) continue;
+    const { slots, needsPay: _n, trialStage: _t, ...rest } = g;
+    void _n;
+    void _t;
+    out.push({ ...rest, kind, schedule: slots.join(" · ") });
+  }
+  // Gấp nhất lên đầu: học thử xong lâu nhất, học thử sắp tới gần nhất, lớp mới cũ nhất.
+  const order: Record<FollowUpKind, number> = { trial_done: 0, trial_upcoming: 1, unpaid: 2 };
+  return out.sort((a, b) => {
+    if (a.kind !== b.kind) return order[a.kind] - order[b.kind];
+    if (a.kind === "trial_done") return (a.trialDate ?? "").localeCompare(b.trialDate ?? "");
+    if (a.kind === "trial_upcoming") return (a.nextDate ?? "9").localeCompare(b.nextDate ?? "9");
+    return a.createdAt.localeCompare(b.createdAt);
+  });
+}
+
+/** Số khách cần chăm đóng phí — cho badge ở menu. */
+export function countPaymentFollowUps(): number {
+  return listPaymentFollowUps().filter((f) => f.kind !== "trial_upcoming").length;
 }
