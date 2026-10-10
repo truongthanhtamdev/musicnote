@@ -158,12 +158,32 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     ? links.filter((l) => l.href !== "/admin/tao-lop") // Quản lý tạo lớp ngay ở trang Lớp học
     : links.filter((l) => COORDINATOR_PAGES.includes(l.href));
 
+  // Thanh menu dưới cùng trên điện thoại: mấy trang dùng hằng ngày, nhãn ngắn
+  // cho vừa ô. Lấy từ danh sách đã lọc theo vai trò nên không lộ trang nào
+  // người đó không được vào; các trang còn lại vẫn ở menu ☰.
+  const SHORT: Record<string, string> = {
+    "/admin": "Tổng quan",
+    "/admin/classes": "Lớp học",
+    "/admin/attendance": "Điểm danh",
+    "/admin/cham-khach": "Chăm khách",
+    "/admin/trial-requests": "Học thử",
+    "/admin/tiem-nang": "Tiềm năng",
+    "/admin/tao-lop": "Tạo lớp",
+    "/admin/clip": "Clip",
+  };
+  const bottomNav = Object.keys(SHORT)
+    .map((href) => visibleLinks.find((l) => l.href === href))
+    .filter((l): l is NavItem => !!l)
+    .map((l) => ({ ...l, label: SHORT[l.href] }))
+    .slice(0, 5);
+
   return (
     <AppShell
       brandTitle="Piano Guitar Đệm Hát"
       userName={session.name}
       roleLabel={ROLE_LABELS[session.role]}
       links={visibleLinks}
+      bottomNav={bottomNav.length >= 3 ? bottomNav : undefined}
       // Chuông đếm lớp quá giờ chưa điểm danh — việc của Quản lý; nhân viên
       // đặt hẹn thì chuông đếm khách tới hạn gọi lại.
       alertCount={canManage ? overdueTodayCount() : dueLeads}

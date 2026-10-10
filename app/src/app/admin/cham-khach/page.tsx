@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { listPaymentFollowUps, type FollowUpKind, type PaymentFollowUp } from "@/lib/queries";
-import { ADMIN_AREA_ROLES, MANAGE_ROLES, shortDayLabel } from "@/lib/types";
+import { MANAGE_ROLES, shortDayLabel } from "@/lib/types";
 import { formatVND, todayISO } from "@/lib/format";
 import { IconCheckCircle, IconFacebook } from "@/components/icons";
-import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
+import { Card, CardHeader, PageHeader } from "@/components/ui";
 import ClassStatusBadge from "../classes/status-badge";
 
 const SECTIONS: { kind: FollowUpKind; title: string; hint: string }[] = [
@@ -37,8 +37,9 @@ function daysBetween(fromIso: string, toIso: string): number {
  * trang khách (ghi khoản thu, đổi trạng thái), SĐT bấm là gọi.
  */
 export default async function PaymentFollowUpPage() {
-  const session = await requireRole(ADMIN_AREA_ROLES);
-  const showMoney = MANAGE_ROLES.includes(session.role);
+  // Bấm tên là mở trang lớp — trang đó chỉ Quản lý trở lên vào được.
+  await requireRole(MANAGE_ROLES);
+  const showMoney = true;
   const items = listPaymentFollowUps();
   const today = todayISO();
 
@@ -56,7 +57,9 @@ export default async function PaymentFollowUpPage() {
             <CardHeader title={sec.title} count={rows.length} />
             <p className="px-5 pt-3 text-xs text-ink-500">{sec.hint}</p>
             {rows.length === 0 ? (
-              <EmptyState icon={<IconCheckCircle className="w-6 h-6" />} title="Không có khách nào ở mục này" />
+              <p className="px-5 py-4 text-sm text-ink-400 flex items-center gap-2">
+                <IconCheckCircle className="w-4 h-4 text-mint-500" /> Không có khách nào ở mục này.
+              </p>
             ) : (
               <ul className="divide-y divide-navy-100 mt-2">
                 {rows.map((r) => (

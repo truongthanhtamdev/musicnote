@@ -246,7 +246,14 @@ export function AppShell({
                     active ? "text-wood-600" : "text-ink-400 hover:text-ink-700"
                   }`}
                 >
-                  <span className={active ? "text-wood-600" : "text-ink-400"}>{l.icon}</span>
+                  <span className={`relative ${active ? "text-wood-600" : "text-ink-400"}`}>
+                    {l.icon}
+                    {l.badge ? (
+                      <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-coral-500 text-white text-[9px] font-bold leading-4 text-center">
+                        {l.badge > 99 ? "99+" : l.badge}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="truncate max-w-full px-0.5">{l.label}</span>
                 </Link>
               );
