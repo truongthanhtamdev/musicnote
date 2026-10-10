@@ -749,6 +749,7 @@ export async function setClassStageAction(
       ).run(dayOfWeek, schedule.startTime, startDate, classId);
     }
   }
+  revalidatePath("/admin/cham-khach");
   revalidatePath("/admin/classes");
   revalidatePath(`/admin/classes/${classId}`);
   revalidatePath("/admin");

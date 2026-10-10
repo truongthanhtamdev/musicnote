@@ -2118,7 +2118,7 @@ export function listAccountCandidates(): AccountCandidate[] {
   );
 }
 
-export type FollowUpKind = "trial_done" | "trial_upcoming" | "unpaid";
+export type FollowUpKind = "trial_done" | "trial_upcoming" | "unpaid" | "not_studying";
 
 export interface PaymentFollowUp {
   kind: FollowUpKind;
@@ -2135,6 +2135,7 @@ export interface PaymentFollowUp {
   schedule: string;
   /** Ngày học thử đã dạy (trial_done) hoặc buổi học thử sắp tới (trial_upcoming). */
   trialDate: string | null;
+  /** Buổi tới; riêng mục "Khách không học" là ngày học / hoạt động cuối cùng. */
   nextDate: string | null;
   createdAt: string;
   /** Số buổi chính thức đã học. */
@@ -2251,7 +2252,7 @@ export function listPaymentFollowUps(): PaymentFollowUp[] {
     out.push({ ...rest, kind, schedule: slots.join(" · ") });
   }
   // Gấp nhất lên đầu: học thử xong lâu nhất, học thử sắp tới gần nhất, lớp mới cũ nhất.
-  const order: Record<FollowUpKind, number> = { trial_done: 0, trial_upcoming: 1, unpaid: 2 };
+  const order: Record<FollowUpKind, number> = { trial_done: 0, trial_upcoming: 1, unpaid: 2, not_studying: 3 };
   return out.sort((a, b) => {
     if (a.kind !== b.kind) return order[a.kind] - order[b.kind];
     if (a.kind === "trial_done") return (a.trialDate ?? "").localeCompare(b.trialDate ?? "");
@@ -2263,4 +2264,77 @@ export function listPaymentFollowUps(): PaymentFollowUp[] {
 /** Số khách cần chăm đóng phí — cho badge ở menu. */
 export function countPaymentFollowUps(): number {
   return listPaymentFollowUps().filter((f) => f.kind !== "trial_upcoming").length;
+}
+
+/** Trạng thái "khách không học" — học thử xong không theo, hoặc bỏ học. */
+const NOT_STUDYING_STAGES = ["not_studying", "dropped"];
+
+/**
+ * Khách không học (Không học / Rớt lớp) trong `days` ngày gần đây — giữ lại
+ * một chỗ để sau này chăm lại (mở lớp mới, ưu đãi...). Khách vẫn còn lớp
+ * đang học cùng môn (chỉ bỏ một buổi trong tuần) thì không tính.
+ */
+export function listNotStudyingCustomers(days = 90): PaymentFollowUp[] {
+  const since = toISODate(addDays(now(), -days));
+  const rows = db
+    .prepare(
+      `SELECT c.*, u.name AS teacher_name,
+              (SELECT MAX(a.session_date) FROM attendance a WHERE a.class_id = c.id AND a.is_trial = 1) AS trial_date,
+              (SELECT MAX(a.session_date) FROM attendance a WHERE a.class_id = c.id) AS last_date,
+              (SELECT COUNT(*) FROM attendance a WHERE a.class_id = c.id AND a.is_trial = 0 AND a.status = 'completed') AS regular
+         FROM classes c LEFT JOIN users u ON u.id = c.teacher_id
+        WHERE c.stage IN (${NOT_STUDYING_STAGES.map(() => "?").join(",")})`
+    )
+    .all(...NOT_STUDYING_STAGES) as (ClassWithTeacher & {
+    trial_date: string | null;
+    last_date: string | null;
+    regular: number;
+  })[];
+  const activeKeys = new Set(
+    listClasses({ status: "active" }).map((c) => `${personKey(c)}|${c.subject}`)
+  );
+
+  const groups = new Map<string, PaymentFollowUp & { slots: string[]; last: string }>();
+  for (const c of rows) {
+    const key = `${personKey(c)}|${c.subject}`;
+    if (activeKeys.has(key)) continue;
+    const last = c.last_date ?? c.created_at.slice(0, 10);
+    const g =
+      groups.get(key) ??
+      {
+        kind: "not_studying" as FollowUpKind,
+        classId: c.id,
+        name: c.student_name,
+        guardian: c.guardian_name,
+        phone: c.student_phone,
+        facebook: c.facebook_url,
+        subject: c.subject,
+        stage: c.stage,
+        teacherName: c.teacher_name,
+        coordinatorName: null,
+        schedule: "",
+        trialDate: null,
+        nextDate: null,
+        createdAt: c.created_at,
+        regularSessions: 0,
+        paid: 0,
+        expected: null,
+        slots: [],
+        last,
+      };
+    g.slots.push(formatClassSchedule(c));
+    g.phone ||= c.student_phone;
+    g.facebook ||= c.facebook_url;
+    g.regularSessions += c.regular;
+    if (c.trial_date && (!g.trialDate || c.trial_date > g.trialDate)) g.trialDate = c.trial_date;
+    if (last > g.last) {
+      g.last = last;
+      g.classId = c.id;
+    }
+    groups.set(key, g);
+  }
+  return [...groups.values()]
+    .filter((g) => g.last >= since)
+    .sort((a, b) => b.last.localeCompare(a.last))
+    .map(({ slots, last, ...rest }) => ({ ...rest, schedule: slots.join(" · "), nextDate: last }));
 }

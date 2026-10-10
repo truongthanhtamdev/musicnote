@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
-import { listPaymentFollowUps, type FollowUpKind, type PaymentFollowUp } from "@/lib/queries";
+import {
+  listNotStudyingCustomers,
+  listPaymentFollowUps,
+  type FollowUpKind,
+  type PaymentFollowUp,
+} from "@/lib/queries";
 import { MANAGE_ROLES, shortDayLabel } from "@/lib/types";
 import { formatVND, todayISO } from "@/lib/format";
 import { IconCheckCircle, IconFacebook } from "@/components/icons";
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import ClassStatusBadge from "../classes/status-badge";
+import NotStudyingButton from "./not-studying-button";
 
 const SECTIONS: { kind: FollowUpKind; title: string; hint: string }[] = [
   {
@@ -22,6 +28,11 @@ const SECTIONS: { kind: FollowUpKind; title: string; hint: string }[] = [
     kind: "unpaid",
     title: "Lớp mới / đang học — chưa đóng đủ học phí",
     hint: `Lớp tạo trong 30 ngày gần đây chưa thu, hoặc đang ở trạng thái "chưa đóng / chưa hoàn thành HP", "báo / chờ đóng HP khóa mới".`,
+  },
+  {
+    kind: "not_studying",
+    title: "Khách không học",
+    hint: "Khách học thử xong không học / đã nghỉ trong 90 ngày gần đây — để chăm lại khi có lớp mới, ưu đãi. Khách muốn học lại thì mở trang khách, đổi trạng thái.",
   },
 ];
 
@@ -40,7 +51,7 @@ export default async function PaymentFollowUpPage() {
   // Bấm tên là mở trang lớp — trang đó chỉ Quản lý trở lên vào được.
   await requireRole(MANAGE_ROLES);
   const showMoney = true;
-  const items = listPaymentFollowUps();
+  const items = [...listPaymentFollowUps(), ...listNotStudyingCustomers()];
   const today = todayISO();
 
   return (
@@ -81,6 +92,14 @@ function FollowUpRow({ r, today, showMoney }: { r: PaymentFollowUp; today: strin
     when = `Học thử ${shortDayLabel(r.trialDate)} · ${d <= 0 ? "hôm nay" : `${d} ngày trước`}`;
   } else if (r.kind === "trial_upcoming") {
     when = r.nextDate ? `Học thử ${shortDayLabel(r.nextDate)}` : "Chưa có lịch học thử";
+  } else if (r.kind === "not_studying") {
+    when = [
+      r.trialDate ? `Học thử ${shortDayLabel(r.trialDate)}` : "",
+      r.regularSessions ? `đã học ${r.regularSessions} buổi` : "",
+      r.nextDate ? `hoạt động cuối ${shortDayLabel(r.nextDate)}` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
   } else {
     const d = daysBetween(r.createdAt.slice(0, 10), today);
     when = `Tạo lớp ${d <= 0 ? "hôm nay" : `${d} ngày trước`}${r.regularSessions ? ` · đã học ${r.regularSessions} buổi` : ""}`;
@@ -107,7 +126,7 @@ function FollowUpRow({ r, today, showMoney }: { r: PaymentFollowUp; today: strin
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <ClassStatusBadge stage={r.stage} />
-        {showMoney && (
+        {showMoney && r.kind !== "not_studying" && (
           <span className="tabular text-xs text-ink-600">
             {r.paid > 0
               ? `Đã thu ${formatVND(r.paid)}${r.expected ? ` / ${formatVND(r.expected)}` : ""}`
@@ -132,6 +151,7 @@ function FollowUpRow({ r, today, showMoney }: { r: PaymentFollowUp; today: strin
             <IconFacebook className="w-4 h-4" /> Facebook
           </a>
         )}
+        {r.kind !== "not_studying" && <NotStudyingButton classId={r.classId} name={r.name} />}
         <Link href={`/admin/classes/${r.classId}`} className="font-semibold text-wood-600 hover:text-wood-700">
           Mở trang khách →
         </Link>
