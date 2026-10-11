@@ -108,6 +108,8 @@ export interface ClassRow {
   start_date: string | null;
   /** Link nhóm Messenger của lớp (bản sao điểm danh); null là chưa gắn. */
   messenger_url?: string | null;
+  /** Đánh dấu tay đã đóng tiền (lớp cũ thu ngoài hệ thống). */
+  paid_marked_at?: string | null;
   /** Lớp không theo gói: "đã học tới buổi mấy" giáo viên điền lần gần nhất. */
   used_override?: number | null;
   used_override_set_at?: string | null;

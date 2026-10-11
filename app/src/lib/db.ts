@@ -466,6 +466,9 @@ function migrate() {
   // Tăng lên mỗi khi đặt lại / đổi mật khẩu — mọi phiên đăng nhập cũ (ký với
   // số cũ) hết hiệu lực ngay, kể cả trên máy người khác.
   ensureColumn("users", "session_version", "INTEGER NOT NULL DEFAULT 0");
+  // Đánh dấu tay "đã đóng tiền" — lớp cũ thu tiền ngoài hệ thống, không có
+  // khoản thu nào ghi lại nên trước đây cứ bị nhắc "chưa đóng học phí".
+  ensureColumn("classes", "paid_marked_at", "TEXT");
   ensureColumn("packages", "bonus_sessions", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("packages", "course_count", "INTEGER NOT NULL DEFAULT 1");
   backfillClassStages();

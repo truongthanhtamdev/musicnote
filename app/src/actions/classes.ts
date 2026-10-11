@@ -944,3 +944,27 @@ export async function savePlannedSessionsAction(
   revalidatePath("/student");
   return {};
 }
+
+/**
+ * Đánh dấu tay "đã đóng tiền" (hoặc bỏ đánh dấu) — cho lớp cũ thu tiền ngoài
+ * hệ thống. Áp cho mọi buổi trong tuần của cùng khách, cùng môn. Lớp đã đánh
+ * dấu thôi bị nhắc "chưa đóng học phí" và rời trang Chăm khách.
+ */
+export async function markClassPaidAction(classId: number, paid: boolean): Promise<{ error?: string }> {
+  const session = await assertRole(MANAGE_ROLES);
+  const cls = getClass(classId);
+  if (!cls) return { error: "Không tìm thấy lớp" };
+  const ids = [classId, ...listSiblingClasses(cls).filter((s) => s.subject === cls.subject).map((s) => s.id)];
+  const update = db.prepare("UPDATE classes SET paid_marked_at = ? WHERE id = ?");
+  for (const id of ids) update.run(paid ? todayISO() : null, id);
+  logAudit(
+    session,
+    "lop_hoc",
+    `${paid ? "Đánh dấu đã đóng tiền" : "Bỏ đánh dấu đã đóng tiền"}: ${cls.student_name} (${cls.subject})`
+  );
+  revalidatePath("/admin/cham-khach");
+  revalidatePath("/admin/classes");
+  revalidatePath(`/admin/classes/${classId}`);
+  revalidatePath("/admin", "layout");
+  return {};
+}

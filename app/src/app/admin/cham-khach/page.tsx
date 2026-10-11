@@ -12,6 +12,7 @@ import { IconCheckCircle, IconFacebook } from "@/components/icons";
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import ClassStatusBadge from "../classes/status-badge";
 import NotStudyingButton from "./not-studying-button";
+import MarkPaidButton from "./mark-paid-button";
 
 const SECTIONS: { kind: FollowUpKind; title: string; hint: string }[] = [
   {
@@ -151,6 +152,7 @@ function FollowUpRow({ r, today, showMoney }: { r: PaymentFollowUp; today: strin
             <IconFacebook className="w-4 h-4" /> Facebook
           </a>
         )}
+        {r.kind !== "not_studying" && r.kind !== "trial_upcoming" && <MarkPaidButton classId={r.classId} name={r.name} />}
         {r.kind !== "not_studying" && <NotStudyingButton classId={r.classId} name={r.name} />}
         <Link href={`/admin/classes/${r.classId}`} className="font-semibold text-wood-600 hover:text-wood-700">
           Mở trang khách →

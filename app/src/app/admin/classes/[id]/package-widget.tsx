@@ -9,6 +9,7 @@ import {
 } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
+import MarkPaidButton from "../../cham-khach/mark-paid-button";
 import { PACKAGE_OPTIONS, getSuggestedPackagePrice } from "@/lib/types";
 import { todayISO, formatVND } from "@/lib/format";
 import { MoneyInput } from "@/components/money-input";
@@ -108,7 +109,23 @@ export default function PackageWidget({
         <p className="text-sm text-ink-500 mb-4">Lớp chưa đăng ký gói — nhập bên dưới để đăng ký.</p>
       )}
 
-      {tuition && (tuition.paid > 0 || tuition.needsFollowUp) && (
+      {tuition?.markedPaid ? (
+        <p className="text-sm mb-3 flex flex-wrap items-center gap-2">
+          <span className="rounded-lg bg-mint-50 border border-mint-200 px-2.5 py-1 text-xs font-semibold text-mint-700">
+            ✓ Đã đóng tiền
+          </span>
+          <span className="text-xs text-ink-500">đánh dấu tay (thu ngoài hệ thống)</span>
+          <MarkPaidButton classId={classId} name="khách này" paid={false} className="text-xs font-semibold text-ink-500 hover:text-coral-600" />
+        </p>
+      ) : (
+        tuition?.needsFollowUp && (
+          <div className="mb-2">
+            <MarkPaidButton classId={classId} name="Khách này" />
+          </div>
+        )
+      )}
+
+      {tuition && !tuition.markedPaid && (tuition.paid > 0 || tuition.needsFollowUp) && (
         <p
           className={`text-sm mb-3 ${
             tuition.needsFollowUp ? "text-amber-700 font-medium" : "text-mint-700"

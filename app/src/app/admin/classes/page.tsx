@@ -267,6 +267,9 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                         Chưa điểm danh buổi {shortDayLabel(c.lastDueDate)}
                       </p>
                     )}
+                    {owed?.markedPaid && (
+                      <p className="text-xs font-medium text-mint-700 mt-1">✓ Đã đóng tiền</p>
+                    )}
                     {owed?.needsFollowUp && (
                       <p className="flex items-center gap-1 text-xs font-medium text-amber-700 mt-1">
                         <IconWallet className="w-3.5 h-3.5 shrink-0" />

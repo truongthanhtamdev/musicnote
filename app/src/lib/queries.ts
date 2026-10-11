@@ -430,6 +430,8 @@ export interface TuitionStatus {
   outstanding: number;
   /** Lớp đang học mà chưa thu đủ học phí — cần gọi khách hàng. */
   needsFollowUp: boolean;
+  /** Giáo vụ đã đánh dấu tay "đã đóng tiền" (thu ngoài hệ thống). */
+  markedPaid: boolean;
 }
 
 /**
@@ -488,7 +490,8 @@ export function getTuitionStatusForClasses(
     const outstanding = expected ? Math.max(0, expected - paid) : 0;
 
     let needsFollowUp = false;
-    if (cls.status === "active") {
+    const markedPaid = !!cls.paid_marked_at;
+    if (cls.status === "active" && !markedPaid) {
       if (cls.package_id) {
         needsFollowUp = expected ? paid < expected : paid === 0;
       } else {
@@ -497,7 +500,7 @@ export function getTuitionStatusForClasses(
       }
     }
 
-    result.set(cls.id, { paid, expected, outstanding, needsFollowUp });
+    result.set(cls.id, { paid, expected, outstanding: markedPaid ? 0 : outstanding, needsFollowUp, markedPaid });
   }
   return result;
 }
@@ -2275,7 +2278,10 @@ export function listPaymentFollowUps(): PaymentFollowUp[] {
   );
   const cutoff = toISODate(addDays(now(), -NEW_CLASS_DAYS));
 
-  const groups = new Map<string, PaymentFollowUp & { slots: string[]; needsPay: boolean; trialStage: boolean }>();
+  const groups = new Map<
+    string,
+    PaymentFollowUp & { slots: string[]; needsPay: boolean; trialStage: boolean; markedPaid: boolean }
+  >();
   for (const c of active) {
     const key = `${personKey(c)}|${c.subject}`;
     const a = att.get(c.id);
@@ -2304,7 +2310,9 @@ export function listPaymentFollowUps(): PaymentFollowUp[] {
         slots: [],
         needsPay: false,
         trialStage: false,
+        markedPaid: false,
       };
+    g.markedPaid ||= !!c.paid_marked_at;
     g.slots.push(formatClassSchedule(c));
     g.phone ||= c.student_phone;
     g.guardian ||= c.guardian_name;
@@ -2331,16 +2339,17 @@ export function listPaymentFollowUps(): PaymentFollowUp[] {
 
   const out: PaymentFollowUp[] = [];
   for (const g of groups.values()) {
-    const fullyPaid = g.expected != null ? g.paid >= g.expected : g.paid > 0;
+    const fullyPaid = g.markedPaid || (g.expected != null ? g.paid >= g.expected : g.paid > 0);
     let kind: FollowUpKind | null = null;
     if (g.trialStage && fullyPaid) kind = null;
     else if (g.trialStage) kind = g.trialDate ? "trial_done" : "trial_upcoming";
     else if (g.trialDate && g.regularSessions === 0 && g.paid === 0) kind = "trial_done";
     else if (g.needsPay && !fullyPaid) kind = "unpaid";
     if (!kind) continue;
-    const { slots, needsPay: _n, trialStage: _t, ...rest } = g;
+    const { slots, needsPay: _n, trialStage: _t, markedPaid: _m, ...rest } = g;
     void _n;
     void _t;
+    void _m;
     out.push({ ...rest, kind, schedule: slots.join(" · ") });
   }
   // Gấp nhất lên đầu: học thử xong lâu nhất, học thử sắp tới gần nhất, lớp mới cũ nhất.
