@@ -2,13 +2,15 @@
 
 import { useRef, useState } from "react";
 import { LuckyWheel } from "./lucky-wheel";
+import { SpinModal } from "./spin-modal";
 import { TrialForm } from "./trial-form";
 import { IconClock } from "@/components/icons";
 import type { WheelState } from "@/lib/wheel-state";
 
 /**
- * Vòng quay + form học thử. Gửi form xong thì vòng quay mở khoá và cuộn tới
- * (trên điện thoại vòng quay nằm phía trên form, khách không tự thấy).
+ * Vòng quay + form học thử. Gửi form xong là bật ngay màn quay lớn giữa màn
+ * hình — khách đang hào hứng sau khi đăng ký, quay luôn lúc đó mới có cảm
+ * giác "trúng thưởng", thay vì phải tự tìm vòng quay nhỏ ở góc trang.
  */
 export function TrialSection({
   initialWheel,
@@ -18,30 +20,41 @@ export function TrialSection({
   facebookUrl: string | null;
 }) {
   const [unlocked, setUnlocked] = useState(initialWheel.unlocked);
-  // Mỗi lần gửi đăng ký mới là một lượt quay mới — đổi key để vòng quay
-  // về trạng thái chưa quay (cùng số điện thoại thì máy chủ trả lại kết quả cũ).
+  const [prize, setPrize] = useState<number | null>(initialWheel.prize);
+  const [modalOpen, setModalOpen] = useState(false);
+  // Mỗi lần mở màn quay là một màn mới (về trạng thái chưa quay).
   const [round, setRound] = useState(0);
   const wheelRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
-  const [wonSessions, setWonSessions] = useState<number | null>(null);
+
+  function openSpin() {
+    setRound((r) => r + 1);
+    setModalOpen(true);
+  }
 
   function onSubmitted(wheelOpen: boolean) {
     if (!wheelOpen) return;
     setUnlocked(true);
-    setWonSessions(null);
-    setRound((r) => r + 1);
-    window.setTimeout(() => wheelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 150);
+    setPrize(null);
+    openSpin();
+  }
+
+  function closeSpin() {
+    setModalOpen(false);
+    // Quay xong rồi thì đưa khách tới màn cảm ơn (hướng dẫn đăng nhập, kết bạn).
+    if (prize !== null) {
+      window.setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    }
   }
 
   return (
     <div className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-20 grid gap-10 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
       <LuckyWheel
-        key={round}
         unlocked={unlocked}
-        initialPrize={round === 0 ? initialWheel.prize : null}
+        prize={prize}
         anchorRef={wheelRef}
-        onSpun={setWonSessions}
-        onNext={unlocked ? () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) : undefined}
+        onOpen={openSpin}
+        onNext={prize !== null ? () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) : undefined}
       />
 
       <div>
@@ -56,9 +69,16 @@ export function TrialSection({
           </span>
         </p>
         <div ref={formRef} className="mt-7 scroll-mt-24">
-          <TrialForm wonSessions={wonSessions} facebookUrl={facebookUrl} onSubmitted={onSubmitted} onSpinClick={() => wheelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} />
+          <TrialForm
+            wonSessions={prize}
+            facebookUrl={facebookUrl}
+            onSubmitted={onSubmitted}
+            onSpinClick={unlocked && prize === null ? openSpin : undefined}
+          />
         </div>
       </div>
+
+      <SpinModal key={round} open={modalOpen} onClose={closeSpin} onWon={setPrize} />
     </div>
   );
 }

@@ -59,7 +59,7 @@ export function PricingTabs() {
               key={tier.sessions}
               className={`relative bg-white rounded-2xl p-5 sm:p-6 flex flex-col ${
                 featured
-                  ? "border-2 border-coral-400 shadow-lg md:-mt-2"
+                  ? "border-2 border-coral-500 shadow-lg md:-mt-2"
                   : "border border-navy-100"
               }`}
             >
