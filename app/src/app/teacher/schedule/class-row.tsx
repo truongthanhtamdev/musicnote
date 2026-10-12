@@ -5,6 +5,7 @@ import Link from "next/link";
 import { updateClassAction, deleteClassAction, endWeeklySlotAction } from "@/actions/classes";
 import { UsedSessionsEditor } from "@/components/used-sessions-editor";
 import { MonthPlanner } from "@/components/month-planner";
+import AddSlotForm from "./add-slot-form";
 import type { FormState } from "@/actions/teachers";
 import {
   DAY_LABELS,
@@ -371,6 +372,11 @@ export default function TeacherClassRow({
           </button>
         </div>
       </form>
+      {cls.schedule_type === "fixed" && (
+        <div className="mt-3 border-t border-navy-100 pt-3">
+          <AddSlotForm classId={cls.id} defaultDuration={cls.duration_minutes} defaultTime={cls.start_time} />
+        </div>
+      )}
     </li>
   );
 }

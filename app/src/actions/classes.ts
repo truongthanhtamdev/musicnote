@@ -247,8 +247,9 @@ export async function addWeeklySlotAction(
 
   // Buổi thêm sau không phải buổi học thử của lớp, nên trial_pending để 0.
   db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, student_user_id, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, status, stage, paused_until)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'fixed', ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, student_user_id, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, status, stage, paused_until,
+                          teacher_label, meeting_url, messenger_url, coordinator_id, paid_marked_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'fixed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     cls.student_name,
     cls.student_phone,
@@ -267,10 +268,18 @@ export async function addWeeklySlotAction(
     cls.notes,
     cls.status,
     cls.stage,
-    cls.paused_until
+    cls.paused_until,
+    // Buổi mới là cùng một khách: giữ tên giáo viên đặt, link Meet, nhóm
+    // Messenger, giáo vụ phụ trách và nhãn "đã đóng tiền" như buổi gốc.
+    cls.teacher_label ?? null,
+    cls.meeting_url,
+    cls.messenger_url ?? null,
+    cls.coordinator_id,
+    cls.paid_marked_at ?? null
   );
 
   revalidateClassViews(classId);
+  revalidatePath("/teacher", "layout");
   return { success: true };
 }
 
