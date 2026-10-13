@@ -15,7 +15,7 @@ import { formatVND, monthRangeOf, todayISO } from "@/lib/format";
 import { MonthNav } from "@/components/month-nav";
 import { MonthSelect } from "@/components/month-select";
 import { db } from "@/lib/db";
-import { LANGUAGE_LABELS, parseLanguages, parseSubjects, MANAGE_ROLES, TRIAL_SESSION_RATE, personKey } from "@/lib/types";
+import { LANGUAGE_LABELS, parseLanguages, parseSubjects, MANAGE_ROLES, TRIAL_SESSION_RATE, isPaidSession, personKey } from "@/lib/types";
 import { TeacherScheduleGrid } from "@/components/teacher-schedule-grid";
 import TeacherClassList from "./class-list";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
@@ -60,7 +60,7 @@ function groupByStudent(rows: AttendanceWithContext[]): StudentGroup[] {
     }
     if (!g.classIds.includes(a.class_id)) g.classIds.push(a.class_id);
     g.rows.push(a);
-    if (a.status === "completed") {
+    if (isPaidSession(a)) {
       if (a.is_trial) g.trial++;
       else g.taught++;
       if (a.late_checkin) g.late++;

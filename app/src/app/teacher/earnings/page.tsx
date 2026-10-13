@@ -4,7 +4,7 @@ import { firstDayOfMonth, formatVND, lastDayOfMonth, monthRangeOf, todayISO } fr
 import { MonthSelect } from "@/components/month-select";
 import { db } from "@/lib/db";
 import { MonthNav } from "@/components/month-nav";
-import { DAY_LABELS, TRIAL_SESSION_RATE, personKey, teacherSees } from "@/lib/types";
+import { DAY_LABELS, TRIAL_SESSION_RATE, isPaidSession, personKey, teacherSees } from "@/lib/types";
 import { IconCheckCircle, IconFilter, IconWallet } from "@/components/icons";
 import { Card, MetricCard, PageHeader, btn, field, label } from "@/components/ui";
 
@@ -27,7 +27,8 @@ export default async function TeacherEarningsPage({
   const rating = ratingsByTeacher(from, to).get(session!.userId);
   const comments = listRecentRatings(10, session!.userId).filter((r) => r.comment).map(teacherSees);
   const rows = listAttendance({ teacherId: session!.userId, from, to })
-    .filter((a) => a.status === "completed")
+    // Buổi được tính công: đã dạy + học viên vắng không báo trước.
+    .filter(isPaidSession)
     .map(teacherSees);
 
   // Các tháng để chọn nhanh: từ buổi điểm danh đầu tiên tới tháng này.
@@ -209,6 +210,9 @@ export default async function TeacherEarningsPage({
                   <span className="tabular text-ink-500">{dayLabel(a.session_date)}</span> ·{" "}
                   <span className="font-medium text-ink-900">{a.student_name}</span>
                   {a.is_trial ? <span className="text-wood-700"> · buổi học thử</span> : null}
+                  {a.status === "student_absent" ? (
+                    <span className="text-amber-700"> · HV vắng không báo — vẫn tính công</span>
+                  ) : null}
                 </span>
                 <span className="text-sm font-semibold text-ink-900 tabular shrink-0">
                   {formatVND(a.is_trial ? TRIAL_SESSION_RATE : mine?.pay_per_session || 0)}

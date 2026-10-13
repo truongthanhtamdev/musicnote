@@ -734,3 +734,16 @@ export function sessionPoolKey(c: {
 export function shortDayLabel(iso: string): string {
   return `${DAY_LABELS[new Date(`${iso}T00:00:00`).getDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
+
+/**
+ * Buổi được tính công cho giáo viên: đã dạy, hoặc học viên vắng KHÔNG báo
+ * trước (giáo viên vẫn giữ giờ chờ, khách vẫn bị trừ tiết — nên giáo viên
+ * cũng được tính công buổi đó). Vắng có báo trước / dời lịch / giáo viên báo
+ * bận thì không.
+ */
+export function isPaidSession(a: { status: string; counts_as_used?: number | null }): boolean {
+  return a.status === "completed" || (a.status === "student_absent" && !!a.counts_as_used);
+}
+
+/** Cùng quy tắc với isPaidSession, viết cho câu SQL có bảng attendance đặt bí danh `a`. */
+export const PAID_SESSION_SQL = "(a.status = 'completed' OR (a.status = 'student_absent' AND a.counts_as_used = 1))";

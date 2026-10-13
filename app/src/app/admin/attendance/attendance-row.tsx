@@ -91,7 +91,7 @@ export default function AttendanceRow({
                   defaultChecked={!!row.counts_as_used}
                   className="w-4 h-4 rounded border-amber-300 accent-[var(--color-amber-500)]"
                 />
-                Không báo trước — tính tiết
+                Không báo trước — tính tiết + công GV
               </label>
             )}
             <input

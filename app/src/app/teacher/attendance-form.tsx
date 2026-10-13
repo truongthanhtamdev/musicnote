@@ -91,7 +91,8 @@ export default function AttendanceForm({
             <span className="text-sm text-ink-700">
               Khách không báo trước — vẫn tính tiết buổi này
               <span className="block text-xs text-ink-500 mt-0.5">
-                Bỏ tick nếu khách đã báo nghỉ trước giờ học.
+                Trừ 1 tiết của khách và <b>bạn vẫn được tính công</b> buổi này. Bỏ tick nếu khách đã
+                báo nghỉ trước giờ học.
               </span>
             </span>
           </label>

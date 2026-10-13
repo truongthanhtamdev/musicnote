@@ -9,6 +9,7 @@ import {
   MISSED_CHECKIN_DAYS,
   PAUSE_RETURN_WARNING_DAYS,
   NEW_CLASS_DAYS,
+  PAID_SESSION_SQL,
   formatClassSchedule,
   REMINDER_DAYS,
   TIME_SLOTS,
@@ -1119,7 +1120,7 @@ export function computePayroll(from: string, to: string, quota?: number): Payrol
               SUM(CASE WHEN a.id IS NOT NULL AND a.is_trial = 0 AND a.late_checkin = 1 THEN 1 ELSE 0 END) as late_sessions
        FROM users u
        LEFT JOIN attendance a ON a.teacher_id = u.id
-         AND a.status = 'completed' AND a.session_date >= ? AND a.session_date <= ?
+         AND ${PAID_SESSION_SQL} AND a.session_date >= ? AND a.session_date <= ?
        WHERE u.role = 'teacher'
        GROUP BY u.id
        ORDER BY u.name`
