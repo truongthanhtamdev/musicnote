@@ -96,6 +96,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/teachers", label: "Giáo viên", icon: <IconTeacher className={ICON} /> },
     { href: "/admin/ratings", label: "Khách đánh giá", icon: <IconStar className={ICON} /> },
     { href: "/admin/clip", label: "Clip học viên", icon: <IconVideo className={ICON} /> },
+    { href: "/admin/thu-nhap", label: "Thu nhập của tôi", icon: <IconWallet className={ICON} /> },
     ...(canManage
       ? [
           {
@@ -153,9 +154,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Nhân viên đặt hẹn chỉ làm việc với khách chưa học: đúng hai mục này.
   // Lọc từ danh sách đầy đủ thay vì dựng danh sách riêng, để thêm mục mới
   // cho Quản lý không bao giờ vô tình lọt sang phía nhân viên đặt hẹn.
-  const COORDINATOR_PAGES = ["/admin/tiem-nang", "/admin/trial-requests", "/admin/tao-lop", "/admin/clip"];
+  const COORDINATOR_PAGES = [
+    "/admin/tiem-nang",
+    "/admin/trial-requests",
+    "/admin/tao-lop",
+    "/admin/clip",
+    "/admin/thu-nhap",
+  ];
   const visibleLinks = canManage
-    ? links.filter((l) => l.href !== "/admin/tao-lop") // Quản lý tạo lớp ngay ở trang Lớp học
+    ? // Quản lý tạo lớp ngay ở trang Lớp học; thưởng của mọi người xem ở "Thưởng giáo vụ".
+      links.filter((l) => l.href !== "/admin/tao-lop" && l.href !== "/admin/thu-nhap")
     : links.filter((l) => COORDINATOR_PAGES.includes(l.href));
 
   // Thanh menu dưới cùng trên điện thoại: mấy trang dùng hằng ngày, nhãn ngắn
@@ -170,6 +178,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     "/admin/tiem-nang": "Tiềm năng",
     "/admin/tao-lop": "Tạo lớp",
     "/admin/clip": "Clip",
+    "/admin/thu-nhap": "Thu nhập",
   };
   const bottomNav = Object.keys(SHORT)
     .map((href) => visibleLinks.find((l) => l.href === href))
