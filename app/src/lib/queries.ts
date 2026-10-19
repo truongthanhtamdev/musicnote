@@ -2440,3 +2440,142 @@ export function listNotStudyingCustomers(days = 90): PaymentFollowUp[] {
     .sort((a, b) => b.last.localeCompare(a.last))
     .map(({ slots, last, ...rest }) => ({ ...rest, schedule: slots.join(" · "), nextDate: last }));
 }
+
+export type CoordinatorGroup = "trial_upcoming" | "trial_done" | "studying" | "paused" | "ended";
+
+export interface CoordinatorClass {
+  classId: number;
+  name: string;
+  guardian: string | null;
+  phone: string | null;
+  subject: string;
+  stage: string;
+  group: CoordinatorGroup;
+  teacherName: string | null;
+  schedule: string;
+  createdAt: string;
+  /** Buổi học thử đã dạy gần nhất. */
+  trialDate: string | null;
+  /** Buổi tới (lớp đang chạy lịch cố định). */
+  nextDate: string | null;
+  lastDate: string | null;
+  regularSessions: number;
+  paid: boolean;
+  pausedUntil: string | null;
+  /** Thưởng đã ghi cho nhân viên này từ khách này. */
+  bonusTrial: boolean;
+  bonusConversion: boolean;
+}
+
+/**
+ * Các khách một nhân viên đặt hẹn đã đặt (classes.coordinator_id), gộp các buổi
+ * trong tuần của cùng khách, cùng môn — kèm tình trạng để nhân viên tự theo
+ * dõi: đã học thử chưa, có chốt không, đã đóng tiền chưa, đã có thưởng chưa.
+ */
+export function listCoordinatorClasses(staffId: number): CoordinatorClass[] {
+  const classes = db
+    .prepare(
+      `SELECT c.*, u.name AS teacher_name FROM classes c LEFT JOIN users u ON u.id = c.teacher_id
+        WHERE c.coordinator_id = ? ORDER BY c.created_at DESC`
+    )
+    .all(staffId) as ClassWithTeacher[];
+  if (classes.length === 0) return [];
+  const ids = classes.map((c) => c.id);
+  const ph = ids.map(() => "?").join(",");
+  const att = new Map(
+    (
+      db
+        .prepare(
+          `SELECT class_id,
+                  MAX(CASE WHEN is_trial = 1 AND status = 'completed' THEN session_date END) AS trial_date,
+                  MAX(CASE WHEN status = 'completed' OR counts_as_used = 1 THEN session_date END) AS last_date,
+                  SUM(CASE WHEN is_trial = 0 AND (status = 'completed' OR counts_as_used = 1) THEN 1 ELSE 0 END) AS regular
+             FROM attendance WHERE class_id IN (${ph}) GROUP BY class_id`
+        )
+        .all(...ids) as { class_id: number; trial_date: string | null; last_date: string | null; regular: number }[]
+    ).map((r) => [r.class_id, r])
+  );
+  const tuition = getTuitionStatusForClasses(classes);
+  const scheduled = new Map(annotateSchedule(classes.filter((c) => c.status === "active")).map((c) => [c.id, c]));
+
+  // Thưởng của nhân viên này, quy về lớp (học thử: theo buổi điểm danh; chốt lớp: theo gói / lớp).
+  const bonusRows = db
+    .prepare(
+      `SELECT b.kind,
+              CASE b.ref_type
+                WHEN 'attendance' THEN (SELECT a.class_id FROM attendance a WHERE a.id = b.ref_id)
+                WHEN 'class' THEN b.ref_id
+                WHEN 'package' THEN (SELECT MIN(c2.id) FROM classes c2 WHERE c2.package_id = b.ref_id)
+              END AS class_id,
+              CASE b.ref_type WHEN 'package' THEN b.ref_id END AS package_id
+         FROM staff_bonuses b WHERE b.staff_id = ?`
+    )
+    .all(staffId) as { kind: string; class_id: number | null; package_id: number | null }[];
+
+  const rank: Record<CoordinatorGroup, number> = { trial_done: 4, trial_upcoming: 3, studying: 2, paused: 1, ended: 0 };
+  const groups = new Map<string, CoordinatorClass>();
+  for (const c of classes) {
+    const key = `${personKey(c)}|${c.subject}`;
+    const a = att.get(c.id);
+    const isTrialStage = c.stage === "trial" || c.stage === "trial_awaiting_fee";
+    const group: CoordinatorGroup =
+      c.status === "ended"
+        ? "ended"
+        : c.status === "paused"
+          ? "paused"
+          : isTrialStage
+            ? a?.trial_date
+              ? "trial_done"
+              : "trial_upcoming"
+            : "studying";
+    const g =
+      groups.get(key) ??
+      ({
+        classId: c.id,
+        name: c.student_name,
+        guardian: c.guardian_name,
+        phone: c.student_phone,
+        subject: c.subject,
+        stage: c.stage,
+        group,
+        teacherName: c.teacher_name,
+        schedule: "",
+        createdAt: c.created_at,
+        trialDate: null,
+        nextDate: null,
+        lastDate: null,
+        regularSessions: 0,
+        paid: false,
+        pausedUntil: null,
+        bonusTrial: false,
+        bonusConversion: false,
+      } satisfies CoordinatorClass);
+    if (rank[group] > rank[g.group] || groups.get(key) === undefined) {
+      g.group = group;
+      g.stage = c.stage;
+      g.classId = c.id;
+    }
+    const slot = c.schedule_type === "flexible" ? "Linh động" : c.start_time ? formatClassSchedule(c) : "";
+    if (slot && c.status !== "ended") g.schedule = g.schedule ? `${g.schedule} · ${slot}` : slot;
+    g.phone ||= c.student_phone;
+    g.guardian ||= c.guardian_name;
+    g.teacherName ||= c.teacher_name;
+    if (c.created_at < g.createdAt) g.createdAt = c.created_at;
+    if (a?.trial_date && (!g.trialDate || a.trial_date > g.trialDate)) g.trialDate = a.trial_date;
+    if (a?.last_date && (!g.lastDate || a.last_date > g.lastDate)) g.lastDate = a.last_date;
+    g.regularSessions += a?.regular ?? 0;
+    const t = tuition.get(c.id);
+    if (t && (t.paid > 0 || t.markedPaid)) g.paid = true;
+    if (c.paused_until) g.pausedUntil = c.paused_until;
+    const next = scheduled.get(c.id)?.nextSessionDate;
+    if (next && c.status === "active" && (!g.nextDate || next < g.nextDate)) g.nextDate = next;
+    for (const b of bonusRows) {
+      const hit = b.class_id === c.id || (b.package_id != null && b.package_id === c.package_id);
+      if (!hit) continue;
+      if (b.kind === "trial") g.bonusTrial = true;
+      if (b.kind === "conversion") g.bonusConversion = true;
+    }
+    groups.set(key, g);
+  }
+  return [...groups.values()];
+}
