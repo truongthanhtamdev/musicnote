@@ -76,6 +76,10 @@ export async function createClassAction(
   const notes = String(formData.get("notes") || "").trim();
   const packageRaw = String(formData.get("package_total_sessions") || "");
   const packageTotalSessions = packageRaw ? Number(packageRaw) : null;
+  // Ngày học buổi đầu (không bắt buộc): lịch tuần chỉ chạy từ ngày này.
+  const startDateRaw = String(formData.get("start_date") || "").trim();
+  const startDate =
+    scheduleType === "fixed" && /^\d{4}-\d{2}-\d{2}$/.test(startDateRaw) ? startDateRaw : null;
 
   // A student studying 2-3 buổi/tuần is entered as multiple weekly slots
   // in one submission — each becomes its own `classes` row (one per
@@ -117,7 +121,7 @@ export async function createClassAction(
   if (packageTotalSessions) {
     const info = db
       .prepare("INSERT INTO packages (total_sessions, started_at) VALUES (?, ?)")
-      .run(packageTotalSessions, todayISO());
+      .run(packageTotalSessions, startDate ?? todayISO());
     packageId = Number(info.lastInsertRowid);
   }
 
@@ -139,8 +143,8 @@ export async function createClassAction(
   }
 
   const insert = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, start_date, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   );
   let firstClassId: number | null = null;
   for (const slot of slots) {
@@ -160,7 +164,8 @@ export async function createClassAction(
       slot.durationMinutes,
       teacherId,
       notes || null,
-      coordinatorId
+      coordinatorId,
+      startDate
     );
     firstClassId ??= Number(info.lastInsertRowid);
   }

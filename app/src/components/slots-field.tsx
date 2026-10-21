@@ -23,6 +23,8 @@ const EMPTY_SLOT: Slot = { day: "", time: "", duration: "60" };
  */
 export function SlotsField() {
   const [slots, setSlots] = useState<Slot[]>([EMPTY_SLOT]);
+  const [startDate, setStartDate] = useState("");
+  const startDow = startDate ? new Date(`${startDate}T00:00:00`).getDay() : null;
 
   function updateSlot(i: number, patch: Partial<Slot>) {
     setSlots((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
@@ -48,6 +50,31 @@ export function SlotsField() {
 
   return (
     <div className="col-span-2 space-y-2">
+      {/* Ngày học buổi đầu: lớp chỉ hiện trong lịch, nhắc lịch, "quên điểm danh"
+          từ ngày này — không thì tính từ hôm tạo lớp. */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-ivory-50 border border-navy-100 p-2">
+        <label htmlFor="slot-start-date" className="text-sm font-medium text-ink-700 pl-1">
+          Ngày bắt đầu học
+        </label>
+        <input
+          id="slot-start-date"
+          type="date"
+          name="start_date"
+          value={startDate}
+          onChange={(e) => {
+            const v = e.target.value;
+            setStartDate(v);
+            // Chưa chọn thứ cho buổi đầu thì lấy luôn thứ của ngày vừa chọn.
+            if (v && !slots[0]?.day) updateSlot(0, { day: String(new Date(`${v}T00:00:00`).getDay()) });
+          }}
+          className={`${field} w-auto py-2 tabular`}
+        />
+        <span className="text-xs text-ink-500">
+          {startDate
+            ? `${DAY_LABELS[startDow!]} ${startDate.slice(8)}/${startDate.slice(5, 7)} — lịch chạy từ ngày này`
+            : "Không bắt buộc — để trống là học từ tuần này"}
+        </span>
+      </div>
       {slots.map((slot, i) => (
         <div
           key={i}
