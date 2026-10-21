@@ -354,6 +354,17 @@ function migrate() {
     );
     CREATE INDEX IF NOT EXISTS idx_planned_sessions_date ON planned_sessions(session_date);
 
+    -- Giáo viên báo "hôm đó không có buổi học" cho một buổi bị nhắc quên điểm
+    -- danh (khách chưa bắt đầu học, nghỉ hẳn hôm đó...). Không ghi gì vào sổ
+    -- điểm danh — chỉ để khỏi nhắc nữa; trung tâm xem lại trong Nhật ký.
+    CREATE TABLE IF NOT EXISTS missed_dismissals (
+      class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      session_date TEXT NOT NULL,
+      teacher_id INTEGER REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (class_id, session_date)
+    );
+
     -- Clip học viên hiện ở trang chủ. Chỉ lưu link (YouTube/TikTok/Facebook),
     -- không lưu file video: máy chủ nhỏ, và clip đăng lên kênh còn kéo thêm
     -- lượt xem cho kênh của trung tâm.

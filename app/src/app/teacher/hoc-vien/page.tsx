@@ -9,7 +9,7 @@ import {
 } from "@/lib/queries";
 import { classStage, formatClassSchedule, personKey, shortDayLabel, teacherSees } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
-import { toISODate, todayISO } from "@/lib/format";
+import { addDays, toISODate, todayISO } from "@/lib/format";
 import StudentList, { type StudentGroup, type StudentTab } from "./student-list";
 
 /**
@@ -137,7 +137,9 @@ export default async function TeacherStudentsPage() {
         g.historyClassId = c.id;
       }
     }
-    const next = scheduled.get(c.id)?.nextSessionDate;
+    let next = scheduled.get(c.id)?.nextSessionDate;
+    // Buổi hôm nay đã điểm danh rồi thì "buổi tới" là tuần sau.
+    if (next && s?.last === next) next = toISODate(addDays(new Date(`${next}T00:00:00`), 7));
     if (tab === "active" && next && (!g.nextDate || next < g.nextDate)) g.nextDate = next;
     groups.set(key, g);
   }

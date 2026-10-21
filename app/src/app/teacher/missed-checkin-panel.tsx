@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { dismissMissedSessionAction } from "@/actions/attendance";
 import { Modal } from "@/components/modal";
 import { IconAlert, SubjectIcon } from "@/components/icons";
 import { Card, CardHeader, StatusChip } from "@/components/ui";
@@ -45,7 +46,23 @@ export default function MissedCheckinPanel({
   // Danh sách dài thì chỉ hiện 3 buổi trễ gần nhất, còn lại bấm "Xem thêm" —
   // để lớp hôm nay không bị đẩy xuống tít cuối trang.
   const [showAll, setShowAll] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   if (rows.length === 0) return null;
+
+  function dismiss(r: MissedRow) {
+    if (
+      !window.confirm(
+        `${r.studentName} · ${r.dayLabel}: hôm đó không có buổi học (khách chưa bắt đầu / nghỉ hôm đó)? Buổi này sẽ thôi nhắc, không tính công và không trừ buổi của khách.`
+      )
+    )
+      return;
+    setError(null);
+    startTransition(async () => {
+      const res = await dismissMissedSessionAction(r.classId, r.date);
+      if (res.error) setError(res.error);
+    });
+  }
   const visible = showAll ? rows : rows.slice(0, 3);
 
   const active = openIndex === null ? null : rows[openIndex];
@@ -84,10 +101,20 @@ export default function MissedCheckinPanel({
               >
                 Điểm danh bù
               </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => dismiss(r)}
+                className="inline-flex items-center justify-center rounded-xl border border-coral-200 bg-white hover:bg-coral-50 text-coral-700 font-semibold px-3 py-2 text-sm transition disabled:opacity-60"
+              >
+                Hôm đó không học
+              </button>
             </div>
           </li>
         ))}
       </ul>
+
+      {error && <p className="px-5 py-2 text-sm text-coral-700 bg-white">{error}</p>}
 
       {rows.length > 3 && (
         <button

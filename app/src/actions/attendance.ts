@@ -13,7 +13,13 @@ import {
   getClass,
   sessionPoolClassIds,
 } from "@/lib/queries";
-import { ATTENDANCE_STATUS_LABELS, hasRescheduleInfo, type AttendanceStatus, MANAGE_ROLES } from "@/lib/types";
+import {
+  ATTENDANCE_STATUS_LABELS,
+  hasRescheduleInfo,
+  type AttendanceStatus,
+  MANAGE_ROLES,
+  MISSED_CHECKIN_DAYS,
+} from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import { awardTrialBonus } from "@/lib/bonus";
 import type { FormState } from "./teachers";
@@ -365,6 +371,38 @@ export async function deleteAttendanceAction(id: number): Promise<{ error?: stri
   revalidatePath("/admin/classes");
   revalidatePath("/admin/payroll");
   revalidatePath("/admin");
+  revalidatePath("/teacher", "layout");
+  return {};
+}
+
+/**
+ * Giáo viên báo một buổi bị nhắc "chưa điểm danh" thật ra không có học (khách
+ * chưa bắt đầu, lịch cũ trước khi vào hệ thống, khách nghỉ hẳn hôm đó...).
+ * Không ghi vào sổ điểm danh — không tính công, không trừ buổi của khách —
+ * chỉ thôi nhắc. Ghi nhật ký để trung tâm xem lại.
+ */
+export async function dismissMissedSessionAction(classId: number, sessionDate: string): Promise<{ error?: string }> {
+  const session = await assertRole(["teacher"]);
+  const cls = getClass(classId);
+  if (!cls || cls.teacher_id !== session.userId) return { error: "Không tìm thấy lớp của bạn" };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(sessionDate) || sessionDate >= todayISO()) {
+    return { error: "Chỉ báo được cho buổi đã qua" };
+  }
+  const oldest = new Date(`${todayISO()}T00:00:00`);
+  oldest.setDate(oldest.getDate() - MISSED_CHECKIN_DAYS - 1);
+  if (new Date(`${sessionDate}T00:00:00`) < oldest) return { error: "Buổi này đã quá cũ" };
+  if (db.prepare("SELECT 1 FROM attendance WHERE class_id = ? AND session_date = ?").get(classId, sessionDate)) {
+    return { error: "Buổi này đã có điểm danh rồi" };
+  }
+
+  db.prepare(
+    "INSERT OR IGNORE INTO missed_dismissals (class_id, session_date, teacher_id) VALUES (?, ?, ?)"
+  ).run(classId, sessionDate, session.userId);
+  logAudit(
+    session,
+    "diem_danh",
+    `Báo không có buổi học ${sessionDate.split("-").reverse().join("/")} — ${cls.student_name}`
+  );
   revalidatePath("/teacher", "layout");
   return {};
 }

@@ -55,6 +55,8 @@ export function MonthPlanner({
     () => new Map(planned.map((p) => [p.session_date, p.start_time]))
   );
   const [saved, setSaved] = useState<string | null>(null);
+  /** Có ngày vừa chọn / bỏ mà chưa lưu — đóng hộp thì hỏi lại cho khỏi mất. */
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -75,6 +77,7 @@ export function MonthPlanner({
 
   function toggle(date: string) {
     setSaved(null);
+    setDirty(true);
     setPicked((prev) => {
       const next = new Map(prev);
       if (next.has(date)) next.delete(date);
@@ -83,17 +86,35 @@ export function MonthPlanner({
     });
   }
 
+  // Lưu cả hai tháng một lượt: chọn ngày tháng này rồi chuyển sang tháng sau
+  // chọn tiếp, bấm Lưu một lần là đủ — không mất các ngày của tháng trước.
   function save() {
     setError(null);
     startTransition(async () => {
-      const res = await savePlannedSessionsAction(
-        classId,
-        month,
-        inMonth.map(([date, time]) => ({ date, time }))
-      );
-      if (res.error) setError(res.error);
-      else setSaved(`Đã lưu ${inMonth.length} buổi ${monthLabel(month).toLowerCase()}.`);
+      const counts: string[] = [];
+      for (const m of months) {
+        const entries = [...picked.entries()]
+          .filter(([d]) => d.startsWith(m) && d >= today)
+          .map(([date, time]) => ({ date, time }));
+        const res = await savePlannedSessionsAction(classId, m, entries);
+        if (res.error) {
+          setError(res.error);
+          return;
+        }
+        counts.push(`${entries.length} buổi ${monthLabel(m).toLowerCase()}`);
+      }
+      setDirty(false);
+      setSaved(`Đã lưu ${counts.join(", ")}.`);
     });
+  }
+
+  function close() {
+    if (dirty && !window.confirm("Bạn chưa bấm Lưu — đóng lại sẽ mất các ngày vừa chọn. Vẫn đóng?")) return;
+    if (dirty) {
+      setPicked(new Map(planned.map((p) => [p.session_date, p.start_time])));
+      setDirty(false);
+    }
+    setOpen(false);
   }
 
   return (
@@ -118,7 +139,7 @@ export function MonthPlanner({
 
       <Modal
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={close}
         title={`Lịch học tháng — ${name}`}
         subtitle="Bấm vào ngày để thêm / bỏ buổi học. Buổi đã xếp hiện ở trang Hôm nay đúng ngày đó và được nhắc lịch như lớp cố định."
       >
@@ -137,6 +158,10 @@ export function MonthPlanner({
                 }`}
               >
                 {monthLabel(m)}
+                {(() => {
+                  const n = [...picked.keys()].filter((d) => d.startsWith(m) && d >= today).length;
+                  return n > 0 ? <span className="tabular opacity-80"> · {n}</span> : null;
+                })()}
               </button>
             ))}
             <label className="ml-auto flex items-center gap-1.5 text-sm text-ink-600">
@@ -197,6 +222,7 @@ export function MonthPlanner({
                       onChange={(e) => {
                         const v = e.target.value;
                         setSaved(null);
+                        setDirty(true);
                         setPicked((prev) => new Map(prev).set(date, v));
                       }}
                       className={`${field} w-auto py-1`}
@@ -213,9 +239,10 @@ export function MonthPlanner({
 
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" disabled={pending} onClick={save} className={btn.primary}>
-              {pending ? "Đang lưu..." : `Lưu lịch ${monthLabel(month).toLowerCase()}`}
+              {pending ? "Đang lưu..." : "Lưu lịch"}
             </button>
-            <button type="button" onClick={() => setOpen(false)} className={btn.ghost}>
+            {dirty && <span className="text-xs text-coral-700">Chưa lưu</span>}
+            <button type="button" onClick={close} className={btn.ghost}>
               Đóng
             </button>
           </div>

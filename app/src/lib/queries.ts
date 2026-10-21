@@ -1590,6 +1590,15 @@ export function listMissedCheckins(opts?: {
 
   // Khách bị nhập thành hai lớp trùng giờ: một lớp đã điểm danh là đủ.
   const slotsDone = checkedInSlots(fromStr, todayISO());
+  // Buổi giáo viên đã báo "hôm đó không có buổi học".
+  const dismissed = new Set(
+    (
+      db.prepare("SELECT class_id, session_date FROM missed_dismissals WHERE session_date >= ?").all(fromStr) as {
+        class_id: number;
+        session_date: string;
+      }[]
+    ).map((d) => `${d.class_id}|${d.session_date}`)
+  );
 
   const out: MissedCheckin[] = [];
   // Buổi hẹn của lớp linh động đã qua ngày mà chưa điểm danh.
@@ -1608,6 +1617,7 @@ export function listMissedCheckins(opts?: {
       )
       .all(...flexIds.map(([id]) => id), fromStr, todayStr) as { class_id: number; session_date: string; start_time: string }[];
     for (const r of rows) {
+      if (dismissed.has(`${r.class_id}|${r.session_date}`)) continue;
       const cls = { ...byId.get(r.class_id)!, start_time: r.start_time };
       const daysLate = Math.round(
         (new Date(`${todayStr}T00:00:00`).getTime() - new Date(`${r.session_date}T00:00:00`).getTime()) / 86_400_000
@@ -1622,7 +1632,7 @@ export function listMissedCheckins(opts?: {
       if (date.getDay() !== cls.day_of_week) continue;
       const iso = toISODate(date);
       if (iso < fromStr || iso < createdDate) continue;
-      if (marked.has(`${cls.id}|${iso}`)) continue;
+      if (marked.has(`${cls.id}|${iso}`) || dismissed.has(`${cls.id}|${iso}`)) continue;
       if (slotsDone.has(`${slotKeyOf(cls)}|${iso}`)) continue;
       out.push({ cls, date: iso, daysLate: i });
     }
