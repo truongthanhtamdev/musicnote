@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/guard";
+import { db } from "@/lib/db";
 import { MANAGE_ROLES } from "@/lib/types";
 import { firstDayOfMonth, formatVND, lastDayOfMonth } from "@/lib/format";
 import { MonthNav } from "@/components/month-nav";
@@ -49,7 +50,42 @@ export default async function BonusPage({
   const to = sp.to || lastDayOfMonth();
 
   const rates = getBonusRates();
-  const staff = listBonuses(from, to);
+  // Hiện đủ mọi nhân viên đặt hẹn đang làm — kể cả người kỳ này chưa có khoản
+  // nào (0đ), để không ai "biến mất" khỏi bảng thưởng.
+  const withBonus = listBonuses(from, to);
+  const coordinators = db
+    .prepare(
+      "SELECT id, name FROM users WHERE role = 'coordinator' AND active = 1 ORDER BY name",
+    )
+    .all() as { id: number; name: string }[];
+  const staff = [
+    ...withBonus,
+    ...coordinators
+      .filter((c) => !withBonus.some((b) => b.staff_id === c.id))
+      .map((c) => ({
+        staff_id: c.id,
+        staff_name: c.name,
+        trial_count: 0,
+        trial_total: 0,
+        conversion_count: 0,
+        conversion_total: 0,
+        manual_total: 0,
+        total: 0,
+        rows: [] as BonusRow[],
+      })),
+  ];
+  // Số khách mỗi người đặt hẹn (tạo lớp) trong kỳ — thấy được ai đang làm.
+  const booked = new Map(
+    (
+      db
+        .prepare(
+          `SELECT coordinator_id AS id, COUNT(*) AS n FROM classes
+            WHERE coordinator_id IS NOT NULL AND date(created_at) BETWEEN ? AND ?
+            GROUP BY coordinator_id`,
+        )
+        .all(from, to) as { id: number; n: number }[]
+    ).map((r) => [r.id, r.n]),
+  );
   const unrewarded = listUnrewardedTrials(from, to);
   const missedConversions = listUnrewardedConversions(from, to);
   const grand = staff.reduce((sum, s) => sum + s.total, 0);
@@ -69,13 +105,25 @@ export default async function BonusPage({
             <label className={label} htmlFor="b-from">
               Từ ngày
             </label>
-            <input id="b-from" type="date" name="from" defaultValue={from} className={`${field} w-auto`} />
+            <input
+              id="b-from"
+              type="date"
+              name="from"
+              defaultValue={from}
+              className={`${field} w-auto`}
+            />
           </div>
           <div>
             <label className={label} htmlFor="b-to">
               Đến ngày
             </label>
-            <input id="b-to" type="date" name="to" defaultValue={to} className={`${field} w-auto`} />
+            <input
+              id="b-to"
+              type="date"
+              name="to"
+              defaultValue={to}
+              className={`${field} w-auto`}
+            />
           </div>
           <button type="submit" className={btn.primary}>
             Xem kỳ này
@@ -98,18 +146,30 @@ export default async function BonusPage({
           <div className="p-5 space-y-3">
             {missedConversions.length > 0 && (
               <>
-                <p className="text-sm font-semibold text-ink-700">Chốt lớp (đã đóng tiền hoặc đã chuyển sang Đang học)</p>
+                <p className="text-sm font-semibold text-ink-700">
+                  Chốt lớp (đã đóng tiền hoặc đã chuyển sang Đang học)
+                </p>
                 <ul className="space-y-2 text-sm">
                   {missedConversions.map((u) => (
-                    <li key={`c${u.class_id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="font-medium text-ink-900">{u.student_name}</span>
+                    <li
+                      key={`c${u.class_id}`}
+                      className="flex flex-wrap items-center gap-x-2 gap-y-1"
+                    >
+                      <span className="font-medium text-ink-900">
+                        {u.student_name}
+                      </span>
                       <span className="text-ink-500 tabular">{u.paid_at}</span>
                       {u.coordinator_id ? (
-                        <span className="text-mint-700">→ sẽ ghi cho {u.coordinator_name} khi bấm nút dưới</span>
+                        <span className="text-mint-700">
+                          → sẽ ghi cho {u.coordinator_name} khi bấm nút dưới
+                        </span>
                       ) : (
                         <span className="text-amber-700">
                           lớp chưa gán người phụ trách —{" "}
-                          <Link href={`/admin/classes/${u.class_id}`} className="font-semibold underline hover:text-amber-900">
+                          <Link
+                            href={`/admin/classes/${u.class_id}`}
+                            className="font-semibold underline hover:text-amber-900"
+                          >
                             gán ngay
                           </Link>
                         </span>
@@ -120,12 +180,19 @@ export default async function BonusPage({
               </>
             )}
             {unrewarded.length > 0 && (
-              <p className="text-sm font-semibold text-ink-700">Buổi học thử đã dạy</p>
+              <p className="text-sm font-semibold text-ink-700">
+                Buổi học thử đã dạy
+              </p>
             )}
             <ul className="space-y-2 text-sm">
               {unrewarded.map((u) => (
-                <li key={u.attendance_id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-medium text-ink-900">{u.student_name}</span>
+                <li
+                  key={u.attendance_id}
+                  className="flex flex-wrap items-center gap-x-2 gap-y-1"
+                >
+                  <span className="font-medium text-ink-900">
+                    {u.student_name}
+                  </span>
                   <span className="text-ink-500 tabular">{u.session_date}</span>
                   {u.coordinator_id ? (
                     <span className="text-mint-700">
@@ -147,10 +214,13 @@ export default async function BonusPage({
               ))}
             </ul>
             {(unrewarded.some((u) => u.coordinator_id) ||
-              missedConversions.some((u) => u.coordinator_id)) && <RescanButton from={from} to={to} />}
+              missedConversions.some((u) => u.coordinator_id)) && (
+              <RescanButton from={from} to={to} />
+            )}
             <p className="text-xs text-ink-500">
-              Bấm nhiều lần vô hại — mỗi buổi chỉ ghi được đúng một khoản. Khoản bạn đã Gỡ tay
-              cũng hiện lại ở đây; không muốn ghi lại thì đừng bấm.
+              Bấm nhiều lần vô hại — mỗi buổi chỉ ghi được đúng một khoản. Khoản
+              bạn đã Gỡ tay cũng hiện lại ở đây; không muốn ghi lại thì đừng
+              bấm.
             </p>
           </div>
         </Card>
@@ -187,82 +257,104 @@ export default async function BonusPage({
             />
             <div className="px-5 pt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-600">
               <span>
-                Học thử: <span className="font-semibold text-ink-900">{s.trial_count}</span> buổi ·{" "}
-                {formatVND(s.trial_total)}
+                Học thử:{" "}
+                <span className="font-semibold text-ink-900">
+                  {s.trial_count}
+                </span>{" "}
+                buổi · {formatVND(s.trial_total)}
               </span>
               <span>
-                Chốt lớp: <span className="font-semibold text-ink-900">{s.conversion_count}</span> lần ·{" "}
-                {formatVND(s.conversion_total)}
+                Chốt lớp:{" "}
+                <span className="font-semibold text-ink-900">
+                  {s.conversion_count}
+                </span>{" "}
+                lần · {formatVND(s.conversion_total)}
               </span>
-              {s.manual_total !== 0 && <span>Ghi tay: {formatVND(s.manual_total)}</span>}
+              {s.manual_total !== 0 && (
+                <span>Ghi tay: {formatVND(s.manual_total)}</span>
+              )}
+              <span>
+                Lớp đặt hẹn trong kỳ:{" "}
+                <span className="font-semibold text-ink-900">
+                  {booked.get(s.staff_id) ?? 0}
+                </span>
+              </span>
             </div>
-            <div className="mt-3">
-              <TableShell stackOnMobile>
-                <thead>
-                  <tr>
-                    <Th>Ngày</Th>
-                    <Th>Loại</Th>
-                    <Th>Nội dung</Th>
-                    <Th className="text-right">Số tiền</Th>
-                    <Th className="w-10" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.rows.map((r) => (
-                    <tr key={r.id} className="border-t border-navy-100">
-                      <td className="px-4 py-2.5 text-sm text-ink-700 tabular whitespace-nowrap">
-                        {r.earned_at}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            r.kind === "conversion"
-                              ? "bg-mint-50 text-mint-700"
-                              : r.kind === "trial"
-                                ? "bg-wood-50 text-wood-700"
-                                : "bg-ivory-100 text-ink-600"
-                          }`}
-                        >
-                          {KIND_LABEL[r.kind]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-sm text-ink-600">
-                        {r.class_id ? (
-                          <Link
-                            href={`/admin/classes/${r.class_id}`}
-                            className="text-navy-700 hover:text-wood-600 hover:underline"
-                            title="Mở trang khách để chăm lại"
-                          >
-                            {r.note ?? "Xem khách"}
-                          </Link>
-                        ) : (
-                          (r.note ?? "—")
-                        )}
-                        {(r.class_stage || r.student_phone) && (
-                          <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                            {r.class_stage && <ClassStatusBadge stage={r.class_stage} />}
-                            {r.student_phone && (
-                              <a
-                                href={`tel:${r.student_phone.replace(/[^\d+]/g, "")}`}
-                                className="tabular text-ink-500 hover:text-navy-700"
-                              >
-                                📞 {r.student_phone}
-                              </a>
-                            )}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2.5 text-sm font-semibold text-ink-900 tabular text-right whitespace-nowrap">
-                        {formatVND(r.amount)}
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <DeleteBonusButton id={r.id} />
-                      </td>
+            {s.rows.length === 0 ? (
+              <p className="px-5 py-4 text-sm text-ink-400">
+                Chưa có khoản thưởng nào trong kỳ này.
+              </p>
+            ) : (
+              <div className="mt-3">
+                <TableShell stackOnMobile>
+                  <thead>
+                    <tr>
+                      <Th>Ngày</Th>
+                      <Th>Loại</Th>
+                      <Th>Nội dung</Th>
+                      <Th className="text-right">Số tiền</Th>
+                      <Th className="w-10" />
                     </tr>
-                  ))}
-                </tbody>
-              </TableShell>
-            </div>
+                  </thead>
+                  <tbody>
+                    {s.rows.map((r) => (
+                      <tr key={r.id} className="border-t border-navy-100">
+                        <td className="px-4 py-2.5 text-sm text-ink-700 tabular whitespace-nowrap">
+                          {r.earned_at}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              r.kind === "conversion"
+                                ? "bg-mint-50 text-mint-700"
+                                : r.kind === "trial"
+                                  ? "bg-wood-50 text-wood-700"
+                                  : "bg-ivory-100 text-ink-600"
+                            }`}
+                          >
+                            {KIND_LABEL[r.kind]}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-sm text-ink-600">
+                          {r.class_id ? (
+                            <Link
+                              href={`/admin/classes/${r.class_id}`}
+                              className="text-navy-700 hover:text-wood-600 hover:underline"
+                              title="Mở trang khách để chăm lại"
+                            >
+                              {r.note ?? "Xem khách"}
+                            </Link>
+                          ) : (
+                            (r.note ?? "—")
+                          )}
+                          {(r.class_stage || r.student_phone) && (
+                            <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                              {r.class_stage && (
+                                <ClassStatusBadge stage={r.class_stage} />
+                              )}
+                              {r.student_phone && (
+                                <a
+                                  href={`tel:${r.student_phone.replace(/[^\d+]/g, "")}`}
+                                  className="tabular text-ink-500 hover:text-navy-700"
+                                >
+                                  📞 {r.student_phone}
+                                </a>
+                              )}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-sm font-semibold text-ink-900 tabular text-right whitespace-nowrap">
+                          {formatVND(r.amount)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          <DeleteBonusButton id={r.id} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </TableShell>
+              </div>
+            )}
           </Card>
         ))
       )}
