@@ -1,3 +1,4 @@
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/guard";
 import { listTrialRequests } from "@/lib/queries";
 import { TRIAL_REQUEST_STATUS_LABELS, type TrialRequestStatus, ADMIN_AREA_ROLES, MANAGE_ROLES } from "@/lib/types";
@@ -8,6 +9,13 @@ import RequestRow from "./request-row";
 export default async function TrialRequestsPage() {
   const session = await requireRole(ADMIN_AREA_ROLES);
   const canManage = MANAGE_ROLES.includes(session.role);
+  // Quản lý xếp lịch hộ thì chọn người nhận thưởng — nhân viên đặt hẹn đứng đầu danh sách.
+  const staff = db
+    .prepare(
+      `SELECT id, name FROM users WHERE role IN ('coordinator','manager','admin') AND active = 1
+        ORDER BY CASE role WHEN 'coordinator' THEN 0 ELSE 1 END, name`
+    )
+    .all() as { id: number; name: string }[];
   const requests = listTrialRequests();
   const counts = Object.fromEntries(
     Object.keys(TRIAL_REQUEST_STATUS_LABELS).map((status) => [
@@ -57,7 +65,13 @@ export default async function TrialRequestsPage() {
             </thead>
             <tbody className="divide-y divide-navy-100">
               {requests.map((r) => (
-                <RequestRow key={r.id} request={r} canCreateClass={canManage} />
+                <RequestRow
+                  key={r.id}
+                  request={r}
+                  canCreateClass={canManage}
+                  staff={canManage ? staff : undefined}
+                  selfId={session.userId}
+                />
               ))}
             </tbody>
           </TableShell>

@@ -21,7 +21,12 @@ export default function BookTrialButton({
   customerName,
   subject,
   booked,
+  staff,
+  selfId,
 }: {
+  /** Quản lý xếp hộ: chọn người nhận thưởng. Nhân viên đặt hẹn thì không có ô này. */
+  staff?: { id: number; name: string }[];
+  selfId?: number;
   requestId: number;
   customerName: string;
   subject: string;
@@ -62,7 +67,7 @@ export default function BookTrialButton({
                 <p className="text-lg font-bold text-ink-900">Đã đặt hẹn học thử</p>
                 <p className="text-sm text-ink-600 mt-2">
                   Buổi hẹn của {customerName} đã chuyển sang Quản lý để giao giáo viên. Khi buổi học
-                  thử diễn ra, thưởng học thử tự ghi cho bạn.
+                  thử diễn ra, thưởng học thử tự ghi cho người đặt hẹn.
                 </p>
                 <button type="button" onClick={() => setOpen(false)} className={`${btn.primary} mt-4`}>
                   Xong
@@ -75,6 +80,30 @@ export default function BookTrialButton({
                   <p className="text-sm text-ink-500">{customerName}</p>
                 </div>
                 <input type="hidden" name="trial_request_id" value={requestId} />
+
+                {staff && staff.length > 0 && (
+                  <div>
+                    <label className={label} htmlFor={`bt-coord-${requestId}`}>
+                      Người đặt hẹn (nhận thưởng)
+                    </label>
+                    <select
+                      id={`bt-coord-${requestId}`}
+                      name="coordinator_id"
+                      defaultValue={selfId ?? ""}
+                      className={field}
+                    >
+                      {staff.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                          {s.id === selfId ? " (tôi)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-ink-500 mt-1">
+                      Thưởng học thử và chốt lớp của khách này ghi cho người được chọn.
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>

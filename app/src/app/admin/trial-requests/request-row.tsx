@@ -22,8 +22,12 @@ const TONE: Record<TrialRequestStatus, "coral" | "amber" | "mint" | "neutral"> =
 export default function RequestRow({
   request,
   canCreateClass,
+  staff,
+  selfId,
 }: {
   request: TrialRequestRow;
+  staff?: { id: number; name: string }[];
+  selfId?: number;
   /** Quản lý tạo lớp ở trang Lớp học; nhân viên đặt hẹn ở trang Tạo lớp riêng. */
   canCreateClass: boolean;
 }) {
@@ -83,6 +87,8 @@ export default function RequestRow({
               customerName={request.name}
               subject={request.subject}
               booked={request.status === "done"}
+              staff={staff}
+              selfId={selfId}
             />
           )}
           {request.status !== "done" && (

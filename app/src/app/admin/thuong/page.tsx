@@ -26,6 +26,7 @@ import DeleteBonusButton from "./delete-bonus-button";
 import RescanButton from "./rescan-button";
 import Link from "next/link";
 import ClassStatusBadge from "../classes/status-badge";
+import ReassignSelect from "./reassign-select";
 
 const KIND_LABEL: Record<BonusRow["kind"], string> = {
   trial: "Học thử",
@@ -86,6 +87,39 @@ export default async function BonusPage({
         .all(from, to) as { id: number; n: number }[]
     ).map((r) => [r.id, r.n]),
   );
+  // Khách trong kỳ đang ghi cho chủ trung tâm / Quản lý, hoặc chưa gán ai —
+  // hay gặp khi Quản lý tự bấm xếp lịch học thử cho khách của nhân viên đặt
+  // hẹn: thưởng rơi vào tài khoản Quản lý. Chọn lại người là thưởng đi theo.
+  const reassignable = db
+    .prepare(
+      `SELECT c.id, c.student_name, c.subject, c.coordinator_id, u.name AS coordinator_name,
+              date(c.created_at) AS created,
+              (SELECT MAX(a.session_date) FROM attendance a WHERE a.class_id = c.id AND a.is_trial = 1) AS trial_date
+         FROM classes c LEFT JOIN users u ON u.id = c.coordinator_id
+        WHERE (c.coordinator_id IS NULL OR u.role IN ('admin','manager'))
+          AND (date(c.created_at) BETWEEN ? AND ?
+               OR EXISTS (SELECT 1 FROM attendance a WHERE a.class_id = c.id AND a.is_trial = 1
+                            AND a.session_date BETWEEN ? AND ?))
+          AND c.id = (SELECT MIN(c2.id) FROM classes c2
+                       WHERE c2.student_name = c.student_name AND c2.subject = c.subject)
+        ORDER BY c.created_at DESC
+        LIMIT 100`
+    )
+    .all(from, to, from, to) as {
+    id: number;
+    student_name: string;
+    subject: string;
+    coordinator_id: number | null;
+    coordinator_name: string | null;
+    created: string;
+    trial_date: string | null;
+  }[];
+  const allStaff = db
+    .prepare(
+      `SELECT id, name FROM users WHERE role IN ('coordinator','manager','admin') AND active = 1
+        ORDER BY CASE role WHEN 'coordinator' THEN 0 ELSE 1 END, name`
+    )
+    .all() as { id: number; name: string }[];
   const unrewarded = listUnrewardedTrials(from, to);
   const missedConversions = listUnrewardedConversions(from, to);
   const grand = staff.reduce((sum, s) => sum + s.total, 0);
@@ -133,6 +167,36 @@ export default async function BonusPage({
           <MonthNav from={from} />
         </div>
       </Card>
+
+      {reassignable.length > 0 && (
+        <Card padded={false} className="border-wood-200">
+          <CardHeader title="Khách đang ghi cho Quản lý / chưa gán người đặt hẹn" count={reassignable.length} />
+          <p className="px-5 pt-3 text-xs text-ink-500">
+            Khách do nhân viên nào chăm thì chọn lại người đó — thưởng học thử và chốt lớp đã ghi sẽ tự
+            chuyển sang. Giữ nguyên nếu đúng là của Quản lý.
+          </p>
+          <ul className="divide-y divide-navy-100 mt-2">
+            {reassignable.map((r) => (
+              <li key={r.id} className="px-5 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <span className="min-w-0 flex-1 basis-56 text-sm">
+                  <Link href={`/admin/classes/${r.id}`} className="font-medium text-ink-900 hover:text-wood-600 hover:underline">
+                    {r.student_name}
+                  </Link>
+                  <span className="text-ink-500">
+                    {" "}
+                    · {r.subject} · tạo {r.created.split("-").reverse().join("/")}
+                    {r.trial_date ? ` · học thử ${r.trial_date.split("-").reverse().join("/")}` : ""}
+                  </span>
+                  <span className="block text-xs text-ink-400">
+                    Đang ghi cho: {r.coordinator_name ?? "chưa gán ai"}
+                  </span>
+                </span>
+                <ReassignSelect classId={r.id} current={r.coordinator_id} staff={allStaff} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {/* Buổi học thử bị sót thưởng. Khoản chỉ được ghi đúng lúc điểm danh,
           nên lớp gán giáo vụ muộn hay dữ liệu sửa tay là rơi rớt — bảng này

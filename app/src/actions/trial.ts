@@ -249,12 +249,31 @@ export async function bookTrialAction(
         | undefined)
     : undefined;
 
+  // Người nhận thưởng của khách này: nhân viên đặt hẹn tự xếp thì là chính họ;
+  // Quản lý xếp hộ thì chọn được người nhận (VD xếp lịch cho khách của Mỹ Kim
+  // mà thưởng vẫn ghi cho Mỹ Kim). Không chọn thì như cũ — người bấm.
+  let coordinatorId = session.userId;
+  if (session.role !== "coordinator") {
+    const picked = Number(formData.get("coordinator_id") || 0);
+    if (picked > 0) {
+      const ok = db
+        .prepare("SELECT 1 FROM users WHERE id = ? AND role IN ('admin','manager','coordinator') AND active = 1")
+        .get(picked);
+      if (ok) coordinatorId = picked;
+    }
+  }
+  const coordinatorName =
+    coordinatorId === session.userId
+      ? session.name
+      : ((db.prepare("SELECT name FROM users WHERE id = ?").get(coordinatorId) as { name: string } | undefined)?.name ??
+        session.name);
+
   const noteParts = [
     wheelPrizeNote(req),
     note || null,
     req.note ? `Khách ghi: ${req.note}` : null,
     req.contact ? `Liên hệ: ${req.contact}` : null,
-    `Đặt hẹn bởi ${session.name}`,
+    `Đặt hẹn bởi ${coordinatorName}`,
   ].filter(Boolean);
 
   db.transaction(() => {
@@ -272,7 +291,7 @@ export async function bookTrialAction(
       dayOfWeek,
       startTime,
       noteParts.join(" · "),
-      session.userId,
+      coordinatorId,
       startDate
     );
     db.prepare("UPDATE trial_requests SET status = 'done' WHERE id = ?").run(requestId);
