@@ -115,6 +115,9 @@ Gợi ý:
 
   Bot làm ba việc: gửi lịch ngày mai vào khoảng 20h mỗi tối, nhắc lại trước
   mỗi buổi khoảng một tiếng, và đẩy mọi thông báo trong web ra điện thoại.
+  Riêng buổi **học thử**: chủ trung tâm, quản lý và giáo vụ đã đặt hẹn khách
+  đó cũng nhận danh sách học thử ngày mai (kèm SĐT khách) và tin nhắc trước
+  giờ học thử, để gọi nhắc khách vào học.
   Mỗi tin có mã chống trùng lưu trong bảng `telegram_log`, nên deploy lại
   giữa chừng cũng không ai nhận hai lần.
 

@@ -14,6 +14,16 @@ interface Slot {
 
 const EMPTY_SLOT: Slot = { day: "", time: "", duration: "60" };
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Ngày gần nhất từ hôm nay rơi vào một trong các thứ đã chọn. */
+function nextDateOn(days: number[]): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 7; i++, d.setDate(d.getDate() + 1)) if (days.includes(d.getDay())) break;
+  return d;
+}
+
 /**
  * Repeatable day/time/duration rows for a class that meets more than once a
  * week (e.g. a student studying 2-3 buổi/tuần). Each row posts as a
@@ -25,6 +35,10 @@ export function SlotsField() {
   const [slots, setSlots] = useState<Slot[]>([EMPTY_SLOT]);
   const [startDate, setStartDate] = useState("");
   const startDow = startDate ? new Date(`${startDate}T00:00:00`).getDay() : null;
+  // Để trống ngày bắt đầu thì lớp học từ buổi kế tiếp đúng thứ đã chọn (hôm
+  // nay đúng thứ thì tính hôm nay) — hiện ra cho người nhập thấy trước.
+  const firstDays = slots.map((s) => s.day).filter(Boolean).map(Number);
+  const defaultStart = firstDays.length ? nextDateOn(firstDays) : null;
 
   function updateSlot(i: number, patch: Partial<Slot>) {
     setSlots((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
@@ -72,7 +86,9 @@ export function SlotsField() {
         <span className="text-xs text-ink-500">
           {startDate
             ? `${DAY_LABELS[startDow!]} ${startDate.slice(8)}/${startDate.slice(5, 7)} — lịch chạy từ ngày này`
-            : "Không bắt buộc — để trống là học từ tuần này"}
+            : defaultStart
+              ? `Để trống: buổi đầu là ${DAY_LABELS[defaultStart.getDay()]} ${pad(defaultStart.getDate())}/${pad(defaultStart.getMonth() + 1)} (buổi kế tiếp)`
+              : "Không bắt buộc — để trống là học từ buổi kế tiếp trong tuần"}
         </span>
       </div>
       {slots.map((slot, i) => (

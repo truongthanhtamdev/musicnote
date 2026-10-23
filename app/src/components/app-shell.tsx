@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { logoutAction } from "@/actions/auth";
 import { Logo } from "./logo";
 import { IconBell, IconKey, IconLogout, IconMenu, IconX } from "./icons";
+import { DisplaySettings } from "./display-settings";
 import { Avatar } from "./ui";
 
 export interface NavItem {
@@ -80,6 +81,7 @@ function UserBlock({ name, roleLabel }: { name: string; roleLabel: string }) {
         <p className="text-sm font-semibold text-white truncate">{name}</p>
         <p className="text-xs text-navy-300 truncate">{roleLabel}</p>
       </div>
+      <DisplaySettings className="text-navy-300 hover:text-wood-300 p-1.5 rounded-lg hover:bg-white/5 transition" />
       <Link
         href="/account/password"
         title="Đổi mật khẩu"
@@ -174,6 +176,7 @@ export function AppShell({
             <Brand title={brandTitle} compact />
           </div>
           <div className="flex items-center gap-1">
+            <DisplaySettings className="p-2 rounded-lg text-navy-200 hover:bg-white/10 transition" />
             <span className="relative p-2 text-navy-200">
               <IconBell className="w-5 h-5" />
               {alertCount > 0 && (

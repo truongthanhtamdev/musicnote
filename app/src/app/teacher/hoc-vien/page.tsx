@@ -161,7 +161,17 @@ export default async function TeacherStudentsPage() {
       nextLabel: g.nextDate ? shortDayLabel(g.nextDate) : null,
       pausedLabel: g.pausedUntil ? shortDayLabel(g.pausedUntil) : null,
     }))
-    .sort((a, b) => a.name.localeCompare(b.name, "vi"));
+    // Khách có buổi gần nhất lên trước; chưa có lịch thì xếp theo tên ở cuối.
+    .map((g) => ({ ...g, soonest: g.nextDate ?? g.planned.find((p) => p.session_date >= today)?.session_date ?? null }))
+    .sort((a, b) =>
+      a.soonest && b.soonest
+        ? a.soonest.localeCompare(b.soonest) || a.name.localeCompare(b.name, "vi")
+        : a.soonest
+          ? -1
+          : b.soonest
+            ? 1
+            : a.name.localeCompare(b.name, "vi")
+    );
 
   return (
     <div className="space-y-5">

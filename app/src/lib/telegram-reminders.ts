@@ -1,3 +1,4 @@
+import { db } from "./db";
 import { contactEmailOf, lessonReminderMail, mailEnabled, sendMail } from "./mail";
 import { addDays, formatTimeRange, now, toISODate, toMinutesOfDay } from "./format";
 import { listSessionsOn, type ScheduledSession } from "./queries";
@@ -58,6 +59,37 @@ function movedNote(s: ScheduledSession): string {
 }
 
 /* ------------------------------------------------------------------ */
+/* Học thử — nhắc cho quản lý + giáo vụ đặt hẹn                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Buổi học thử: lớp trung tâm vừa giao (hoặc đang ở bước "Học thử") mà chưa
+ * dạy buổi nào. Đã dạy rồi thì các buổi sau là buổi thường, dù giáo vụ chưa
+ * kịp đổi trạng thái.
+ */
+function isTrialSession(s: ScheduledSession): boolean {
+  if (!s.cls.trial_pending && s.cls.stage !== "trial") return false;
+  return !db.prepare("SELECT 1 FROM attendance WHERE class_id = ? AND status = 'completed' LIMIT 1").get(s.cls.id);
+}
+
+/** Quản lý / chủ trung tâm đã nối Telegram, cộng người đặt hẹn khách này. */
+function trialWatchers(s: ScheduledSession): number[] {
+  const ids = new Set(
+    (
+      db
+        .prepare("SELECT id FROM users WHERE role IN ('admin','manager') AND active = 1 AND telegram_chat_id IS NOT NULL")
+        .all() as { id: number }[]
+    ).map((r) => r.id)
+  );
+  if (s.cls.coordinator_id) ids.add(s.cls.coordinator_id);
+  return [...ids];
+}
+
+function phoneLine(s: ScheduledSession): string {
+  return s.cls.student_phone ? `\n📞 ${escapeHtml(s.cls.student_phone)}` : "";
+}
+
+/* ------------------------------------------------------------------ */
 /* Nhắc trước giờ học                                                   */
 /* ------------------------------------------------------------------ */
 
@@ -94,6 +126,21 @@ async function remindBeforeLessons(current: Date) {
           meetingLine(s),
         `${key}|gv${s.cls.teacher_id}`
       );
+    }
+
+    if (isTrialSession(s)) {
+      for (const staffId of trialWatchers(s)) {
+        await sendToUser(
+          staffId,
+          `🎯 <b>Sắp tới buổi học thử</b>\n` +
+            `${timeRange(s)} · ${subject}\n` +
+            `Khách: ${studentLabel(s)}` +
+            (s.cls.teacher_name ? `\nGiáo viên: ${escapeHtml(s.cls.teacher_name)}` : "\n⚠️ Chưa xếp giáo viên") +
+            phoneLine(s) +
+            `\nNhắc khách vào học đúng giờ nhé.`,
+          `${key}|thu${staffId}`
+        );
+      }
     }
 
     if (s.cls.student_user_id) {
@@ -155,6 +202,25 @@ async function sendTomorrowDigest(tomorrowISO: string) {
   }
 
   const label = dayLabel(tomorrowISO);
+
+  // Khách học thử ngày mai — gửi quản lý và người đặt hẹn để gọi nhắc khách.
+  const forStaff = new Map<number, string[]>();
+  for (const s of sessions) {
+    if (!isTrialSession(s)) continue;
+    const teacher = s.cls.teacher_name ? `GV ${escapeHtml(s.cls.teacher_name)}` : "⚠️ chưa xếp GV";
+    const phone = s.cls.student_phone ? ` · ${escapeHtml(s.cls.student_phone)}` : "";
+    for (const staffId of trialWatchers(s)) {
+      push(forStaff, staffId, `• ${timeRange(s)} · ${escapeHtml(s.cls.subject)} — ${studentLabel(s)}${phone} (${teacher})`);
+    }
+  }
+  for (const [staffId, lines] of forStaff) {
+    await sendToUser(
+      staffId,
+      `🎯 <b>Học thử ngày mai — ${label}</b>\n${lines.join("\n")}\n\nGọi / nhắn nhắc khách giúp nhé.`,
+      `thu-ngay-mai|${staffId}|${tomorrowISO}`
+    );
+  }
+
   for (const [teacherId, lines] of forTeacher) {
     await sendToUser(
       teacherId,

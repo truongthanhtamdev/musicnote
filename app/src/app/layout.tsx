@@ -7,6 +7,7 @@ import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { AnalyticsPageView } from "@/components/analytics";
 import { OaiPixel } from "@/components/oai-pixel";
 import { MetaPixel } from "@/components/meta-pixel";
+import { UI_PREFS_SCRIPT } from "@/lib/ui-prefs";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -51,8 +52,11 @@ export default function RootLayout({
     <html
       lang="vi"
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
+      // Màu / cỡ chữ người dùng tự chọn được gắn lên <html> trước khi React chạy.
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-ivory-50 text-ink-900">
+        <script id="ui-prefs" dangerouslySetInnerHTML={{ __html: UI_PREFS_SCRIPT }} />
         {children}
         {GA_MEASUREMENT_ID && (
           <>

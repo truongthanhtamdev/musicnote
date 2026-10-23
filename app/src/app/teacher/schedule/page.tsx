@@ -8,7 +8,7 @@ import {
   listPlannedSessions,
   plannedClassesOn,
 } from "@/lib/queries";
-import { DAY_LABELS, DAY_ORDER, MAKEUP_WINDOW_DAYS, teacherSees } from "@/lib/types";
+import { DAY_LABELS, MAKEUP_WINDOW_DAYS, teacherSees } from "@/lib/types";
 import { IconClasses, IconClock } from "@/components/icons";
 import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import NewClassForm from "./new-class-form";
@@ -38,14 +38,16 @@ export default async function TeacherSchedulePage({
   end.setMonth(end.getMonth() + 2, 0);
   const rangeEnd = toISODate(end);
   const todayDow = now().getDay();
-  // Buổi hẹn của lớp linh động rơi vào tuần này (T2 → CN), hiện chung cột thứ.
-  const monday = addDays(now(), -((todayDow + 6) % 7));
-  const weekPlanned = new Map(
-    DAY_ORDER.map((d) => {
-      const date = toISODate(addDays(monday, (d + 6) % 7));
-      return [d, { date, rows: plannedClassesOn(date, session!.userId).map(teacherSees) }] as const;
-    })
-  );
+  // 7 ngày tới tính từ hôm nay — ngày gần nhất lên đầu, kèm buổi hẹn của lớp
+  // linh động rơi đúng ngày đó.
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const date = toISODate(addDays(now(), i));
+    return {
+      dow: (todayDow + i) % 7,
+      date,
+      planned: plannedClassesOn(date, session!.userId).map(teacherSees),
+    };
+  });
 
   // Buổi sắp tới + khung còn trống, để giáo viên dời giúp khách ngay tại đây.
   const upcoming = listUpcomingSessionsForTeacher(session!.userId).map((g) => ({
@@ -122,12 +124,12 @@ export default async function TeacherSchedulePage({
           )}
 
           <div className="grid grid-cols-1 [&>*]:min-w-0 gap-4 sm:grid-cols-2">
-            {DAY_ORDER.map((d) => {
+            {week.map(({ dow: d, date, planned: plannedRows }) => {
               const dayClasses = classes
                 .filter((c) => c.schedule_type !== "flexible" && c.day_of_week === d)
                 .sort((a, b) => a.start_time.localeCompare(b.start_time));
               const isToday = d === todayDow;
-              const planned = weekPlanned.get(d)!;
+              const planned = { date, rows: plannedRows };
               return (
                 <Card
                   key={d}
@@ -140,6 +142,11 @@ export default async function TeacherSchedulePage({
                       {isToday && (
                         <span className="text-[11px] font-bold uppercase tracking-wide text-wood-700 bg-wood-50 border border-wood-100 rounded-full px-2 py-0.5">
                           Hôm nay
+                        </span>
+                      )}
+                      {d === (todayDow + 1) % 7 && (
+                        <span className="text-[11px] font-semibold text-ink-500 bg-ivory-100 rounded-full px-2 py-0.5">
+                          Ngày mai
                         </span>
                       )}
                     </h2>

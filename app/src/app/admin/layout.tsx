@@ -8,6 +8,7 @@ import {
   countPaymentFollowUps,
 } from "@/lib/queries";
 import { countDueLeads } from "@/lib/leads";
+import { telegramEnabled } from "@/lib/telegram";
 import {
   IconBell,
   IconCalendarCheck,
@@ -22,6 +23,7 @@ import {
   IconStar,
   IconSettings,
   IconTeacher,
+  IconTelegram,
   IconUpload,
   IconUser,
   IconUsers,
@@ -150,6 +152,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           },
         ]
       : []),
+    // Quản lý + giáo vụ nối Telegram để được nhắc lịch học thử sắp tới.
+    ...(telegramEnabled()
+      ? [{ href: "/account/telegram", label: "Nhắc lịch Telegram", icon: <IconTelegram className={ICON} /> }]
+      : []),
   ];
 
   // Nhân viên đặt hẹn chỉ làm việc với khách chưa học: đúng hai mục này.
@@ -162,6 +168,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     "/admin/clip",
     "/admin/lop-cua-toi",
     "/admin/thu-nhap",
+    "/account/telegram",
   ];
   const visibleLinks = canManage
     ? // Quản lý tạo lớp ngay ở trang Lớp học; thưởng của mọi người xem ở "Thưởng giáo vụ".

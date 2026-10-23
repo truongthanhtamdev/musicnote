@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertRole, ForbiddenError } from "@/lib/guard";
-import { normalizeFacebookUrl, normalizeMeetingUrl, todayISO, formatVND } from "@/lib/format";
+import { normalizeFacebookUrl, normalizeMeetingUrl, todayISO, formatVND, nextOccurrence, toISODate } from "@/lib/format";
 import {
   notifyUser,
   getClass,
@@ -165,7 +165,9 @@ export async function createClassAction(
       teacherId,
       notes || null,
       coordinatorId,
-      startDate
+      // Không ghi ngày bắt đầu thì lấy buổi kế tiếp đúng thứ đó (hôm nay đúng
+      // thứ thì tính luôn hôm nay) — ghi hẳn vào lớp cho ai xem cũng rõ.
+      scheduleType === "fixed" ? (startDate ?? toISODate(nextOccurrence(slot.dayOfWeek))) : null
     );
     firstClassId ??= Number(info.lastInsertRowid);
   }
@@ -758,9 +760,12 @@ export async function setClassStageAction(
     const startDate = schedule.startDate && /^\d{4}-\d{2}-\d{2}$/.test(schedule.startDate) ? schedule.startDate : null;
     const dayOfWeek = startDate ? new Date(`${startDate}T00:00:00`).getDay() : schedule.dayOfWeek;
     if (!Number.isNaN(dayOfWeek)) {
+      // Không ghi ngày thì học lại từ buổi kế tiếp đúng thứ đó — không để
+      // trống, vì trống là tính từ ngày tạo lớp cũ: cả quãng tạm nghỉ sẽ bị
+      // nhắc "quên điểm danh".
       db.prepare(
         "UPDATE classes SET schedule_type = 'fixed', day_of_week = ?, start_time = ?, start_date = ? WHERE id = ?"
-      ).run(dayOfWeek, schedule.startTime, startDate, classId);
+      ).run(dayOfWeek, schedule.startTime, startDate ?? toISODate(nextOccurrence(dayOfWeek)), classId);
     }
   }
   revalidatePath("/admin/cham-khach");

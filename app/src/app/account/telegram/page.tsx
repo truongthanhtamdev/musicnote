@@ -56,8 +56,9 @@ export default async function TelegramPage() {
                 <div className="rounded-xl border border-mint-200 bg-mint-50 px-4 py-3">
                   <p className="font-semibold text-ink-900">Đã kết nối</p>
                   <p className="text-sm text-ink-600 mt-1">
-                    Mỗi tối bạn nhận lịch của ngày mai, và trước mỗi buổi khoảng một tiếng sẽ có
-                    thêm một tin nhắc.
+                    {session.role === "teacher" || session.role === "student"
+                      ? "Mỗi tối bạn nhận lịch của ngày mai, và trước mỗi buổi khoảng một tiếng sẽ có thêm một tin nhắc."
+                      : "Mỗi tối bạn nhận danh sách khách học thử ngày mai, và trước mỗi buổi học thử khoảng một tiếng sẽ có thêm một tin nhắc để gọi nhắc khách."}
                   </p>
                 </div>
                 <TelegramActions />

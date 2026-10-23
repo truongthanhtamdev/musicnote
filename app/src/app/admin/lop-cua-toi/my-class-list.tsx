@@ -42,7 +42,16 @@ export default function MyClassList({ rows }: { rows: Row[] }) {
         ? foldVietnamese(`${r.name} ${r.guardian ?? ""} ${r.phone ?? ""}`.toLowerCase()).includes(needle)
         : r.group === tab
     )
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    // Có lịch sắp tới thì buổi gần nhất lên trước; còn lại khách mới đặt lên trước.
+    .sort((a, b) =>
+      a.nextDate && b.nextDate
+        ? a.nextDate.localeCompare(b.nextDate)
+        : a.nextDate
+          ? -1
+          : b.nextDate
+            ? 1
+            : b.createdAt.localeCompare(a.createdAt)
+    );
 
   return (
     <div className="space-y-4">
