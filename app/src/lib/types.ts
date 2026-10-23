@@ -351,6 +351,105 @@ export const PRICING: { subject: string; tiers: PricingTier[] }[] = [
       { sessions: 100, name: "Gói Toàn Diện", price: null, features: [] },
     ],
   },
+  // Toán: giá bằng Guitar. Tiếng Việt: mỗi gói rẻ hơn Toán 500.000đ.
+  {
+    subject: "Toán",
+    tiers: [
+      {
+        sessions: 20,
+        name: "Gói Khởi Đầu",
+        price: 7_500_000,
+        priceUSD: 300,
+        features: [
+          ONE_ON_ONE,
+          "Kiểm tra trình độ & lộ trình riêng",
+          "Củng cố kiến thức nền tảng theo lớp",
+          "Luyện kỹ năng giải bài tập",
+          "Bài tập về nhà có chấm chữa",
+          "Báo cáo tiến độ cho phụ huynh",
+          "Hỗ trợ qua tin nhắn",
+        ],
+      },
+      {
+        sessions: 50,
+        name: "Gói Nâng Cao",
+        price: 15_000_000,
+        priceUSD: 600,
+        badge: "Phổ biến nhất",
+        features: [
+          ONE_ON_ONE,
+          "Toàn bộ nội dung gói 20 buổi",
+          "Bám sát chương trình trên lớp",
+          "Luyện đề kiểm tra giữa kỳ / cuối kỳ",
+          "Toán tư duy & bài nâng cao",
+          "Ưu tiên đặt lịch & hỗ trợ 24/7",
+        ],
+      },
+      {
+        sessions: 100,
+        name: "Gói Toàn Diện",
+        price: 28_000_000,
+        badge: "Tiết kiệm nhất",
+        features: [
+          "Toàn bộ nội dung gói 50 buổi",
+          "Ôn thi chuyển cấp / học sinh giỏi",
+          "Luyện đề theo cấu trúc đề thi",
+          "Rèn tư duy logic & khả năng tự học",
+          "Video ghi lại từng buổi học",
+          "Báo cáo tiến độ hằng tháng",
+        ],
+      },
+    ],
+  },
+  {
+    subject: "Tiếng Việt",
+    tiers: [
+      {
+        sessions: 20,
+        name: "Gói Khởi Đầu",
+        price: 7_000_000,
+        priceUSD: 280,
+        features: [
+          ONE_ON_ONE,
+          "Kiểm tra trình độ & lộ trình riêng",
+          "Đánh vần, đọc trôi chảy",
+          "Chính tả & viết chữ đẹp",
+          "Mở rộng vốn từ",
+          "Phù hợp cả trẻ Việt kiều",
+          "Báo cáo tiến độ cho phụ huynh",
+        ],
+      },
+      {
+        sessions: 50,
+        name: "Gói Nâng Cao",
+        price: 14_500_000,
+        priceUSD: 580,
+        badge: "Phổ biến nhất",
+        features: [
+          ONE_ON_ONE,
+          "Toàn bộ nội dung gói 20 buổi",
+          "Đọc hiểu văn bản",
+          "Viết câu, đoạn văn đúng ngữ pháp",
+          "Tập làm văn theo chương trình",
+          "Ưu tiên đặt lịch & hỗ trợ 24/7",
+        ],
+      },
+      {
+        sessions: 100,
+        name: "Gói Toàn Diện",
+        price: 27_500_000,
+        badge: "Tiết kiệm nhất",
+        features: [
+          "Toàn bộ nội dung gói 50 buổi",
+          "Cảm thụ văn học",
+          "Viết bài văn hoàn chỉnh",
+          "Giao tiếp & thuyết trình tự tin",
+          "Video ghi lại từng buổi học",
+          "Báo cáo tiến độ hằng tháng",
+        ],
+      },
+    ],
+  },
 ];
 
 export function getSuggestedPackagePrice(
