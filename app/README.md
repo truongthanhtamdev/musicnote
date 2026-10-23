@@ -129,7 +129,7 @@ Gợi ý:
   Riêng buổi **học thử**: chủ trung tâm, quản lý và giáo vụ đã đặt hẹn khách
   đó cũng nhận danh sách học thử ngày mai (kèm SĐT khách) và tin nhắc trước
   giờ học thử, để gọi nhắc khách vào học.
-  Lớp **chưa có giáo viên**: chủ trung tâm và quản lý được báo ngay khi có
+  Lớp **chưa có giáo viên**: chỉ chủ trung tâm được báo ngay khi có
   lớp mới chờ giao, báo gấp khi lớp sắp học hôm nay / ngày mai mà vẫn trống
   giáo viên, và 8h sáng nhận bảng tổng hợp các lớp còn chờ giao.
   Mỗi tin có mã chống trùng lưu trong bảng `telegram_log`, nên deploy lại

@@ -108,10 +108,11 @@ function phoneLine(s: ScheduledSession): string {
 /* Lớp chờ giao giáo viên — nhắc quản lý                                 */
 /* ------------------------------------------------------------------ */
 
-function managerIds(): number[] {
+/** Tin "lớp chờ giao giáo viên" chỉ gửi chủ trung tâm — người quyết giao lớp. */
+function ownerIds(): number[] {
   return (
     db
-      .prepare(`SELECT id FROM users WHERE role IN ('admin','manager') AND active = 1 AND ${staffLinkedSql()}`)
+      .prepare(`SELECT id FROM users WHERE role = 'admin' AND active = 1 AND ${staffLinkedSql()}`)
       .all() as { id: number }[]
   ).map((r) => r.id);
 }
@@ -165,14 +166,14 @@ function waitingClasses(todayISO: string): WaitingClass[] {
 const ASSIGN_LINK = `\n\n👉 <a href="${SITE_URL}/admin/assign">Mở trang Giao lớp</a>`;
 
 /**
- * Ba loại tin cho quản lý:
+ * Ba loại tin cho chủ trung tâm (quản lý, giáo vụ không nhận):
  *   1. Lớp mới tạo mà chưa có giáo viên — báo ngay (trong vòng 5 phút).
  *   2. Lớp sắp học trong hôm nay / ngày mai mà vẫn chưa có giáo viên — báo
  *      một lần mỗi buổi, để kịp xếp người.
  *   3. 8h sáng: tổng hợp mọi lớp còn chờ giao, buổi gần nhất lên đầu.
  */
 async function remindUnassigned(current: Date) {
-  const managers = managerIds();
+  const managers = ownerIds();
   if (managers.length === 0) return;
   const todayISO = toISODate(current);
   const waiting = waitingClasses(todayISO);
