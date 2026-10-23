@@ -58,7 +58,9 @@ export async function callTelegram<T>(
     });
     return (await res.json()) as TelegramResponse<T>;
   } catch (e) {
-    console.error(`[telegram] gọi ${method} hỏng:`, e);
+    // In kèm nguyên nhân gốc (ENETUNREACH, ETIMEDOUT...) — "fetch failed" trơn thì không biết hỏng ở đâu.
+    const cause = (e as { cause?: { code?: string; message?: string } })?.cause;
+    console.error(`[telegram] gọi ${method} hỏng:`, cause?.code ?? cause?.message ?? e);
     return null;
   }
 }
