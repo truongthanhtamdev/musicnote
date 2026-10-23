@@ -1,5 +1,6 @@
 "use server";
 
+import { notifyNewCustomer } from "@/lib/telegram";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { logAudit } from "@/lib/audit";
@@ -76,6 +77,7 @@ export async function submitTrialRequestAction(
       )
       .run(name, phone, contact || null, subject, language, note || null, trialSessions, oldPrize, email).lastInsertRowid
   );
+  notifyNewCustomer({ requestId, name, phone, subject, contact, note, email });
   if (oldPrize) store.delete(WHEEL_COOKIE);
   // Mở khoá vòng quay cho đúng đăng ký vừa gửi.
   store.set(WHEEL_REQUEST_COOKIE, signRequest(requestId), wheelCookieOptions);
@@ -178,15 +180,20 @@ export async function requestExtraTrialAction(
     return { error: `Trung tâm đã nhận đăng ký học thử môn ${subjectRaw} của bạn rồi nhé.` };
   }
 
-  db.prepare(
-    "INSERT INTO trial_requests (name, phone, contact, subject, language, note) VALUES (?, ?, ?, ?, 'vi', ?)"
-  ).run(
-    user.name,
-    user.phone || user.email,
-    user.email,
-    subjectRaw,
-    `Học viên đang học, đăng ký thêm môn${note ? ` — ${note}` : ""}`.slice(0, MAX.note)
+  const extraNote = `Học viên đang học, đăng ký thêm môn${note ? ` — ${note}` : ""}`.slice(0, MAX.note);
+  const extraId = Number(
+    db
+      .prepare("INSERT INTO trial_requests (name, phone, contact, subject, language, note) VALUES (?, ?, ?, ?, 'vi', ?)")
+      .run(user.name, user.phone || user.email, user.email, subjectRaw, extraNote).lastInsertRowid
   );
+  notifyNewCustomer({
+    requestId: extraId,
+    name: user.name,
+    phone: user.phone || user.email,
+    subject: subjectRaw,
+    note: note || null,
+    existingStudent: true,
+  });
 
   revalidatePath("/admin/trial-requests");
   revalidatePath("/admin");

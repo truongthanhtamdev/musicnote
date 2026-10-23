@@ -463,6 +463,8 @@ function migrate() {
   // Telegram cấp khi người dùng bấm Bắt đầu, không phải thứ tự khai được.
   // link_code là mã một lần người dùng gửi cho bot để bot biết đây là ai.
   ensureColumn("users", "telegram_chat_id", "TEXT");
+  // Hộp thư với bot riêng của quản lý / giáo vụ (TELEGRAM_STAFF_BOT_TOKEN).
+  ensureColumn("users", "telegram_staff_chat_id", "TEXT");
   ensureColumn("users", "telegram_link_code", "TEXT");
   // Số buổi học thử khách được nhận. Mặc định 1 như mức thường; khách quay
   // vòng may mắn ở trang chủ thì ghi số trúng được, để giáo vụ biết mà xếp đủ.

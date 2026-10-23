@@ -13,7 +13,7 @@ import {
   type ScheduledSession,
 } from "./queries";
 import { SITE_URL } from "./seo";
-import { escapeHtml, pruneTelegramLog, sendToUser, telegramEnabled } from "./telegram";
+import { escapeHtml, pruneTelegramLog, sendToUser, staffLinkedSql, telegramEnabled } from "./telegram";
 import { DAY_LABELS, formatClassSchedule } from "./types";
 
 /**
@@ -82,7 +82,7 @@ function movedNote(s: ScheduledSession): string {
  * dạy buổi nào. Đã dạy rồi thì các buổi sau là buổi thường, dù giáo vụ chưa
  * kịp đổi trạng thái.
  */
-function isTrialSession(s: ScheduledSession): boolean {
+export function isTrialSession(s: ScheduledSession): boolean {
   if (!s.cls.trial_pending && s.cls.stage !== "trial") return false;
   return !db.prepare("SELECT 1 FROM attendance WHERE class_id = ? AND status = 'completed' LIMIT 1").get(s.cls.id);
 }
@@ -92,7 +92,7 @@ function trialWatchers(s: ScheduledSession): number[] {
   const ids = new Set(
     (
       db
-        .prepare("SELECT id FROM users WHERE role IN ('admin','manager') AND active = 1 AND telegram_chat_id IS NOT NULL")
+        .prepare(`SELECT id FROM users WHERE role IN ('admin','manager') AND active = 1 AND ${staffLinkedSql()}`)
         .all() as { id: number }[]
     ).map((r) => r.id)
   );
@@ -111,7 +111,7 @@ function phoneLine(s: ScheduledSession): string {
 function managerIds(): number[] {
   return (
     db
-      .prepare("SELECT id FROM users WHERE role IN ('admin','manager') AND active = 1 AND telegram_chat_id IS NOT NULL")
+      .prepare(`SELECT id FROM users WHERE role IN ('admin','manager') AND active = 1 AND ${staffLinkedSql()}`)
       .all() as { id: number }[]
   ).map((r) => r.id);
 }

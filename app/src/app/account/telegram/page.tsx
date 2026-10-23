@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireSession } from "@/lib/guard";
-import { getUserById } from "@/lib/auth";
 import { roleHomePath } from "@/lib/types";
-import { getBotUsername, linkCodeFor, telegramEnabled } from "@/lib/telegram";
+import { botEnabled, botForRole, getBotUsername, isLinked, linkCodeFor } from "@/lib/telegram";
 import { Logo } from "@/components/logo";
 import { IconChevronLeft, IconTelegram } from "@/components/icons";
 import { Card, CardHeader } from "@/components/ui";
@@ -13,13 +12,16 @@ export const metadata: Metadata = { title: "Nhắc lịch Telegram", robots: { i
 
 export default async function TelegramPage() {
   const session = await requireSession();
-  const user = getUserById(session.userId);
-  const linked = Boolean(user?.telegram_chat_id);
+  // Quản lý / giáo vụ nối với bot riêng (nếu trung tâm đã bật), giáo viên và
+  // học viên nối với bot nhắc lịch.
+  const bot = botForRole(session.role);
+  const enabled = botEnabled(bot);
+  const linked = isLinked(session.userId);
 
   // Chỉ sinh mã khi thật sự cần hiện: đã kết nối rồi mà vẫn sinh mã mới là
   // tạo ra một mã sống vô ích, ai nhặt được là nối nhầm vào tài khoản này.
-  const code = telegramEnabled() && !linked ? linkCodeFor(session.userId) : null;
-  const botUsername = await getBotUsername();
+  const code = enabled && !linked ? linkCodeFor(session.userId) : null;
+  const botUsername = await getBotUsername(bot);
   const deepLink = botUsername && code ? `https://t.me/${botUsername}?start=${code}` : null;
 
   return (
@@ -47,7 +49,7 @@ export default async function TelegramPage() {
             icon={<IconTelegram className="w-4.5 h-4.5 text-wood-500" />}
           />
           <div className="p-5 space-y-4">
-            {!telegramEnabled() ? (
+            {!enabled ? (
               <p className="text-sm text-ink-500">
                 Trung tâm chưa bật bot Telegram. Bạn nhắn cho quản lý để được bật giúp nhé.
               </p>

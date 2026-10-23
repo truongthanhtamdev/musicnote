@@ -109,6 +109,17 @@ Gợi ý:
   TELEGRAM_BOT_TOKEN=123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   ```
 
+  Muốn tin của chủ trung tâm / quản lý / giáo vụ (khách mới đăng ký, học thử,
+  lớp chưa có giáo viên) đi qua **một bot riêng**, tạo thêm bot thứ hai rồi
+  khai thêm:
+
+  ```
+  TELEGRAM_STAFF_BOT_TOKEN=987654321:BBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  ```
+
+  Khi đó giáo viên / học viên vẫn dùng bot cũ, còn quản lý / giáo vụ nối với bot
+  riêng (trang **Nhắc lịch Telegram** tự mở đúng bot theo vai trò).
+
   Khởi động lại app là bot chạy — không cần cài cron, không cần khai webhook
   hay mở thêm cổng nào (app tự hỏi Telegram bằng `getUpdates`). Bỏ trống
   token thì toàn bộ phần Telegram tắt hẳn.

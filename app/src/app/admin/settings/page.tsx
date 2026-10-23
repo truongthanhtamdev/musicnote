@@ -80,9 +80,24 @@ export default async function AdminSettingsPage() {
           {telegram.enabled ? (
             <>
               <p className="text-sm text-ink-500 mb-3">
-                Bot đang chạy{telegram.botUsername ? ` với tên @${telegram.botUsername}` : ""}. Mỗi
-                tối bot gửi lịch ngày mai, và nhắc lại trước mỗi buổi khoảng một tiếng. Ai đã nối
+                Bot nhắc lịch{telegram.botUsername ? ` @${telegram.botUsername}` : ""} đang chạy: mỗi
+                tối gửi lịch ngày mai, và nhắc lại trước mỗi buổi khoảng một tiếng. Ai đã nối
                 tài khoản cũng nhận luôn các thông báo của web ngay trên điện thoại.
+              </p>
+              <p className="text-sm text-ink-500 mb-3">
+                {telegram.staffBotUsername ? (
+                  <>
+                    Bot quản lý <span className="font-mono text-ink-900">@{telegram.staffBotUsername}</span> riêng cho
+                    chủ trung tâm, quản lý, giáo vụ: khách mới đăng ký, học thử, lớp chưa có giáo viên —{" "}
+                    <b className="text-ink-700">{telegram.linkedStaff}</b> người đã nối.
+                  </>
+                ) : (
+                  <>
+                    Muốn tin của quản lý / giáo vụ đi bot riêng, thêm{" "}
+                    <span className="font-mono text-ink-900">TELEGRAM_STAFF_BOT_TOKEN=...</span> vào{" "}
+                    <span className="font-mono text-ink-900">.env.local</span>. Chưa có thì dùng chung bot trên.
+                  </>
+                )}
               </p>
               <dl className="grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-xl border border-navy-100 bg-ivory-50 px-3 py-2.5">
