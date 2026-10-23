@@ -1,9 +1,20 @@
 import { db } from "./db";
 import { contactEmailOf, lessonReminderMail, mailEnabled, sendMail } from "./mail";
 import { addDays, formatTimeRange, now, toISODate, toMinutesOfDay } from "./format";
-import { listSessionsOn, type ScheduledSession } from "./queries";
+import {
+  annotateSchedule,
+  isTeacherAvailable,
+  listClasses,
+  listPlannedSessions,
+  listSessionsOn,
+  listTeachers,
+  teacherSpeaksLanguage,
+  teacherTeachesSubject,
+  type ScheduledSession,
+} from "./queries";
+import { SITE_URL } from "./seo";
 import { escapeHtml, pruneTelegramLog, sendToUser, telegramEnabled } from "./telegram";
-import { DAY_LABELS } from "./types";
+import { DAY_LABELS, formatClassSchedule } from "./types";
 
 /**
  * Lịch nhắc tự động qua Telegram, do chính app chạy — không cần cài cron trên
@@ -24,6 +35,10 @@ const FIRST_TICK_MS = 45 * 1000;
 const LEAD_MINUTES = 60;
 /** Từ giờ này trở đi trong ngày thì gửi lịch của ngày mai. */
 const DIGEST_HOUR = 20;
+/** Buổi sáng, từ giờ này: tổng hợp các lớp còn chờ giao giáo viên. */
+const MORNING_HOUR = 8;
+/** Lớp tạo trong bấy nhiêu giờ gần đây mới báo "lớp mới chờ giao". */
+const NEW_CLASS_HOURS = 24;
 const MINUTES_PER_DAY = 24 * 60;
 
 declare global {
@@ -87,6 +102,112 @@ function trialWatchers(s: ScheduledSession): number[] {
 
 function phoneLine(s: ScheduledSession): string {
   return s.cls.student_phone ? `\n📞 ${escapeHtml(s.cls.student_phone)}` : "";
+}
+
+/* ------------------------------------------------------------------ */
+/* Lớp chờ giao giáo viên — nhắc quản lý                                 */
+/* ------------------------------------------------------------------ */
+
+function managerIds(): number[] {
+  return (
+    db
+      .prepare("SELECT id FROM users WHERE role IN ('admin','manager') AND active = 1 AND telegram_chat_id IS NOT NULL")
+      .all() as { id: number }[]
+  ).map((r) => r.id);
+}
+
+interface WaitingClass {
+  id: number;
+  name: string;
+  line: string;
+  /** Buổi học gần nhất (YYYY-MM-DD), null nếu lớp linh động chưa hẹn buổi nào. */
+  next: string | null;
+  createdAt: string;
+}
+
+/** Lớp đang học mà chưa có giáo viên, buổi gần nhất lên đầu — giống trang Giao lớp. */
+function waitingClasses(todayISO: string): WaitingClass[] {
+  const classes = listClasses({ unassignedOnly: true, status: "active" });
+  if (classes.length === 0) return [];
+  const teachers = listTeachers(false);
+  const until = toISODate(addDays(new Date(`${todayISO}T00:00:00`), 60));
+  return annotateSchedule(classes)
+    .map((c) => {
+      const next =
+        c.schedule_type === "flexible"
+          ? (listPlannedSessions(c.id, todayISO, until)[0]?.session_date ?? null)
+          : c.nextSessionDate || null;
+      const free = teachers.filter(
+        (t) =>
+          teacherTeachesSubject(t, c.subject) &&
+          teacherSpeaksLanguage(t, c.language) &&
+          (c.schedule_type === "flexible" ||
+            isTeacherAvailable(t.id, c.day_of_week, c.start_time, c.duration_minutes, c.id))
+      ).length;
+      const days = next
+        ? Math.round((new Date(`${next}T00:00:00`).getTime() - new Date(`${todayISO}T00:00:00`).getTime()) / 86_400_000)
+        : null;
+      const when =
+        days === null ? "chưa có buổi hẹn" : days === 0 ? "⚠️ học HÔM NAY" : days === 1 ? "⚠️ học NGÀY MAI" : `buổi đầu ${dayLabel(next!)}`;
+      return {
+        id: c.id,
+        name: c.student_name,
+        next,
+        createdAt: c.created_at,
+        line:
+          `• <b>${escapeHtml(c.student_name)}</b> · ${escapeHtml(c.subject)} · ${escapeHtml(formatClassSchedule(c))}\n` +
+          `   ${when} · ${free > 0 ? `${free} GV rảnh, hợp môn` : "chưa có GV nào rảnh, hợp môn"}`,
+      };
+    })
+    .sort((a, b) => (a.next && b.next ? a.next.localeCompare(b.next) : a.next ? -1 : b.next ? 1 : 0));
+}
+
+const ASSIGN_LINK = `\n\n👉 <a href="${SITE_URL}/admin/assign">Mở trang Giao lớp</a>`;
+
+/**
+ * Ba loại tin cho quản lý:
+ *   1. Lớp mới tạo mà chưa có giáo viên — báo ngay (trong vòng 5 phút).
+ *   2. Lớp sắp học trong hôm nay / ngày mai mà vẫn chưa có giáo viên — báo
+ *      một lần mỗi buổi, để kịp xếp người.
+ *   3. 8h sáng: tổng hợp mọi lớp còn chờ giao, buổi gần nhất lên đầu.
+ */
+async function remindUnassigned(current: Date) {
+  const managers = managerIds();
+  if (managers.length === 0) return;
+  const todayISO = toISODate(current);
+  const waiting = waitingClasses(todayISO);
+  if (waiting.length === 0) return;
+  const tomorrowISO = toISODate(addDays(current, 1));
+  // created_at lưu theo giờ UTC của SQLite.
+  const newSince = new Date(Date.now() - NEW_CLASS_HOURS * 3600_000).toISOString().slice(0, 19).replace("T", " ");
+
+  for (const w of waiting) {
+    for (const id of managers) {
+      if (w.createdAt >= newSince) {
+        await sendToUser(id, `🆕 <b>Lớp mới chờ giao giáo viên</b>\n${w.line}${ASSIGN_LINK}`, `cho-giao-moi|${w.id}|${id}`);
+      }
+      if (w.next && w.next <= tomorrowISO) {
+        await sendToUser(
+          id,
+          `🚨 <b>Lớp sắp học mà chưa có giáo viên</b>\n${w.line}${ASSIGN_LINK}`,
+          `cho-giao-gap|${w.id}|${w.next}|${id}`
+        );
+      }
+    }
+  }
+
+  if (current.getHours() >= MORNING_HOUR) {
+    for (const id of managers) {
+      await sendToUser(
+        id,
+        `📋 <b>${waiting.length} lớp đang chờ giao giáo viên</b>\n${waiting
+          .slice(0, 15)
+          .map((w) => w.line)
+          .join("\n")}${waiting.length > 15 ? `\n… và ${waiting.length - 15} lớp nữa` : ""}${ASSIGN_LINK}`,
+        `cho-giao-sang|${todayISO}|${id}`
+      );
+    }
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -246,6 +367,7 @@ async function tick() {
     const current = now();
 
     await remindBeforeLessons(current);
+    if (telegramEnabled()) await remindUnassigned(current);
 
     if (telegramEnabled() && current.getHours() >= DIGEST_HOUR) {
       await sendTomorrowDigest(toISODate(addDays(current, 1)));
