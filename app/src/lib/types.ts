@@ -351,7 +351,7 @@ export const PRICING: { subject: string; tiers: PricingTier[] }[] = [
       { sessions: 100, name: "Gói Toàn Diện", price: null, features: [] },
     ],
   },
-  // Toán: giá bằng Guitar. Tiếng Việt: mỗi gói rẻ hơn Toán 500.000đ.
+  // Toán: giá bằng Guitar. Tiếng Việt: 7 / 15 / 27 triệu.
   {
     subject: "Toán",
     tiers: [
@@ -422,8 +422,8 @@ export const PRICING: { subject: string; tiers: PricingTier[] }[] = [
       {
         sessions: 50,
         name: "Gói Nâng Cao",
-        price: 14_500_000,
-        priceUSD: 580,
+        price: 15_000_000,
+        priceUSD: 600,
         badge: "Phổ biến nhất",
         features: [
           ONE_ON_ONE,
@@ -437,7 +437,7 @@ export const PRICING: { subject: string; tiers: PricingTier[] }[] = [
       {
         sessions: 100,
         name: "Gói Toàn Diện",
-        price: 27_500_000,
+        price: 27_000_000,
         badge: "Tiết kiệm nhất",
         features: [
           "Toàn bộ nội dung gói 50 buổi",

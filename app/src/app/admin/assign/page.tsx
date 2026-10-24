@@ -3,12 +3,14 @@ import { requireRole } from "@/lib/guard";
 import { getSession } from "@/lib/auth";
 import {
   listClasses,
+  listPlannedSessions,
   listTeachers,
   isTeacherAvailable,
   teacherSpeaksLanguage,
   teacherTeachesSubject,
 } from "@/lib/queries";
-import { formatClassSchedule, LANGUAGE_LABELS, MANAGE_ROLES } from "@/lib/types";
+import { DAY_LABELS, formatClassSchedule, LANGUAGE_LABELS, MANAGE_ROLES } from "@/lib/types";
+import { addDays, nextOccurrence, toISODate, todayISO } from "@/lib/format";
 import { IconCheckCircle, SubjectIcon } from "@/components/icons";
 import {
   Avatar,
@@ -26,7 +28,25 @@ export default async function AssignPage() {
   // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
   await requireRole(MANAGE_ROLES);
   const session = await getSession();
-  const unassigned = listClasses({ unassignedOnly: true, status: "active" });
+  // Buổi học đầu của từng lớp: ngày bắt đầu nếu còn ở phía trước, không ghi
+  // ngày thì lấy buổi gần nhất đúng thứ đó; lớp linh động lấy buổi hẹn đầu tiên.
+  // Lớp học sớm nhất lên đầu — cần giao giáo viên trước.
+  const today = todayISO();
+  const until = toISODate(addDays(new Date(`${today}T00:00:00`), 60));
+  const firstDate = (c: ReturnType<typeof listClasses>[number]): string | null =>
+    c.schedule_type === "flexible"
+      ? (listPlannedSessions(c.id, today, until)[0]?.session_date ?? null)
+      : c.start_date && c.start_date > today
+        ? c.start_date
+        : toISODate(nextOccurrence(c.day_of_week));
+  const unassigned = listClasses({ unassignedOnly: true, status: "active" })
+    .map((c) => ({ ...c, firstDate: firstDate(c) }))
+    .sort((a, b) =>
+      a.firstDate && b.firstDate ? a.firstDate.localeCompare(b.firstDate) : a.firstDate ? -1 : b.firstDate ? 1 : 0
+    );
+  const tomorrow = toISODate(addDays(new Date(`${today}T00:00:00`), 1));
+  const dateLabel = (d: string) =>
+    `${d === today ? "Hôm nay · " : d === tomorrow ? "Ngày mai · " : ""}${DAY_LABELS[new Date(`${d}T00:00:00`).getDay()]} ${d.slice(8, 10)}/${d.slice(5, 7)}`;
   const teachers = listTeachers(false);
 
   return (
@@ -82,7 +102,15 @@ export default async function AssignPage() {
                     <p className="font-semibold text-ink-900">{c.student_name}</p>
                     <p className="text-sm text-ink-500 flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-0.5">
                       <SubjectIcon subject={c.subject} className="w-4 h-4 text-wood-500" />
-                      <span className="tabular">{formatClassSchedule(c)}</span>
+                      <span className="tabular">{formatClassSchedule({ ...c, start_date: null })}</span>
+                      <span className="text-ink-300">·</span>
+                      <span
+                        className={`tabular font-semibold ${
+                          c.firstDate && c.firstDate <= tomorrow ? "text-coral-600" : "text-ink-700"
+                        }`}
+                      >
+                        {c.firstDate ? `Buổi đầu ${dateLabel(c.firstDate)}` : "Chưa hẹn buổi nào"}
+                      </span>
                       <span className="text-ink-300">·</span>
                       {c.subject}
                       {c.level ? ` · ${c.level}` : ""}
