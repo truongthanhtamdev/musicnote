@@ -56,12 +56,17 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   const canManage = session?.role === "admin" || session?.role === "manager";
   const staffList = canManage ? listStaff().filter((u) => u.active) : [];
 
-  const teachers = listTeachers(false).map((t) => ({
-    ...t,
-    available:
-      cls.schedule_type === "flexible" ||
-      isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes, cls.id),
-  }));
+  // Giáo viên hiện tại đã nghỉ thì vẫn liệt kê (ghi "đã nghỉ"), để ô chọn
+  // không giả vờ "Chưa xếp GV" trong khi lớp vẫn đang gắn với người đó.
+  const teachers = listTeachers(true)
+    .filter((t) => t.active || t.id === cls.teacher_id)
+    .map((t) => ({
+      ...t,
+      name: t.active ? t.name : `${t.name} (đã nghỉ)`,
+      available:
+        cls.schedule_type === "flexible" ||
+        isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes, cls.id),
+    }));
   const history = listAttendance({ classId }).slice(0, 30);
   const sessionNumbers = sessionNumberMap([classId]);
   const students = listStudents();

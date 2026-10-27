@@ -84,7 +84,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
 
   const activeCount = all.filter((c) => c.status === "active").length;
   const missedCount = all.filter((c) => c.missedLastSession).length;
-  const unassigned = all.filter((c) => c.status === "active" && !c.teacher_id).length;
+  const unassigned = all.filter((c) => c.status === "active" && (!c.teacher_id || c.teacher_active === 0)).length;
   const dueCount = all.filter((c) => tuition.get(c.id)?.needsFollowUp).length;
 
   return (
@@ -390,7 +390,13 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
                       )}
                     </td>
                     <td className="px-4 py-3 text-ink-700 max-w-[150px]">
-                      {c.teacher_name || <StatusChip tone="amber">Chưa xếp GV</StatusChip>}
+                      {c.teacher_name && c.teacher_active !== 0 ? (
+                        c.teacher_name
+                      ) : c.teacher_name ? (
+                        <StatusChip tone="amber">{c.teacher_name} đã nghỉ — chờ giao</StatusChip>
+                      ) : (
+                        <StatusChip tone="amber">Chưa xếp GV</StatusChip>
+                      )}
                     </td>
                     <td className="px-4 py-3 max-w-[120px]">
                       <ClassStatusBadge stage={c.stage} wrap />

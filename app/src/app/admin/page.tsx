@@ -82,11 +82,7 @@ export default async function AdminDashboard() {
   const activeClassCount = (
     db.prepare("SELECT COUNT(*) as c FROM classes WHERE status='active'").get() as { c: number }
   ).c;
-  const unassignedCount = (
-    db
-      .prepare("SELECT COUNT(*) as c FROM classes WHERE status='active' AND teacher_id IS NULL")
-      .get() as { c: number }
-  ).c;
+  const unassignedCount = listClasses({ unassignedOnly: true, status: "active" }).length;
 
   const today = now();
   const dow = today.getDay();

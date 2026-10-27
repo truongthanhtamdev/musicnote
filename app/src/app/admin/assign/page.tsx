@@ -114,6 +114,9 @@ export default async function AssignPage() {
                       <span className="text-ink-300">·</span>
                       {c.subject}
                       {c.level ? ` · ${c.level}` : ""}
+                      {c.teacher_id && (
+                        <StatusChip tone="amber">GV cũ {c.teacher_name ?? ""} đã nghỉ</StatusChip>
+                      )}
                       {c.language === "en" && (
                         <StatusChip tone="navy">Dạy bằng {LANGUAGE_LABELS.en}</StatusChip>
                       )}
