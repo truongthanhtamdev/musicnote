@@ -1,4 +1,5 @@
-import { requireRole } from "@/lib/guard";
+import Link from "next/link";
+import { isClassEditor, requireRole } from "@/lib/guard";
 import { ADMIN_AREA_ROLES, formatClassSchedule } from "@/lib/types";
 import { db } from "@/lib/db";
 import { listTeachers } from "@/lib/queries";
@@ -22,6 +23,9 @@ export default async function CreateClassPage({
   const sp = await searchParams;
   const teachers = listTeachers(false);
   const prefill = trialPrefill(sp.trial);
+  // Được cấp quyền sửa lớp thì bấm vào lớp để sửa, lớp chưa có giáo viên
+  // thì giao luôn — khỏi phải nhờ Quản lý.
+  const canEdit = isClassEditor(session);
 
   const mine = db
     .prepare(
@@ -47,13 +51,37 @@ export default async function CreateClassPage({
         ) : (
           <ul className="divide-y divide-navy-100">
             {mine.map((c) => (
-              <li key={c.id} className="px-5 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                <span className="font-medium text-ink-900">{c.student_name}</span>
+              <li key={c.id} className="px-5 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm min-w-0">
+                {canEdit ? (
+                  <Link href={`/admin/classes/${c.id}`} className="font-medium text-ink-900 hover:text-wood-700 hover:underline">
+                    {c.student_name}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-ink-900">{c.student_name}</span>
+                )}
                 <span className="text-ink-500">{c.subject}</span>
                 <span className="text-ink-500 tabular">{formatClassSchedule(c)}</span>
                 <span className={c.teacher_name ? "text-ink-600" : "text-amber-700"}>
                   {c.teacher_name ?? "chưa có giáo viên"}
                 </span>
+                {canEdit && (
+                  <span className="ml-auto flex items-center gap-2">
+                    {!c.teacher_id && (
+                      <Link
+                        href="/admin/assign"
+                        className="rounded-lg bg-wood-500 hover:bg-wood-600 px-3 py-1.5 text-xs font-semibold text-white"
+                      >
+                        Giao giáo viên
+                      </Link>
+                    )}
+                    <Link
+                      href={`/admin/classes/${c.id}`}
+                      className="rounded-lg border border-navy-200 px-3 py-1.5 text-xs font-semibold text-wood-700 hover:bg-ivory-100"
+                    >
+                      Sửa lớp
+                    </Link>
+                  </span>
+                )}
               </li>
             ))}
           </ul>
