@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { MANAGE_ROLES, ROLE_LABELS, type Role } from "@/lib/types";
 import { listStaff } from "@/lib/queries";
@@ -61,7 +62,17 @@ export default async function StaffPage() {
                       )}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-ink-600">{s.email}</td>
+                  <td className="px-4 py-3 text-ink-600">
+                    {s.email}
+                    {s.role === "coordinator" && (
+                      <Link
+                        href={`/admin/tao-lop?staff=${s.id}`}
+                        className="block text-xs font-semibold text-wood-700 hover:underline mt-0.5"
+                      >
+                        Xem lịch sử lớp đã tạo →
+                      </Link>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <StatusChip tone={ROLE_TONE[s.role] ?? "neutral"}>
                       {ROLE_LABELS[s.role as Role]}

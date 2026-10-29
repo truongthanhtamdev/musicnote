@@ -494,6 +494,19 @@ function migrate() {
   migratePackagesToTable();
   invertAvailabilityToBusyOnce();
   seedStarterClipsOnce();
+  grantClassEditToCoordinatorsOnce();
+}
+
+// Chủ trung tâm muốn mọi nhân viên đặt hẹn đang có đều sửa được lớp học. Chạy
+// đúng một lần lúc cập nhật (đánh dấu trong settings) — sau đó bỏ tick ai ở
+// trang Nhân sự thì giữ nguyên, lần khởi động sau không tự bật lại.
+function grantClassEditToCoordinatorsOnce() {
+  const flag = "class_edit_granted_v1";
+  if (db.prepare("SELECT 1 FROM settings WHERE key = ?").get(flag)) return;
+  db.transaction(() => {
+    db.prepare("UPDATE users SET can_edit_classes = 1 WHERE role = 'coordinator'").run();
+    db.prepare("INSERT INTO settings (key, value) VALUES (?, '1')").run(flag);
+  })();
 }
 
 // Clip đầu tiên chủ trung tâm gửi — cài sẵn để cập nhật xong là trang chủ có

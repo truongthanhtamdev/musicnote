@@ -31,6 +31,20 @@ export function now(): Date {
   );
 }
 
+/**
+ * Mốc thời gian SQLite (datetime('now') — giờ UTC, dạng "YYYY-MM-DD HH:MM:SS")
+ * đổi sang giờ trung tâm, trả "YYYY-MM-DD HH:MM". Không đổi thì lớp tạo lúc
+ * 6h sáng bị ghi sang ngày hôm trước.
+ */
+export function localFromSqlUtc(value: string): string {
+  const d = new Date(`${value.replace(" ", "T")}Z`);
+  if (Number.isNaN(d.getTime())) return value.slice(0, 16);
+  const parts = ZONED_PARTS.formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  const hour = String(Number(get("hour")) % 24).padStart(2, "0");
+  return `${get("year")}-${get("month")}-${get("day")} ${hour}:${get("minute")}`;
+}
+
 export function formatVND(amount: number): string {
   return amount.toLocaleString("vi-VN") + "đ";
 }

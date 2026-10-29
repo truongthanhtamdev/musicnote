@@ -201,8 +201,8 @@ export async function createStaffAction(
   }
 
   db.prepare(
-    `INSERT INTO users (name, email, password_hash, role, active) VALUES (?, ?, ?, ?, 1)`
-  ).run(name, email, bcrypt.hashSync(password, 10), role);
+    `INSERT INTO users (name, email, password_hash, role, active, can_edit_classes) VALUES (?, ?, ?, ?, 1, ?)`
+  ).run(name, email, bcrypt.hashSync(password, 10), role, role === "coordinator" && formData.get("can_edit_classes") ? 1 : 0);
 
   logAudit(session, "tai_khoan", `Tạo tài khoản ${ROLE_LABELS[role]}: ${name} (${email})`);
   revalidatePath("/admin/staff");

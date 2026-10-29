@@ -61,6 +61,10 @@ export default function NewStaffForm({ canCreateAdmin }: { canCreateAdmin: boole
           {canCreateAdmin && <option value="admin">Chủ trung tâm — toàn quyền</option>}
         </select>
       </div>
+      <label className="flex items-center gap-2 text-sm text-ink-700">
+        <input type="checkbox" name="can_edit_classes" defaultChecked className="h-4 w-4 accent-wood-600" />
+        Được sửa lớp học (áp dụng cho nhân viên đặt hẹn)
+      </label>
 
       {state.error && <p className="text-sm text-coral-600">{state.error}</p>}
       {state.success && <p className="text-sm text-mint-600">Đã tạo tài khoản.</p>}
