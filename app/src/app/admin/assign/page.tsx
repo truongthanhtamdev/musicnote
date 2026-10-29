@@ -96,36 +96,40 @@ export default async function AssignPage() {
             );
             return (
               <Card key={c.id}>
-                <div className="flex items-start gap-3 mb-4">
-                  <Avatar name={c.student_name} className="w-10 h-10 text-xs" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-ink-900">{c.student_name}</p>
-                    <p className="text-sm text-ink-500 flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-0.5">
-                      <SubjectIcon subject={c.subject} className="w-4 h-4 text-wood-500" />
-                      <span className="tabular">{formatClassSchedule({ ...c, start_date: null })}</span>
-                      <span className="text-ink-300">·</span>
-                      <span
-                        className={`tabular font-semibold ${
-                          c.firstDate && c.firstDate <= tomorrow ? "text-coral-600" : "text-ink-700"
-                        }`}
-                      >
-                        {c.firstDate ? `Buổi đầu ${dateLabel(c.firstDate)}` : "Chưa hẹn buổi nào"}
-                      </span>
-                      <span className="text-ink-300">·</span>
-                      {c.subject}
-                      {c.level ? ` · ${c.level}` : ""}
-                      {c.teacher_id && (
-                        <StatusChip tone="amber">GV cũ {c.teacher_name ?? ""} đã nghỉ</StatusChip>
-                      )}
-                      {c.language === "en" && (
-                        <StatusChip tone="navy">Dạy bằng {LANGUAGE_LABELS.en}</StatusChip>
-                      )}
-                    </p>
+                {/* Điện thoại: nút Sửa/Xoá xuống hàng riêng dưới tên — để chung một
+                    hàng thì tên khách bị ép thành cột hẹp và nút tràn ra ngoài viền. */}
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-4">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <Avatar name={c.student_name} className="w-10 h-10 text-xs shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-ink-900">{c.student_name}</p>
+                      <p className="text-sm text-ink-500 flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-0.5">
+                        <SubjectIcon subject={c.subject} className="w-4 h-4 text-wood-500" />
+                        <span className="tabular">{formatClassSchedule({ ...c, start_date: null })}</span>
+                        <span className="text-ink-300">·</span>
+                        <span
+                          className={`tabular font-semibold ${
+                            c.firstDate && c.firstDate <= tomorrow ? "text-coral-600" : "text-ink-700"
+                          }`}
+                        >
+                          {c.firstDate ? `Buổi đầu ${dateLabel(c.firstDate)}` : "Chưa hẹn buổi nào"}
+                        </span>
+                        <span className="text-ink-300">·</span>
+                        {c.subject}
+                        {c.level ? ` · ${c.level}` : ""}
+                        {c.teacher_id && (
+                          <StatusChip tone="amber">GV cũ {c.teacher_name ?? ""} đã nghỉ</StatusChip>
+                        )}
+                        {c.language === "en" && (
+                          <StatusChip tone="navy">Dạy bằng {LANGUAGE_LABELS.en}</StatusChip>
+                        )}
+                      </p>
+                    </div>
                   </div>
                   {/* Sửa/xoá ngay tại đây: lớp chưa có giáo viên thường là lớp
                       vừa nhập, sai giờ hoặc trùng thì phải chỉnh được liền chứ
                       không phải mò sang trang khác. */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 pl-[52px] sm:pl-0 sm:shrink-0">
                     {/* Khách nhập vội thành lớp nhưng chưa chốt gì thì trả về
                         Khách tiềm năng cho có người nhắc chăm — nằm ở đây
                         không ai hẹn gọi lại cả. */}
