@@ -463,6 +463,9 @@ function migrate() {
   // Telegram cấp khi người dùng bấm Bắt đầu, không phải thứ tự khai được.
   // link_code là mã một lần người dùng gửi cho bot để bot biết đây là ai.
   ensureColumn("users", "telegram_chat_id", "TEXT");
+  // Nhân viên đặt hẹn được chủ trung tâm / quản lý cho thêm quyền xem + sửa lớp
+  // học (không xoá lớp, không ghi học phí, không đổi người nhận thưởng).
+  ensureColumn("users", "can_edit_classes", "INTEGER NOT NULL DEFAULT 0");
   // Hộp thư với bot riêng của quản lý / giáo vụ (TELEGRAM_STAFF_BOT_TOKEN).
   ensureColumn("users", "telegram_staff_chat_id", "TEXT");
   ensureColumn("users", "telegram_link_code", "TEXT");

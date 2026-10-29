@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireRole } from "@/lib/guard";
+import { requireClassEditor } from "@/lib/guard";
 import { getSession } from "@/lib/auth";
 import {
   listClasses,
@@ -9,7 +9,7 @@ import {
   teacherSpeaksLanguage,
   teacherTeachesSubject,
 } from "@/lib/queries";
-import { DAY_LABELS, formatClassSchedule, LANGUAGE_LABELS, MANAGE_ROLES } from "@/lib/types";
+import { DAY_LABELS, formatClassSchedule, LANGUAGE_LABELS } from "@/lib/types";
 import { addDays, nextOccurrence, toISODate, todayISO } from "@/lib/format";
 import { IconCheckCircle, SubjectIcon } from "@/components/icons";
 import {
@@ -26,7 +26,7 @@ import ToLeadButton from "./to-lead-button";
 
 export default async function AssignPage() {
   // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
-  await requireRole(MANAGE_ROLES);
+  await requireClassEditor();
   const session = await getSession();
   // Buổi học đầu của từng lớp: ngày bắt đầu nếu còn ở phía trước, không ghi
   // ngày thì lấy buổi gần nhất đúng thứ đó; lớp linh động lấy buổi hẹn đầu tiên.

@@ -69,6 +69,8 @@ export interface UserRow {
   /** Hộp thư Telegram đã kết nối; null là chưa bật nhắc lịch qua Telegram. */
   telegram_chat_id: string | null;
   telegram_staff_chat_id?: string | null;
+  /** 1 = nhân viên đặt hẹn được cấp quyền xem + sửa lớp học. */
+  can_edit_classes?: number;
   /** Mã một lần để kết nối Telegram, đổi mới sau mỗi lần kết nối thành công. */
   telegram_link_code: string | null;
   active: number;

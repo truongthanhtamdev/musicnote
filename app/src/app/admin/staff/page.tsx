@@ -13,6 +13,7 @@ import {
 } from "@/components/ui";
 import NewStaffForm from "./new-staff-form";
 import RoleSelect from "./role-select";
+import ClassEditToggle from "./class-edit-toggle";
 import ResetPasswordButton from "@/components/reset-password-button";
 
 const ROLE_TONE: Record<string, "navy" | "wood" | "neutral"> = {
@@ -30,7 +31,7 @@ export default async function StaffPage() {
     <div className="space-y-5">
       <PageHeader
         title="Nhân sự quản lý"
-        subtitle="Chủ trung tâm có toàn quyền. Quản lý làm được mọi thứ trừ xem doanh thu. Nhân viên đặt hẹn chỉ thấy Khách tiềm năng và Đăng ký học thử. Tài khoản giáo viên tạo ở trang Giáo viên."
+        subtitle="Chủ trung tâm có toàn quyền. Quản lý làm được mọi thứ trừ xem doanh thu. Nhân viên đặt hẹn chỉ thấy Khách tiềm năng và Đăng ký học thử — tick “Được sửa lớp học” để họ xem và sửa thêm lớp học (không xoá lớp, không ghi học phí). Tài khoản giáo viên tạo ở trang Giáo viên."
       />
 
       <Card padded={false}>
@@ -70,12 +71,17 @@ export default async function StaffPage() {
                     {locked ? (
                       <span className="text-sm text-ink-400">—</span>
                     ) : (
-                      <RoleSelect
-                        userId={s.id}
-                        role={s.role as Role}
-                        canSetAdmin={isOwner}
-                        disabled={false}
-                      />
+                      <div className="flex flex-col gap-2">
+                        <RoleSelect
+                          userId={s.id}
+                          role={s.role as Role}
+                          canSetAdmin={isOwner}
+                          disabled={false}
+                        />
+                        {s.role === "coordinator" && (
+                          <ClassEditToggle userId={s.id} allowed={s.can_edit_classes === 1} />
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">

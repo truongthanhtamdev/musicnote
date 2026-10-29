@@ -254,6 +254,24 @@ export async function changeStaffRoleAction(
   return { success: true };
 }
 
+/**
+ * Bật / tắt quyền "Được sửa lớp học" cho một nhân viên đặt hẹn: xem danh sách
+ * lớp, trang Giao lớp, sửa thông tin / lịch / giáo viên / trạng thái / gói học.
+ * Vẫn không xoá lớp, không ghi học phí, không đổi người nhận thưởng.
+ */
+export async function setClassEditPermissionAction(userId: number, allowed: boolean): Promise<{ error?: string }> {
+  const session = await assertRole(MANAGE_ROLES);
+  const target = getUserById(userId);
+  if (!target || target.role !== "coordinator") {
+    return { error: "Chỉ cấp được cho nhân viên đặt hẹn — Quản lý vốn đã sửa được lớp" };
+  }
+  db.prepare("UPDATE users SET can_edit_classes = ? WHERE id = ?").run(allowed ? 1 : 0, userId);
+  logAudit(session, "tai_khoan", `${allowed ? "Cấp" : "Bỏ"} quyền sửa lớp học cho ${target.name}`);
+  revalidatePath("/admin/staff");
+  revalidatePath("/admin", "layout");
+  return {};
+}
+
 function countAdmins(): number {
   return (db.prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND active = 1").get() as {
     c: number;

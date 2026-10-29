@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/guard";
+import { isClassEditor, requireRole } from "@/lib/guard";
 import { ADMIN_AREA_ROLES, MANAGE_ROLES, ROLE_LABELS } from "@/lib/types";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import {
@@ -169,6 +169,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     "/admin/lop-cua-toi",
     "/admin/thu-nhap",
     "/account/telegram",
+    // Được cấp quyền sửa lớp học: thêm danh sách lớp và trang Giao lớp.
+    ...(isClassEditor(session) ? ["/admin/classes", "/admin/assign"] : []),
   ];
   const visibleLinks = canManage
     ? // Quản lý tạo lớp ngay ở trang Lớp học; thưởng của mọi người xem ở "Thưởng giáo vụ".

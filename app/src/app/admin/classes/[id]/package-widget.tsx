@@ -115,10 +115,13 @@ export default function PackageWidget({
             ✓ Đã đóng tiền
           </span>
           <span className="text-xs text-ink-500">đánh dấu tay (thu ngoài hệ thống)</span>
-          <MarkPaidButton classId={classId} name="khách này" paid={false} className="text-xs font-semibold text-ink-500 hover:text-coral-600" />
+          {canRecordPayment && (
+            <MarkPaidButton classId={classId} name="khách này" paid={false} className="text-xs font-semibold text-ink-500 hover:text-coral-600" />
+          )}
         </p>
       ) : (
-        tuition?.needsFollowUp && (
+        // Đánh dấu "đã đóng tiền" là việc của người thu tiền (Quản lý trở lên).
+        canRecordPayment && tuition?.needsFollowUp && (
           <div className="mb-2">
             <MarkPaidButton classId={classId} name="Khách này" />
           </div>

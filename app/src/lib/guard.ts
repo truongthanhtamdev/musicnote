@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession, type SessionPayload } from "./auth";
-import { roleHomePath, type Role } from "./types";
+import { db } from "./db";
+import { MANAGE_ROLES, roleHomePath, type Role } from "./types";
 
 export async function requireSession(): Promise<SessionPayload> {
   const session = await getSession();
@@ -26,6 +27,39 @@ export async function assertRole(roles: Role[]): Promise<SessionPayload> {
   const session = await getSession();
   if (!session) throw new ForbiddenError("Chưa đăng nhập");
   if (!roles.includes(session.role)) throw new ForbiddenError();
+  return session;
+}
+
+/**
+ * Được xem và sửa lớp học: Quản lý trở lên, hoặc nhân viên đặt hẹn đã được
+ * cấp quyền "Được sửa lớp học" ở trang Nhân sự. Đọc thẳng từ cơ sở dữ liệu
+ * nên bật / tắt quyền là có hiệu lực ngay lần bấm sau, không phải đăng nhập lại.
+ */
+export function isClassEditor(session: Pick<SessionPayload, "userId" | "role">): boolean {
+  if (MANAGE_ROLES.includes(session.role)) return true;
+  if (session.role !== "coordinator") return false;
+  const row = db.prepare("SELECT can_edit_classes FROM users WHERE id = ?").get(session.userId) as
+    | { can_edit_classes: number }
+    | undefined;
+  return row?.can_edit_classes === 1;
+}
+
+export async function requireClassEditor(): Promise<SessionPayload> {
+  const session = await requireSession();
+  if (!isClassEditor(session)) redirect(roleHomePath(session.role));
+  return session;
+}
+
+export async function assertClassEditor(): Promise<SessionPayload> {
+  const session = await assertSession();
+  if (!isClassEditor(session)) throw new ForbiddenError();
+  return session;
+}
+
+/** Như assertClassEditor, nhưng giáo viên cũng qua — action tự kiểm lớp có phải của họ không. */
+export async function assertClassEditorOrTeacher(): Promise<SessionPayload> {
+  const session = await assertSession();
+  if (session.role !== "teacher" && !isClassEditor(session)) throw new ForbiddenError();
   return session;
 }
 

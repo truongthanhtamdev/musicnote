@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireRole } from "@/lib/guard";
+import { requireClassEditor } from "@/lib/guard";
 import {
   listClasses,
   listTeachers,
@@ -8,7 +8,7 @@ import {
   getTuitionStatusForClasses,
   listStaff,
 } from "@/lib/queries";
-import { CLASS_STAGES, formatClassSchedule, MANAGE_ROLES, shortDayLabel } from "@/lib/types";
+import { CLASS_STAGES, formatClassSchedule, shortDayLabel } from "@/lib/types";
 import { formatVND } from "@/lib/format";
 import { IconAlert, IconClasses, IconSearch, IconWallet, SubjectIcon } from "@/components/icons";
 import {
@@ -42,7 +42,8 @@ type SP = {
 
 export default async function ClassesPage({ searchParams }: { searchParams: Promise<SP> }) {
   // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
-  const session = await requireRole(MANAGE_ROLES);
+  // Quản lý trở lên, hoặc nhân viên đặt hẹn được cấp quyền sửa lớp.
+  const session = await requireClassEditor();
   // Người nhận thưởng mặc định: Quản lý tạo lớp thì là chính họ; chủ trung
   // tâm tạo thì để trống — chủ trung tâm tự nhận thưởng của mình là vô nghĩa,
   // và để trống thì trang Thưởng sẽ nhắc gán đúng nhân viên.
