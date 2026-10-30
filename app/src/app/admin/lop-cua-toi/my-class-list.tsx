@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { foldVietnamese } from "@/lib/format";
 import type { CoordinatorClass, CoordinatorGroup } from "@/lib/queries";
@@ -24,7 +25,7 @@ const TABS: { value: CoordinatorGroup; label: string; hint: string }[] = [
   { value: "ended", label: "Không học", hint: "Khách không học tiếp / đã nghỉ." },
 ];
 
-export default function MyClassList({ rows }: { rows: Row[] }) {
+export default function MyClassList({ rows, canEdit = false }: { rows: Row[]; canEdit?: boolean }) {
   const counts = useMemo(() => {
     const m: Record<CoordinatorGroup, number> = { trial_upcoming: 0, trial_done: 0, studying: 0, paused: 0, ended: 0 };
     for (const r of rows) m[r.group]++;
@@ -100,7 +101,16 @@ export default function MyClassList({ rows }: { rows: Row[] }) {
             <li key={r.classId} className="bg-white rounded-2xl border border-navy-100 p-4 space-y-2 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-ink-900 truncate">{r.name}</p>
+                  {canEdit ? (
+                    <Link
+                      href={`/admin/classes/${r.classId}`}
+                      className="block font-semibold text-ink-900 truncate hover:text-wood-700 hover:underline"
+                    >
+                      {r.name}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold text-ink-900 truncate">{r.name}</p>
+                  )}
                   {r.guardian && r.guardian !== r.name && (
                     <p className="text-xs text-ink-500 truncate">Phụ huynh: {r.guardian}</p>
                   )}
@@ -149,6 +159,14 @@ export default function MyClassList({ rows }: { rows: Row[] }) {
                   <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-mint-50 text-mint-700">
                     ✓ Thưởng chốt lớp
                   </span>
+                )}
+                {canEdit && (
+                  <Link
+                    href={`/admin/classes/${r.classId}`}
+                    className="rounded-lg border border-navy-200 px-2.5 py-1 text-xs font-semibold text-wood-700 hover:bg-ivory-100"
+                  >
+                    Sửa lớp
+                  </Link>
                 )}
                 {r.phone && (
                   <a

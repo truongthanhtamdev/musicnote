@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/guard";
-import { ADMIN_AREA_ROLES } from "@/lib/types";
+import { MANAGE_ROLES } from "@/lib/types";
 import { todayISO } from "@/lib/format";
 import {
   LEAD_STAGES,
@@ -28,7 +28,8 @@ export default async function LeadsPage({
 }: {
   searchParams: Promise<{ stage?: string }>;
 }) {
-  await requireRole(ADMIN_AREA_ROLES);
+  // Nhân viên đặt hẹn không còn chăm khách tiềm năng — chỉ Quản lý trở lên.
+  await requireRole(MANAGE_ROLES);
   const sp = await searchParams;
   const stage = (LEAD_STAGES as readonly string[]).includes(sp.stage ?? "")
     ? (sp.stage as LeadStage)

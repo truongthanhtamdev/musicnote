@@ -32,7 +32,7 @@ export default async function StaffPage() {
     <div className="space-y-5">
       <PageHeader
         title="Nhân sự quản lý"
-        subtitle="Chủ trung tâm có toàn quyền. Quản lý làm được mọi thứ trừ xem doanh thu. Nhân viên đặt hẹn chỉ thấy Khách tiềm năng và Đăng ký học thử — tick “Được sửa lớp học” để họ xem và sửa thêm lớp học (không xoá lớp, không ghi học phí). Tài khoản giáo viên tạo ở trang Giáo viên."
+        subtitle="Chủ trung tâm có toàn quyền. Quản lý làm được mọi thứ trừ xem doanh thu. Nhân viên đặt hẹn chỉ tạo lớp, xem lớp của mình và thu nhập — tick “Được sửa lớp học” để họ sửa được lớp của chính mình (không xoá lớp, không ghi học phí). Tài khoản giáo viên tạo ở trang Giáo viên."
       />
 
       <Card padded={false}>

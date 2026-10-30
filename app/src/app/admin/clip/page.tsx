@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/guard";
-import { ADMIN_AREA_ROLES, MANAGE_ROLES } from "@/lib/types";
+import { MANAGE_ROLES } from "@/lib/types";
 import { HOME_CLIP_LIMIT, getCenterChannels, listClips } from "@/lib/clips";
 import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import { IconVideo } from "@/components/icons";
@@ -8,7 +8,7 @@ import ChannelsForm from "./channels-form";
 import ClipItem from "./clip-item";
 
 export default async function ClipAdminPage() {
-  const session = await requireRole(ADMIN_AREA_ROLES);
+  const session = await requireRole(MANAGE_ROLES);
   const clips = listClips();
   const shown = clips.filter((c) => c.is_public).length;
 

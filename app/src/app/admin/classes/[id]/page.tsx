@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireClassEditor } from "@/lib/guard";
+import { requireClassEditorFor } from "@/lib/guard";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import {
@@ -40,10 +40,10 @@ import StudentLinkWidget from "./student-link-widget";
 import { JoinClassLink } from "@/components/join-class-link";
 
 export default async function ClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  // Trang lớp học: nhân viên đặt hẹn không vào, chỉ Quản lý trở lên.
-  await requireClassEditor();
   const { id } = await params;
   const classId = Number(id);
+  // Quản lý trở lên; nhân viên đặt hẹn có quyền sửa lớp thì chỉ lớp của chính mình.
+  await requireClassEditorFor(classId);
   const cls = getClass(classId);
   if (!cls) notFound();
   // Email khách để trung tâm tự gửi link học (gửi tay, chưa bật gửi tự động).

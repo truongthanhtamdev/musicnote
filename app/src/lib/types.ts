@@ -42,9 +42,9 @@ export const MONEY_ROLES: Role[] = ["admin"];
 export function roleHomePath(role: Role): string {
   if (role === "teacher") return "/teacher";
   if (role === "student") return "/student";
-  // Nhân viên đặt hẹn chỉ làm việc với khách chưa học — trang Tổng quan toàn
-  // số liệu lớp học nên đưa thẳng vào danh sách khách.
-  if (role === "coordinator") return "/admin/tiem-nang";
+  // Nhân viên đặt hẹn chỉ tạo lớp, xem lớp của mình và thu nhập — vào thẳng
+  // danh sách lớp của họ.
+  if (role === "coordinator") return "/admin/lop-cua-toi";
   return "/admin";
 }
 

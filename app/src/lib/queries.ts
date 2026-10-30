@@ -2368,13 +2368,15 @@ export function listPaymentFollowUps(): PaymentFollowUp[] {
     void _m;
     out.push({ ...rest, kind, schedule: slots.join(" · ") });
   }
-  // Gấp nhất lên đầu: học thử xong lâu nhất, học thử sắp tới gần nhất, lớp mới cũ nhất.
+  // Ngày học thử gần hôm nay nhất lên đầu, xa dần xuống dưới: học thử xong
+  // thì buổi vừa học trước, học thử sắp tới thì buổi sắp tới trước, lớp mới
+  // thì lớp vừa tạo (hay vừa học thử) trước.
   const order: Record<FollowUpKind, number> = { trial_done: 0, trial_upcoming: 1, unpaid: 2, not_studying: 3 };
   return out.sort((a, b) => {
     if (a.kind !== b.kind) return order[a.kind] - order[b.kind];
-    if (a.kind === "trial_done") return (a.trialDate ?? "").localeCompare(b.trialDate ?? "");
+    if (a.kind === "trial_done") return (b.trialDate ?? "").localeCompare(a.trialDate ?? "");
     if (a.kind === "trial_upcoming") return (a.nextDate ?? "9").localeCompare(b.nextDate ?? "9");
-    return a.createdAt.localeCompare(b.createdAt);
+    return (b.trialDate ?? b.createdAt).localeCompare(a.trialDate ?? a.createdAt);
   });
 }
 

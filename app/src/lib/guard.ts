@@ -44,22 +44,46 @@ export function isClassEditor(session: Pick<SessionPayload, "userId" | "role">):
   return row?.can_edit_classes === 1;
 }
 
-export async function requireClassEditor(): Promise<SessionPayload> {
+/**
+ * Sửa được ĐÚNG lớp này không: Quản lý trở lên sửa mọi lớp; nhân viên đặt hẹn
+ * có quyền thì chỉ sửa lớp do chính mình phụ trách (coordinator_id).
+ */
+export function canEditClass(session: Pick<SessionPayload, "userId" | "role">, classId: number): boolean {
+  if (MANAGE_ROLES.includes(session.role)) return true;
+  if (!isClassEditor(session)) return false;
+  const row = db.prepare("SELECT coordinator_id FROM classes WHERE id = ?").get(classId) as
+    | { coordinator_id: number | null }
+    | undefined;
+  return row?.coordinator_id === session.userId;
+}
+
+/** Trang sửa một lớp: không có quyền với lớp này thì về trang chính của họ. */
+export async function requireClassEditorFor(classId: number): Promise<SessionPayload> {
   const session = await requireSession();
-  if (!isClassEditor(session)) redirect(roleHomePath(session.role));
+  if (!canEditClass(session, classId)) redirect(roleHomePath(session.role));
   return session;
 }
 
-export async function assertClassEditor(): Promise<SessionPayload> {
+export async function assertClassEditor(classId: number): Promise<SessionPayload> {
   const session = await assertSession();
-  if (!isClassEditor(session)) throw new ForbiddenError();
+  if (!canEditClass(session, classId)) throw new ForbiddenError();
   return session;
 }
 
 /** Như assertClassEditor, nhưng giáo viên cũng qua — action tự kiểm lớp có phải của họ không. */
-export async function assertClassEditorOrTeacher(): Promise<SessionPayload> {
+export async function assertClassEditorOrTeacher(classId: number): Promise<SessionPayload> {
   const session = await assertSession();
-  if (session.role !== "teacher" && !isClassEditor(session)) throw new ForbiddenError();
+  if (session.role !== "teacher" && !canEditClass(session, classId)) throw new ForbiddenError();
+  return session;
+}
+
+/** Gói học: sửa được nếu sửa được ít nhất một lớp đang dùng gói đó. */
+export async function assertPackageEditor(packageId: number, allowTeacher = false): Promise<SessionPayload> {
+  const session = await assertSession();
+  if (allowTeacher && session.role === "teacher") return session;
+  if (MANAGE_ROLES.includes(session.role)) return session;
+  const ids = db.prepare("SELECT id FROM classes WHERE package_id = ?").all(packageId) as { id: number }[];
+  if (!ids.some((c) => canEditClass(session, c.id))) throw new ForbiddenError();
   return session;
 }
 

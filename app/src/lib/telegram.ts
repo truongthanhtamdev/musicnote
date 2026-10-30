@@ -190,8 +190,8 @@ export function pushNotification(userId: number, message: string) {
 }
 
 /**
- * Khách mới đăng ký học thử trên web: báo ngay cho chủ trung tâm, quản lý và
- * giáo vụ đã nối Telegram, để gọi lại khi khách còn "nóng". Không await —
+ * Khách mới đăng ký học thử trên web: báo ngay cho chủ trung tâm và quản lý
+ * đã nối Telegram (nhân viên đặt hẹn không còn xử lý đăng ký học thử), để gọi lại khi khách còn "nóng". Không await —
  * khách bấm gửi form không phải chờ Telegram.
  */
 export function notifyNewCustomer(c: {
@@ -207,7 +207,7 @@ export function notifyNewCustomer(c: {
   if (!telegramEnabled()) return;
   const staff = db
     .prepare(
-      `SELECT id FROM users WHERE role IN ('admin','manager','coordinator') AND active = 1 AND ${staffLinkedSql()}`
+      `SELECT id FROM users WHERE role IN ('admin','manager') AND active = 1 AND ${staffLinkedSql()}`
     )
     .all() as { id: number }[];
   if (staff.length === 0) return;

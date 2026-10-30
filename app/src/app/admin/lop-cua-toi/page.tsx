@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/guard";
+import { isClassEditor, requireRole } from "@/lib/guard";
 import { listCoordinatorClasses } from "@/lib/queries";
 import { ADMIN_AREA_ROLES, classStage, shortDayLabel } from "@/lib/types";
 import { MetricCard, PageHeader } from "@/components/ui";
@@ -39,7 +39,7 @@ export default async function MyClassesPage() {
         <MetricCard label="Đã chốt lớp" value={converted} unit="khách" tone="mint" />
         <MetricCard label="Tỉ lệ chốt" value={`${rate}%`} hint="trên số khách đã học thử" />
       </div>
-      <MyClassList rows={rows} />
+      <MyClassList rows={rows} canEdit={isClassEditor(session)} />
     </div>
   );
 }

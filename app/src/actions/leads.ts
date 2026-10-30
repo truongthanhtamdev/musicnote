@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { assertRole, assertClassEditor } from "@/lib/guard";
-import { ADMIN_AREA_ROLES } from "@/lib/types";
+import { assertRole } from "@/lib/guard";
+import { ADMIN_AREA_ROLES, MANAGE_ROLES } from "@/lib/types";
 import { formatClassSchedule, type ClassRow } from "@/lib/types";
 import { normalizeFacebookUrl } from "@/lib/format";
 import { createLead, deleteLead, getLead, updateLead, type LeadStage } from "@/lib/leads";
@@ -161,7 +161,7 @@ export interface ToLeadState {
  * lớp (Tạm OFF/DONE) chứ không phải nút này.
  */
 export async function convertClassToLeadAction(classId: number): Promise<ToLeadState> {
-  const session = await assertClassEditor();
+  const session = await assertRole(MANAGE_ROLES);
 
   const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(classId) as ClassRow | undefined;
   if (!cls) return { error: "Không tìm thấy lớp" };

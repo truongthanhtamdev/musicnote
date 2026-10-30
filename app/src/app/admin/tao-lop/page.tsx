@@ -107,7 +107,8 @@ export default async function CreateClassPage({
                       <span className="ml-auto flex items-center gap-2">
                         {!c.teacher_id && c.status === "active" && (
                           <Link
-                            href="/admin/assign"
+                            href={`/admin/classes/${c.id}`}
+                            title="Chọn giáo viên ở ô giáo viên đầu trang lớp"
                             className="rounded-lg bg-wood-500 hover:bg-wood-600 px-3 py-1.5 text-xs font-semibold text-white"
                           >
                             Giao giáo viên

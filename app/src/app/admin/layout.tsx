@@ -1,4 +1,4 @@
-import { isClassEditor, requireRole } from "@/lib/guard";
+import { requireRole } from "@/lib/guard";
 import { ADMIN_AREA_ROLES, MANAGE_ROLES, ROLE_LABELS } from "@/lib/types";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import {
@@ -158,20 +158,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       : []),
   ];
 
-  // Nhân viên đặt hẹn chỉ làm việc với khách chưa học: đúng hai mục này.
-  // Lọc từ danh sách đầy đủ thay vì dựng danh sách riêng, để thêm mục mới
-  // cho Quản lý không bao giờ vô tình lọt sang phía nhân viên đặt hẹn.
-  const COORDINATOR_PAGES = [
-    "/admin/tiem-nang",
-    "/admin/trial-requests",
-    "/admin/tao-lop",
-    "/admin/clip",
-    "/admin/lop-cua-toi",
-    "/admin/thu-nhap",
-    "/account/telegram",
-    // Được cấp quyền sửa lớp học: thêm danh sách lớp và trang Giao lớp.
-    ...(isClassEditor(session) ? ["/admin/classes", "/admin/assign"] : []),
-  ];
+  // Nhân viên đặt hẹn chỉ: tạo lớp, xem lớp của mình (sửa được nếu có
+  // quyền), xem thu nhập. Lọc từ danh sách đầy đủ thay vì dựng danh sách
+  // riêng, để thêm mục mới cho Quản lý không bao giờ vô tình lọt sang đây.
+  const COORDINATOR_PAGES = ["/admin/tao-lop", "/admin/lop-cua-toi", "/admin/thu-nhap", "/account/telegram"];
   const visibleLinks = canManage
     ? // Quản lý tạo lớp ngay ở trang Lớp học; thưởng của mọi người xem ở "Thưởng giáo vụ".
       links.filter((l) => !["/admin/tao-lop", "/admin/thu-nhap", "/admin/lop-cua-toi"].includes(l.href))
@@ -206,8 +196,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       links={visibleLinks}
       bottomNav={bottomNav.length >= 3 ? bottomNav : undefined}
       // Chuông đếm lớp quá giờ chưa điểm danh — việc của Quản lý; nhân viên
-      // đặt hẹn thì chuông đếm khách tới hạn gọi lại.
-      alertCount={canManage ? overdueTodayCount() : dueLeads}
+      // đặt hẹn không còn chăm khách tiềm năng nên không có chuông.
+      alertCount={canManage ? overdueTodayCount() : 0}
     >
       {children}
     </AppShell>

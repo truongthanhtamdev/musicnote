@@ -1,13 +1,14 @@
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/guard";
 import { listTrialRequests } from "@/lib/queries";
-import { TRIAL_REQUEST_STATUS_LABELS, type TrialRequestStatus, ADMIN_AREA_ROLES, MANAGE_ROLES } from "@/lib/types";
+import { TRIAL_REQUEST_STATUS_LABELS, type TrialRequestStatus, MANAGE_ROLES } from "@/lib/types";
 import { IconBell, IconUser } from "@/components/icons";
 import { Card, EmptyState, MetricCard, PageHeader, TableShell, Th } from "@/components/ui";
 import RequestRow from "./request-row";
 
 export default async function TrialRequestsPage() {
-  const session = await requireRole(ADMIN_AREA_ROLES);
+  // Nhân viên đặt hẹn không còn xử lý đăng ký học thử — chỉ Quản lý trở lên.
+  const session = await requireRole(MANAGE_ROLES);
   const canManage = MANAGE_ROLES.includes(session.role);
   // Quản lý xếp lịch hộ thì chọn người nhận thưởng — nhân viên đặt hẹn đứng đầu danh sách.
   const staff = db
