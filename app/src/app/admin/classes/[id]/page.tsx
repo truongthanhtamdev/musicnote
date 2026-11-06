@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireClassEditorFor } from "@/lib/guard";
 import { notFound } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSession, getUserById } from "@/lib/auth";
 import {
   getClass,
   listTeachers,
@@ -56,17 +56,27 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   const canManage = session?.role === "admin" || session?.role === "manager";
   const staffList = canManage ? listStaff().filter((u) => u.active) : [];
 
-  // Giáo viên hiện tại đã nghỉ thì vẫn liệt kê (ghi "đã nghỉ"), để ô chọn
-  // không giả vờ "Chưa xếp GV" trong khi lớp vẫn đang gắn với người đó.
-  const teachers = listTeachers(true)
+  // Người đang gắn với lớp luôn có trong ô chọn — kể cả đã nghỉ hay không còn
+  // là giáo viên — để ô chọn không giả vờ "Chưa xếp GV" trong khi lớp vẫn
+  // đang gắn với người đó (chọn lại "Chưa xếp GV" lúc ấy sẽ không lưu gì).
+  const teachers: { id: number; name: string; available: boolean }[] = listTeachers(true)
     .filter((t) => t.active || t.id === cls.teacher_id)
     .map((t) => ({
-      ...t,
+      id: t.id,
       name: t.active ? t.name : `${t.name} (đã nghỉ)`,
       available:
         cls.schedule_type === "flexible" ||
         isTeacherAvailable(t.id, cls.day_of_week, cls.start_time, cls.duration_minutes, cls.id),
     }));
+  if (cls.teacher_id && !teachers.some((t) => t.id === cls.teacher_id)) {
+    const current = getUserById(cls.teacher_id);
+    teachers.unshift({
+      id: cls.teacher_id,
+      name: `${current?.name ?? "Tài khoản đã xoá"} (không còn là giáo viên)`,
+      // Không ghi thêm "(bận giờ này)" — người này không còn dạy nữa.
+      available: true,
+    });
+  }
   const history = listAttendance({ classId }).slice(0, 30);
   const sessionNumbers = sessionNumberMap([classId]);
   const students = listStudents();
@@ -137,6 +147,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
           teacherId={cls.teacher_id}
           teachers={teachers}
           canDelete={isAdmin}
+          canOpenAssign={canManage}
         />
       </div>
 

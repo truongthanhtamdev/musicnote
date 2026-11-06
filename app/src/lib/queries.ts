@@ -78,7 +78,9 @@ export function listClasses(filter?: {
     // Giáo viên đã nghỉ (khoá tài khoản) hay đã bị xoá thì lớp cũng đang chờ
     // giao người mới — không thì lớp kẹt: không ai dạy mà cũng không hiện ở
     // trang Giao lớp.
-    clauses.push("(c.teacher_id IS NULL OR u.id IS NULL OR u.active = 0)");
+    // Tài khoản gắn với lớp không còn là giáo viên (đổi vai trò, tài khoản
+    // trùng...) cũng vậy — không giáo viên nào thấy lớp đó trong lịch dạy.
+    clauses.push("(c.teacher_id IS NULL OR u.id IS NULL OR u.active = 0 OR u.role <> 'teacher')");
   }
   if (filter?.status) {
     clauses.push("c.status = @status");
@@ -88,7 +90,8 @@ export function listClasses(filter?: {
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   const rows = db
     .prepare(
-      `SELECT c.*, u.name as teacher_name, u.active as teacher_active
+      `SELECT c.*, u.name as teacher_name,
+              CASE WHEN u.role = 'teacher' THEN u.active ELSE 0 END as teacher_active
        FROM classes c
        LEFT JOIN users u ON u.id = c.teacher_id
        ${where}
@@ -101,7 +104,9 @@ export function listClasses(filter?: {
 export function getClass(id: number): ClassWithTeacher | undefined {
   return db
     .prepare(
-      `SELECT c.*, u.name as teacher_name, u.active as teacher_active FROM classes c
+      `SELECT c.*, u.name as teacher_name,
+              CASE WHEN u.role = 'teacher' THEN u.active ELSE 0 END as teacher_active
+       FROM classes c
        LEFT JOIN users u ON u.id = c.teacher_id WHERE c.id = ?`
     )
     .get(id) as ClassWithTeacher | undefined;
