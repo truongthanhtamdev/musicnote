@@ -466,6 +466,10 @@ function migrate() {
   // Nhân viên đặt hẹn được chủ trung tâm / quản lý cho thêm quyền xem + sửa lớp
   // học (không xoá lớp, không ghi học phí, không đổi người nhận thưởng).
   ensureColumn("users", "can_edit_classes", "INTEGER NOT NULL DEFAULT 0");
+  // Khách đến từ kênh nào (danh sách nguồn khách ở trang Khách tiềm năng) +
+  // ghi rõ thêm — nhân viên đặt hẹn bắt buộc điền lúc tạo lớp.
+  ensureColumn("classes", "customer_channel", "TEXT");
+  ensureColumn("classes", "customer_channel_note", "TEXT");
   // Hộp thư với bot riêng của quản lý / giáo vụ (TELEGRAM_STAFF_BOT_TOKEN).
   ensureColumn("users", "telegram_staff_chat_id", "TEXT");
   ensureColumn("users", "telegram_link_code", "TEXT");

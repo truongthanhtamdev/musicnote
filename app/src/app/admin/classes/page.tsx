@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLeadSources } from "@/lib/leads";
 import { requireRole } from "@/lib/guard";
 import {
   listClasses,
@@ -50,6 +51,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
     .filter((u) => u.active)
     .map((u) => ({ id: u.id, name: u.name }));
   const defaultCoordinatorId = session.role === "admin" ? null : session.userId;
+  const channels = getLeadSources();
   const sp = await searchParams;
   const teachers = listTeachers(false);
   const prefill = trialPrefill(sp.trial);
@@ -97,6 +99,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
               prefill={prefill}
               staff={staff}
               defaultCoordinatorId={defaultCoordinatorId}
+              channels={channels}
             />}
       />
 
@@ -204,6 +207,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
               prefill={prefill}
               staff={staff}
               defaultCoordinatorId={defaultCoordinatorId}
+              channels={channels}
             />}
           />
         ) : (

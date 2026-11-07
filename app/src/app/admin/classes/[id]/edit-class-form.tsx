@@ -1,5 +1,6 @@
 "use client";
 
+import { ChannelField } from "@/components/channel-field";
 import { useActionState, useState } from "react";
 import { updateClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
@@ -16,7 +17,7 @@ import { TimeSelect } from "@/components/time-select";
 
 const initialState: FormState = {};
 
-export default function EditClassForm({ cls }: { cls: ClassRow }) {
+export default function EditClassForm({ cls, channels = [] }: { cls: ClassRow; channels?: string[] }) {
   const [state, formAction, pending] = useActionState(updateClassAction, initialState);
   const [scheduleType, setScheduleType] = useState<ClassScheduleType>(cls.schedule_type);
 
@@ -160,6 +161,14 @@ export default function EditClassForm({ cls }: { cls: ClassRow }) {
             Điểm danh xong, giáo viên bấm một nút là mở đúng nhóm này để dán tin điểm danh backup.
           </p>
         </div>
+        {channels.length > 0 && (
+          <ChannelField
+            channels={channels}
+            defaultChannel={cls.customer_channel}
+            defaultNote={cls.customer_channel_note}
+            compact
+          />
+        )}
         <input
           name="notes"
           defaultValue={cls.notes || ""}

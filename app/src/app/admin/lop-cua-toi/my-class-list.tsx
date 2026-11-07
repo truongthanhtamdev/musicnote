@@ -129,6 +129,14 @@ export default function MyClassList({ rows, canEdit = false }: { rows: Row[]; ca
 
               <ul className="text-xs text-ink-600 space-y-0.5 tabular">
                 <li>Đặt hẹn: {r.createdLabel}</li>
+                <li>
+                  Kênh:{" "}
+                  {r.channel ? (
+                    <b className="text-ink-800">{r.channel}</b>
+                  ) : (
+                    <span className="text-amber-700">chưa ghi — bấm Sửa lớp để ghi</span>
+                  )}
+                </li>
                 {r.group === "trial_upcoming" && (
                   <li>{r.nextLabel ? <>Học thử: <b className="text-ink-800">{r.nextLabel}</b></> : "Chưa có lịch học thử"}</li>
                 )}

@@ -132,6 +132,10 @@ export interface ClassRow {
   /** Link phòng học online cố định của lớp (Google Meet / Zoom / Zalo). */
   meeting_url: string | null;
   created_at: string;
+  /** Khách đến từ kênh nào (theo danh sách nguồn khách). */
+  customer_channel?: string | null;
+  /** Ghi rõ thêm về kênh: bài quảng cáo nào, ai giới thiệu… */
+  customer_channel_note?: string | null;
 }
 
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLeadSources } from "@/lib/leads";
 import { isClassEditor, requireRole } from "@/lib/guard";
 import { ADMIN_AREA_ROLES, MANAGE_ROLES, formatClassSchedule, type ClassRow } from "@/lib/types";
 import { db } from "@/lib/db";
@@ -68,7 +69,16 @@ export default async function CreateClassPage({
             ? "Lịch sử mọi lớp người này đã tạo, có ngày giờ tạo — để đối chiếu."
             : "Tạo lớp cho khách vừa chốt lịch. Bạn được ghi là người phụ trách, nên thưởng học thử và chốt lớp của khách này tự về bạn."
         }
-        action={viewing ? undefined : <NewClassForm teachers={teachers} prefill={prefill} />}
+        action={
+          viewing ? undefined : (
+            <NewClassForm
+              teachers={teachers}
+              prefill={prefill}
+              channels={getLeadSources()}
+              requireChannel={session.role === "coordinator"}
+            />
+          )
+        }
       />
 
       <Card padded={false}>
@@ -103,6 +113,14 @@ export default async function CreateClassPage({
                       {c.teacher_name ?? "chưa có giáo viên"}
                     </span>
                     <ClassStatusBadge stage={c.stage} />
+                    {c.customer_channel ? (
+                      <span className="text-xs text-ink-500" title={c.customer_channel_note ?? undefined}>
+                        Kênh: <b className="text-ink-700">{c.customer_channel}</b>
+                        {c.customer_channel_note ? ` · ${c.customer_channel_note}` : ""}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-amber-700">chưa ghi kênh</span>
+                    )}
                     {canEdit && (
                       <span className="ml-auto flex items-center gap-2">
                         {!c.teacher_id && c.status === "active" && (

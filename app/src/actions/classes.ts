@@ -80,6 +80,10 @@ export async function createClassAction(
   const startDateRaw = String(formData.get("start_date") || "").trim();
   const startDate =
     scheduleType === "fixed" && /^\d{4}-\d{2}-\d{2}$/.test(startDateRaw) ? startDateRaw : null;
+  // Khách đến từ kênh nào: nhân viên đặt hẹn bắt buộc chọn, để biết kênh nào
+  // ra khách (và ra tiền) mà đổ quảng cáo cho đúng chỗ.
+  const customerChannel = String(formData.get("customer_channel") || "").trim().slice(0, 100) || null;
+  const customerChannelNote = String(formData.get("customer_channel_note") || "").trim().slice(0, 200) || null;
 
   // A student studying 2-3 buổi/tuần is entered as multiple weekly slots
   // in one submission — each becomes its own `classes` row (one per
@@ -116,6 +120,9 @@ export async function createClassAction(
   if (!studentName || slots.length === 0) {
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
   }
+  if (session.role === "coordinator" && !customerChannel) {
+    return { error: "Chọn khách đến từ kênh nào (Fanpage, Zalo, giới thiệu…) giúp mình nhé" };
+  }
 
   let packageId: number | null = null;
   if (packageTotalSessions) {
@@ -143,8 +150,8 @@ export async function createClassAction(
   }
 
   const insert = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, start_date, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, start_date, customer_channel, customer_channel_note, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   );
   let firstClassId: number | null = null;
   for (const slot of slots) {
@@ -167,7 +174,9 @@ export async function createClassAction(
       coordinatorId,
       // Không ghi ngày bắt đầu thì lấy buổi kế tiếp đúng thứ đó (hôm nay đúng
       // thứ thì tính luôn hôm nay) — ghi hẳn vào lớp cho ai xem cũng rõ.
-      scheduleType === "fixed" ? (startDate ?? toISODate(nextOccurrence(slot.dayOfWeek))) : null
+      scheduleType === "fixed" ? (startDate ?? toISODate(nextOccurrence(slot.dayOfWeek))) : null,
+      customerChannel,
+      customerChannelNote
     );
     firstClassId ??= Number(info.lastInsertRowid);
   }
@@ -428,6 +437,13 @@ export async function updateClassAction(
   // Form nào không có ô link phòng học thì giữ link cũ, đừng xoá trắng link
   // Meet mỗi lần sửa lớp.
   const nextMeetingUrl = formData.has("meeting_url") ? meetingUrl : (before?.meeting_url ?? null);
+  if (!isTeacher && formData.has("customer_channel")) {
+    db.prepare("UPDATE classes SET customer_channel = ?, customer_channel_note = ? WHERE id = ?").run(
+      String(formData.get("customer_channel") || "").trim().slice(0, 100) || null,
+      String(formData.get("customer_channel_note") || "").trim().slice(0, 200) || null,
+      id
+    );
+  }
   if (formData.has("messenger_url")) {
     const raw = String(formData.get("messenger_url") || "").trim().slice(0, 300);
     const messengerUrl = raw ? (/^https?:\/\//i.test(raw) ? raw : `https://${raw}`) : null;

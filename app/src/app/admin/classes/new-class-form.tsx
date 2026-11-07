@@ -4,6 +4,7 @@ import { useActionState, useRef, useEffect, useState } from "react";
 import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
 import { SlotsField } from "@/components/slots-field";
+import { ChannelField } from "@/components/channel-field";
 import { Modal } from "@/components/modal";
 import { IconAlert, IconPlus } from "@/components/icons";
 import { btn, field, label } from "@/components/ui";
@@ -33,8 +34,14 @@ export default function NewClassForm({
   prefill,
   staff,
   defaultCoordinatorId,
+  channels = [],
+  requireChannel = false,
 }: {
   teachers: UserRow[];
+  /** Danh sách kênh (nguồn khách); trống thì không hiện ô kênh. */
+  channels?: string[];
+  /** Nhân viên đặt hẹn tạo lớp thì bắt buộc ghi khách đến từ kênh nào. */
+  requireChannel?: boolean;
   prefill?: ClassPrefill;
   /**
    * Danh sách người có thể nhận thưởng của khách này. Chỉ truyền cho Quản lý
@@ -148,6 +155,11 @@ export default function NewClassForm({
                   className={field}
                 />
               </div>
+              {channels.length > 0 && (
+                <div className="sm:col-span-2">
+                  <ChannelField channels={channels} required={requireChannel} />
+                </div>
+              )}
               <div>
                 <label className={label} htmlFor="a-facebook">
                   Facebook khách hàng

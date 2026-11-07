@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLeadSources } from "@/lib/leads";
 import { requireClassEditorFor } from "@/lib/guard";
 import { notFound } from "next/navigation";
 import { getSession, getUserById } from "@/lib/auth";
@@ -132,6 +133,15 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
               {LANGUAGE_LABELS[cls.language]}
               <span className="text-ink-300">·</span>
               {SOURCE_LABELS[cls.source]}
+              {cls.customer_channel && (
+                <>
+                  <span className="text-ink-300">·</span>
+                  <span title={cls.customer_channel_note ?? undefined}>
+                    Kênh: <b className="font-semibold text-ink-700">{cls.customer_channel}</b>
+                    {cls.customer_channel_note ? ` (${cls.customer_channel_note})` : ""}
+                  </span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -156,7 +166,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
           <Card padded={false}>
             <CardHeader title="Thông tin lớp" />
             <div className="p-5">
-              <EditClassForm cls={cls} />
+              <EditClassForm cls={cls} channels={getLeadSources()} />
             </div>
           </Card>
           {cls.schedule_type === "fixed" && (

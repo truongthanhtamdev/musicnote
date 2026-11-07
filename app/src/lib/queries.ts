@@ -2476,6 +2476,8 @@ export interface CoordinatorClass {
   teacherName: string | null;
   schedule: string;
   createdAt: string;
+  /** Khách đến từ kênh nào, kèm ghi rõ thêm nếu có. */
+  channel: string | null;
   /** Buổi học thử đã dạy gần nhất. */
   trialDate: string | null;
   /** Buổi tới (lớp đang chạy lịch cố định). */
@@ -2563,6 +2565,9 @@ export function listCoordinatorClasses(staffId: number): CoordinatorClass[] {
         teacherName: c.teacher_name,
         schedule: "",
         createdAt: c.created_at,
+        channel: c.customer_channel
+          ? `${c.customer_channel}${c.customer_channel_note ? ` · ${c.customer_channel_note}` : ""}`
+          : null,
         trialDate: null,
         nextDate: null,
         lastDate: null,
