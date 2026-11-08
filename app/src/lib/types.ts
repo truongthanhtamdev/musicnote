@@ -749,6 +749,21 @@ export function formatClassSchedule(
  * người thanh toán, tên học viên theo sau để phân biệt khi một khách hàng
  * đăng ký cho hai bé. Lớp chưa khai khách hàng thì chỉ còn tên học viên.
  */
+/**
+ * Tên nhóm Facebook / Messenger của lớp: "Môn - Phụ huynh - GV Giáo viên".
+ * Chưa khai phụ huynh thì dùng tên học viên; chưa xếp giáo viên thì ghi rõ.
+ */
+export function facebookGroupName(c: {
+  subject: string;
+  guardian_name?: string | null;
+  student_name: string;
+  teacher_name?: string | null;
+}): string {
+  const customer = c.guardian_name?.trim() || c.student_name.trim();
+  const teacher = c.teacher_name?.trim() ? `GV ${c.teacher_name.trim()}` : "GV (chưa xếp)";
+  return `${c.subject} - ${customer} - ${teacher}`;
+}
+
 export function formatPayerLabel(cls: Pick<ClassRow, "student_name" | "guardian_name">): string {
   return cls.guardian_name ? `${cls.guardian_name} · ${cls.student_name}` : cls.student_name;
 }

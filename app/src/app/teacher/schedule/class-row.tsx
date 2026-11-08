@@ -1,5 +1,6 @@
 "use client";
 
+import { GroupNameCopy } from "@/components/group-name-copy";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { updateClassAction, deleteClassAction, endWeeklySlotAction } from "@/actions/classes";
@@ -14,6 +15,7 @@ import {
   SUBJECT_SUGGESTIONS,
   LANGUAGE_LABELS,
   SCHEDULE_TYPE_LABELS,
+  facebookGroupName,
   formatClassSchedule,
   type ClassRow,
   type ClassScheduleType,
@@ -77,6 +79,10 @@ export default function TeacherClassRow({
               <span className="text-ink-300">·</span>
               {cls.subject}
             </p>
+            <div className="mt-1">
+              {/* Lớp trong lịch dạy luôn kèm tên giáo viên (listClassesForTeacher). */}
+              <GroupNameCopy compact name={facebookGroupName(cls as ClassRow & { teacher_name?: string | null })} />
+            </div>
             {cls.meeting_url ? (
               <p className="text-xs mt-1 flex flex-wrap items-center gap-x-2">
                 <a

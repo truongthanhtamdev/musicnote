@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { foldVietnamese } from "@/lib/format";
+import { facebookGroupName } from "@/lib/types";
+import { GroupNameCopy } from "@/components/group-name-copy";
 import type { CoordinatorClass, CoordinatorGroup } from "@/lib/queries";
 import { IconSearch, IconUsers, SubjectIcon } from "@/components/icons";
 import { Card, EmptyState, field } from "@/components/ui";
@@ -126,6 +128,16 @@ export default function MyClassList({ rows, canEdit = false }: { rows: Row[]; ca
                 {r.schedule && <span className="tabular">· {r.schedule}</span>}
                 <span className="text-ink-400">· {r.teacherName ? `GV ${r.teacherName}` : "Chưa xếp GV"}</span>
               </p>
+
+              <GroupNameCopy
+                compact
+                name={facebookGroupName({
+                  subject: r.subject,
+                  guardian_name: r.guardian,
+                  student_name: r.name,
+                  teacher_name: r.teacherName,
+                })}
+              />
 
               <ul className="text-xs text-ink-600 space-y-0.5 tabular">
                 <li>Đặt hẹn: {r.createdLabel}</li>

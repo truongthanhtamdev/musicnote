@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GroupNameCopy } from "@/components/group-name-copy";
 import { getLeadSources } from "@/lib/leads";
 import { requireClassEditorFor } from "@/lib/guard";
 import { notFound } from "next/navigation";
@@ -16,7 +17,7 @@ import {
   getTuitionStatusForClasses,
   listStaff,
 } from "@/lib/queries";
-import { LANGUAGE_LABELS, SOURCE_LABELS, formatClassSchedule } from "@/lib/types";
+import { LANGUAGE_LABELS, SOURCE_LABELS, facebookGroupName, formatClassSchedule } from "@/lib/types";
 import { AttendanceStatusCell } from "@/components/attendance-status-cell";
 import { IconCalendarCheck, IconChevronLeft, SubjectIcon } from "@/components/icons";
 import {
@@ -143,6 +144,9 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
                 </>
               )}
             </p>
+            <div className="mt-1.5">
+              <GroupNameCopy name={facebookGroupName(cls)} />
+            </div>
           </div>
         </div>
         <JoinClassLink url={cls.meeting_url} />
