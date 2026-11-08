@@ -100,12 +100,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/clip", label: "Clip học viên", icon: <IconVideo className={ICON} /> },
     { href: "/admin/lop-cua-toi", label: "Lớp của tôi", icon: <IconClasses className={ICON} /> },
     { href: "/admin/thu-nhap", label: "Thu nhập của tôi", icon: <IconWallet className={ICON} /> },
+    // Nhân viên văn phòng (đặt hẹn, quản lý) tự chấm công bằng ảnh + vị trí.
+    ...(isOwner
+      ? []
+      : [{ href: "/admin/cham-cong", label: "Chấm công", icon: <IconCalendarCheck className={ICON} /> }]),
     ...(canManage
       ? [
           {
             href: "/admin/payroll",
             label: "Chấm công / Lương",
             icon: <IconWallet className={ICON} />,
+          },
+          {
+            href: "/admin/cong-van-phong",
+            label: "Công văn phòng",
+            icon: <IconCalendarCheck className={ICON} />,
           },
           {
             href: "/admin/thuong",
@@ -161,7 +170,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Nhân viên đặt hẹn chỉ: tạo lớp, xem lớp của mình (sửa được nếu có
   // quyền), xem thu nhập. Lọc từ danh sách đầy đủ thay vì dựng danh sách
   // riêng, để thêm mục mới cho Quản lý không bao giờ vô tình lọt sang đây.
-  const COORDINATOR_PAGES = ["/admin/tao-lop", "/admin/lop-cua-toi", "/admin/thu-nhap", "/account/telegram"];
+  const COORDINATOR_PAGES = [
+    "/admin/cham-cong",
+    "/admin/tao-lop",
+    "/admin/lop-cua-toi",
+    "/admin/thu-nhap",
+    "/account/telegram",
+  ];
   const visibleLinks = canManage
     ? // Quản lý tạo lớp ngay ở trang Lớp học; thưởng của mọi người xem ở "Thưởng giáo vụ".
       links.filter((l) => !["/admin/tao-lop", "/admin/thu-nhap", "/admin/lop-cua-toi"].includes(l.href))
@@ -177,6 +192,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     "/admin/cham-khach": "Chăm khách",
     "/admin/trial-requests": "Học thử",
     "/admin/tiem-nang": "Tiềm năng",
+    "/admin/cham-cong": "Chấm công",
     "/admin/lop-cua-toi": "Lớp của tôi",
     "/admin/tao-lop": "Tạo lớp",
     "/admin/thu-nhap": "Thu nhập",

@@ -69,6 +69,12 @@ export interface UserRow {
   /** Hộp thư Telegram đã kết nối; null là chưa bật nhắc lịch qua Telegram. */
   telegram_chat_id: string | null;
   telegram_staff_chat_id?: string | null;
+  /** Lương chấm công văn phòng: tiền mỗi giờ (NULL = mặc định theo vai trò). */
+  office_hourly_rate?: number | null;
+  /** Số giờ tính cho một lần chấm công (NULL = mặc định 4). */
+  office_hours_per_checkin?: number | null;
+  /** Lương một ca chấm công (đồng); NULL = tiền mỗi giờ × số giờ. */
+  office_shift_pay?: number | null;
   /** 1 = nhân viên đặt hẹn được cấp quyền xem + sửa lớp học. */
   can_edit_classes?: number;
   /** Mã một lần để kết nối Telegram, đổi mới sau mỗi lần kết nối thành công. */

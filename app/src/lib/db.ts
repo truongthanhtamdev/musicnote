@@ -357,6 +357,26 @@ function migrate() {
     -- Giáo viên báo "hôm đó không có buổi học" cho một buổi bị nhắc quên điểm
     -- danh (khách chưa bắt đầu học, nghỉ hẳn hôm đó...). Không ghi gì vào sổ
     -- điểm danh — chỉ để khỏi nhắc nữa; trung tâm xem lại trong Nhật ký.
+    -- Chấm công văn phòng: mỗi dòng là một lần nhân viên bấm chấm công, kèm
+    -- ảnh chụp từ camera và vị trí GPS lúc bấm. Số giờ và số tiền chốt ngay
+    -- lúc chấm (đổi mức lương sau này không làm đổi các lần đã chấm).
+    CREATE TABLE IF NOT EXISTS office_checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      work_date TEXT NOT NULL,
+      checked_at TEXT NOT NULL DEFAULT (datetime('now')),
+      lat REAL,
+      lng REAL,
+      accuracy_m REAL,
+      distance_m REAL,
+      photo TEXT,
+      hours REAL NOT NULL,
+      amount INTEGER NOT NULL,
+      voided INTEGER NOT NULL DEFAULT 0,
+      void_reason TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_office_checkins_user_date ON office_checkins(user_id, work_date);
+
     CREATE TABLE IF NOT EXISTS missed_dismissals (
       class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
       session_date TEXT NOT NULL,
@@ -468,6 +488,12 @@ function migrate() {
   ensureColumn("users", "can_edit_classes", "INTEGER NOT NULL DEFAULT 0");
   // Khách đến từ kênh nào (danh sách nguồn khách ở trang Khách tiềm năng) +
   // ghi rõ thêm — nhân viên đặt hẹn bắt buộc điền lúc tạo lớp.
+  // Lương chấm công văn phòng của từng người: tiền mỗi giờ, số giờ tính cho
+  // một lần chấm công. NULL = theo mặc định của vai trò (xem office-checkin.ts).
+  ensureColumn("users", "office_hourly_rate", "INTEGER");
+  ensureColumn("users", "office_hours_per_checkin", "REAL");
+  // Lương một ca chấm công (đồng) — chủ trung tâm gõ thẳng theo ca.
+  ensureColumn("users", "office_shift_pay", "INTEGER");
   ensureColumn("classes", "customer_channel", "TEXT");
   ensureColumn("classes", "customer_channel_note", "TEXT");
   // Hộp thư với bot riêng của quản lý / giáo vụ (TELEGRAM_STAFF_BOT_TOKEN).

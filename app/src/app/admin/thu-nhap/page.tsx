@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { ADMIN_AREA_ROLES } from "@/lib/types";
 import { firstDayOfMonth, formatVND, lastDayOfMonth, monthRangeOf, todayISO } from "@/lib/format";
 import { getBonusRates, listBonusesForStaff, type BonusRow } from "@/lib/bonus";
+import { officeEarnings } from "@/lib/office-checkin";
 import { MonthSelect } from "@/components/month-select";
 import { MonthNav } from "@/components/month-nav";
 import { IconWallet } from "@/components/icons";
@@ -31,6 +32,7 @@ export default async function MyEarningsPage({
 
   const rates = getBonusRates();
   const mine = listBonusesForStaff(session.userId, from, to);
+  const office = officeEarnings(session.userId, from, to);
 
   // Các tháng để chọn nhanh: từ khoản thưởng đầu tiên tới tháng này.
   const thisMonth = monthRangeOf(todayISO()).from.slice(0, 7);
@@ -58,10 +60,10 @@ export default async function MyEarningsPage({
         <MonthNav from={from} />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <MetricCard
           label="Tổng thu nhập kỳ này"
-          value={formatVND(mine?.total ?? 0)}
+          value={formatVND((mine?.total ?? 0) + office.amount)}
           icon={<IconWallet className="w-5 h-5" />}
           tone="mint"
         />
@@ -76,6 +78,11 @@ export default async function MyEarningsPage({
           value={mine?.conversion_count ?? 0}
           unit="khách"
           hint={formatVND(mine?.conversion_total ?? 0)}
+        />
+        <MetricCard
+          label="Chấm công"
+          value={formatVND(office.amount)}
+          hint={`${office.count} lần · ${office.hours} giờ`}
         />
         <MetricCard label="Ghi tay (cộng/trừ)" value={formatVND(mine?.manual_total ?? 0)} />
       </div>
