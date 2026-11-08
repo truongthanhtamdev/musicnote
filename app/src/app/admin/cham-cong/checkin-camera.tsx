@@ -130,11 +130,12 @@ export default function CheckinCamera({ disabledReason }: { disabledReason?: str
     <div className="space-y-3">
       {(phase === "ready" || phase === "sending" || phase === "starting") && (
         <div className="relative mx-auto aspect-square w-full max-w-xs overflow-hidden rounded-2xl bg-navy-950">
-          {preview ? (
+          {/* Khung camera luôn giữ nguyên; ảnh vừa chụp phủ lên trên. Thay hẳn khung
+              camera bằng ảnh thì camera mất kết nối — bị từ chối xong chụp lại sẽ ra màn đen. */}
+          <video ref={videoRef} playsInline muted className="h-full w-full object-cover -scale-x-100" />
+          {preview && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="Ảnh vừa chụp" className="h-full w-full object-cover" />
-          ) : (
-            <video ref={videoRef} playsInline muted className="h-full w-full object-cover -scale-x-100" />
+            <img src={preview} alt="Ảnh vừa chụp" className="absolute inset-0 h-full w-full object-cover" />
           )}
           {phase === "sending" && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm font-semibold text-white">

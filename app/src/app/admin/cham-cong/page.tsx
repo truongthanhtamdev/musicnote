@@ -45,10 +45,13 @@ export default async function OfficeCheckinPage() {
         <CheckinCamera disabledReason={inShift} />
       </Card>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <MetricCard label="Lần chấm tháng này" value={total.count} unit="lần" />
         <MetricCard label="Số giờ" value={total.hours} unit="giờ" />
-        <MetricCard label="Tiền chấm công" value={formatVND(total.amount)} tone="mint" />
+        {/* Điện thoại: thẻ tiền chiếm cả hàng cho số tiền khỏi rớt dòng. */}
+        <div className="col-span-2 sm:col-span-1">
+          <MetricCard label="Tiền chấm công tháng này" value={formatVND(total.amount)} tone="mint" />
+        </div>
       </div>
 
       <Card padded={false}>
