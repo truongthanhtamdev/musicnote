@@ -165,6 +165,27 @@ export function plannedClassesOn(dateISO: string, teacherId?: number): ClassWith
     });
 }
 
+/**
+ * Buổi học bù dời TỚI ngày này (một buổi khác được ghi "Dời lịch" sang hôm
+ * nay) — trả về như lớp có giờ học đúng ngày đó, để trang Hôm nay của giáo
+ * viên hiện ra mà điểm danh. Không có phần này thì buổi học bù không nằm ở
+ * đâu trên trang Hôm nay, giáo viên vào web không thấy lớp để điểm danh.
+ */
+export function movedClassesOn(dateISO: string, teacherId?: number): ClassWithTeacher[] {
+  return (
+    db
+      .prepare(
+        `SELECT c.*, u.name AS teacher_name, a.rescheduled_to_time AS moved_time
+           FROM attendance a
+           JOIN classes c ON c.id = a.class_id
+           LEFT JOIN users u ON u.id = c.teacher_id
+          WHERE a.status = 'rescheduled' AND a.rescheduled_to_date = ? AND c.status = 'active'
+            ${teacherId ? "AND c.teacher_id = ?" : ""}`
+      )
+      .all(...(teacherId ? [dateISO, teacherId] : [dateISO])) as (ClassWithTeacher & { moved_time: string | null })[]
+  ).map(({ moved_time, ...cls }) => ({ ...cls, start_time: moved_time || cls.start_time }));
+}
+
 /** Các buổi hẹn của một lớp trong khoảng ngày. */
 export function listPlannedSessions(classId: number, from: string, to: string): { session_date: string; start_time: string }[] {
   return db

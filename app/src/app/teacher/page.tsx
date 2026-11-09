@@ -11,6 +11,7 @@ import {
   sessionNumberMap,
   checkedInSlots,
   plannedClassesOn,
+  movedClassesOn,
 } from "@/lib/queries";
 import { addDays, toISODate, todayISO, now } from "@/lib/format";
 import { ATTENDANCE_STATUS_LABELS, DAY_LABELS, personKey, teacherSees, scheduleStart } from "@/lib/types";
@@ -45,7 +46,12 @@ export default async function TeacherTodayPage() {
     ),
     // Lớp linh động có buổi hẹn hôm nay (giáo viên xếp theo tháng).
     ...plannedClassesOn(todayStr, teacherId),
+    // Buổi học bù dời sang hôm nay.
+    ...movedClassesOn(todayStr, teacherId),
   ]
+    // Một lớp chỉ điểm danh một lần mỗi ngày: lớp vừa đúng lịch vừa có buổi
+    // bù dời sang hôm nay thì chỉ hiện một dòng.
+    .filter((c, i, all) => all.findIndex((x) => x.id === c.id) === i)
     .sort((a, b) => a.start_time.localeCompare(b.start_time))
     // Khoá "khách|giờ" lấy từ tên thật, trước khi đổi sang tên giáo viên đặt.
     .map((c) => ({ ...teacherSees(c), existing: attendanceByClassId.get(c.id), slot: `${personKey(c)}|${c.start_time}` }));

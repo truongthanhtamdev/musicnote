@@ -5,6 +5,7 @@ import { NotificationsBanner } from "@/components/notifications-banner";
 import {
   listClassesForTeacher,
   plannedClassesOn,
+  movedClassesOn,
   getAttendance,
   listUnreadNotifications,
   countPendingRescheduleRequests,
@@ -60,7 +61,10 @@ export default async function TeacherLayout({ children }: { children: React.Reac
       c.day_of_week === dow &&
       scheduleStart(c) <= todayStr &&
       !getAttendance(c.id, todayStr)
-  ).length + plannedClassesOn(todayStr, session.userId).filter((c) => !getAttendance(c.id, todayStr)).length;
+  ).length +
+    [...plannedClassesOn(todayStr, session.userId), ...movedClassesOn(todayStr, session.userId)].filter(
+      (c) => !getAttendance(c.id, todayStr)
+    ).length;
   const unread = listUnreadNotifications(session.userId).length;
   const reschedules = countPendingRescheduleRequests(session.userId);
 
