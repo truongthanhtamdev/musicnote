@@ -360,6 +360,24 @@ export async function endWeeklySlotAction(slotClassId: number, ended: boolean) {
 }
 
 /** Đổi ngày/giờ của một buổi trong tuần, giữ nguyên lịch sử của buổi đó. */
+/**
+ * Đổi THỨ học (hoặc từ linh động sang cố định) thì lịch mới chỉ tính từ hôm
+ * nay: ghi start_date = hôm nay (giữ nguyên nếu ngày bắt đầu cũ còn ở phía
+ * trước). Không có bước này, hệ thống tưởng lớp đã học thứ mới từ ngày tạo
+ * lớp và báo "quên điểm danh" cho các ngày cũ của thứ mới.
+ */
+function restartScheduleIfDayChanged(
+  classId: number,
+  before: { schedule_type: string; day_of_week: number; start_date?: string | null } | undefined,
+  next: { scheduleType: string; dayOfWeek: number }
+) {
+  if (!before || next.scheduleType !== "fixed") return;
+  if (before.schedule_type === "fixed" && before.day_of_week === next.dayOfWeek) return;
+  const today = todayISO();
+  if (before.start_date && before.start_date > today) return;
+  db.prepare("UPDATE classes SET start_date = ? WHERE id = ?").run(today, classId);
+}
+
 export async function moveWeeklySlotAction(
   slotClassId: number,
   dayOfWeek: number,
@@ -382,6 +400,7 @@ export async function moveWeeklySlotAction(
     `UPDATE classes SET schedule_type = 'fixed', day_of_week = ?, start_time = ?, duration_minutes = ?
      WHERE id = ?`
   ).run(dayOfWeek, startTime, durationMinutes || cls.duration_minutes, slotClassId);
+  restartScheduleIfDayChanged(slotClassId, cls, { scheduleType: "fixed", dayOfWeek });
   revalidateClassViews(slotClassId);
 }
 
@@ -430,9 +449,19 @@ export async function updateClassAction(
   const isTeacher = session.role === "teacher";
   if (isTeacher) setTeacherLabel(id, session.userId, studentName);
   const before = db
-    .prepare("SELECT meeting_url, student_user_id, student_name, subject FROM classes WHERE id = ?")
+    .prepare(
+      "SELECT meeting_url, student_user_id, student_name, subject, schedule_type, day_of_week, start_date FROM classes WHERE id = ?"
+    )
     .get(id) as
-    | { meeting_url: string | null; student_user_id: number | null; student_name: string; subject: string }
+    | {
+        meeting_url: string | null;
+        student_user_id: number | null;
+        student_name: string;
+        subject: string;
+        schedule_type: string;
+        day_of_week: number;
+        start_date: string | null;
+      }
     | undefined;
   // Form nào không có ô link phòng học thì giữ link cũ, đừng xoá trắng link
   // Meet mỗi lần sửa lớp.
@@ -475,6 +504,8 @@ export async function updateClassAction(
         ...(isTeacher ? [session.userId] : []),
       ] as (string | number | null)[])
     );
+
+  if (result.changes > 0) restartScheduleIfDayChanged(id, before, { scheduleType, dayOfWeek });
 
   if (result.changes === 0) {
     return { error: "Không tìm thấy lớp học hoặc bạn không có quyền sửa" };

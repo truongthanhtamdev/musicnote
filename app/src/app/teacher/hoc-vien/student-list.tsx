@@ -247,7 +247,7 @@ export default function StudentList({ students, today }: { students: Row[]; toda
                 )}
                 {s.editClassId && (
                   <Link
-                    href={`/teacher/schedule?edit=${s.editClassId}#class-${s.editClassId}`}
+                    href={`/teacher/schedule?edit=${s.editClassId}&from=hoc-vien#class-${s.editClassId}`}
                     className="ml-auto font-semibold text-wood-600 hover:text-wood-700"
                   >
                     Sửa lịch / thông tin

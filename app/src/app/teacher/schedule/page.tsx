@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import Link from "next/link";
 import { addDays, formatTimeRange, now, toISODate, todayISO } from "@/lib/format";
 import {
   listClassesForTeacher,
@@ -18,10 +19,13 @@ import ReschedulePanel from "../reschedule-panel";
 export default async function TeacherSchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; from?: string }>;
 }) {
   const session = await getSession();
-  const editId = Number((await searchParams).edit) || 0;
+  const sp = await searchParams;
+  const editId = Number(sp.edit) || 0;
+  // Bấm "Sửa lịch" từ trang Học viên: có nút quay lại đúng trang đó.
+  const fromStudents = sp.from === "hoc-vien";
   const activeClasses = listClassesForTeacher(session!.userId)
     .filter((c) => c.status === "active")
     .map(teacherSees);
@@ -63,6 +67,14 @@ export default async function TeacherSchedulePage({
 
   return (
     <div className="space-y-5">
+      {fromStudents && (
+        <Link
+          href="/teacher/hoc-vien"
+          className="inline-flex items-center gap-1 rounded-xl border border-navy-200 bg-white px-3 py-2 text-sm font-semibold text-wood-700 hover:bg-ivory-100"
+        >
+          ← Sửa xong, quay lại trang Học viên
+        </Link>
+      )}
       <PageHeader
         title="Lịch dạy trong tuần"
         subtitle={`Bạn đang có ${classes.length} lớp. Có học viên mới? Thêm lớp — hệ thống sẽ tự gán lớp đó cho bạn.`}
