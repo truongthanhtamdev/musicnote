@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { foldVietnamese } from "@/lib/format";
 import { facebookGroupName } from "@/lib/types";
 import { GroupNameCopy } from "@/components/group-name-copy";
+import { GroupLinkEditor } from "@/components/group-link-editor";
 import type { CoordinatorClass, CoordinatorGroup } from "@/lib/queries";
 import { IconSearch, IconUsers, SubjectIcon } from "@/components/icons";
 import { Card, EmptyState, field } from "@/components/ui";
@@ -138,6 +139,7 @@ export default function MyClassList({ rows, canEdit = false }: { rows: Row[]; ca
                   teacher_name: r.teacherName,
                 })}
               />
+              <GroupLinkEditor classId={r.classId} url={r.groupUrl} />
 
               <ul className="text-xs text-ink-600 space-y-0.5 tabular">
                 <li>Đặt hẹn: {r.createdLabel}</li>

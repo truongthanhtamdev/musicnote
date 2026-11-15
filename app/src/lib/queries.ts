@@ -2499,6 +2499,8 @@ export interface CoordinatorClass {
   createdAt: string;
   /** Khách đến từ kênh nào, kèm ghi rõ thêm nếu có. */
   channel: string | null;
+  /** Link nhóm Messenger / Zalo của lớp; null là chưa gắn. */
+  groupUrl: string | null;
   /** Buổi học thử đã dạy gần nhất. */
   trialDate: string | null;
   /** Buổi tới (lớp đang chạy lịch cố định). */
@@ -2589,6 +2591,7 @@ export function listCoordinatorClasses(staffId: number): CoordinatorClass[] {
         channel: c.customer_channel
           ? `${c.customer_channel}${c.customer_channel_note ? ` · ${c.customer_channel_note}` : ""}`
           : null,
+        groupUrl: null,
         trialDate: null,
         nextDate: null,
         lastDate: null,
@@ -2608,6 +2611,7 @@ export function listCoordinatorClasses(staffId: number): CoordinatorClass[] {
     g.phone ||= c.student_phone;
     g.guardian ||= c.guardian_name;
     g.teacherName ||= c.teacher_name;
+    g.groupUrl ||= c.messenger_url ?? null;
     if (c.created_at < g.createdAt) g.createdAt = c.created_at;
     if (a?.trial_date && (!g.trialDate || a.trial_date > g.trialDate)) g.trialDate = a.trial_date;
     if (a?.last_date && (!g.lastDate || a.last_date > g.lastDate)) g.lastDate = a.last_date;

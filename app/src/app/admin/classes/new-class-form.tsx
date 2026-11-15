@@ -172,6 +172,17 @@ export default function NewClassForm({
                 />
               </div>
               <div>
+                <label className={label} htmlFor="a-group">
+                  Link nhóm lớp <span className="font-normal text-ink-400">(Messenger / Zalo)</span>
+                </label>
+                <input
+                  id="a-group"
+                  name="messenger_url"
+                  placeholder="Lập nhóm xong dán link — để trống gắn sau cũng được"
+                  className={field}
+                />
+              </div>
+              <div>
                 <label className={label} htmlFor="a-level">
                   Trình độ
                 </label>

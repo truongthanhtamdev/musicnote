@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { assertRole, ForbiddenError, assertClassEditor, assertClassEditorOrTeacher, assertPackageEditor } from "@/lib/guard";
+import {
+  assertRole,
+  ForbiddenError,
+  assertClassEditor,
+  assertClassEditorOrTeacher,
+  assertPackageEditor,
+  canEditClass,
+} from "@/lib/guard";
 import { normalizeFacebookUrl, normalizeMeetingUrl, todayISO, formatVND, nextOccurrence, toISODate } from "@/lib/format";
 import {
   notifyUser,
@@ -84,6 +91,9 @@ export async function createClassAction(
   // ra khách (và ra tiền) mà đổ quảng cáo cho đúng chỗ.
   const customerChannel = String(formData.get("customer_channel") || "").trim().slice(0, 100) || null;
   const customerChannelNote = String(formData.get("customer_channel_note") || "").trim().slice(0, 200) || null;
+  // Link nhóm lớp (Messenger / Zalo): người đặt hẹn lập nhóm xong dán vào luôn.
+  const groupUrlRaw = String(formData.get("messenger_url") || "").trim().slice(0, 300);
+  const groupUrl = groupUrlRaw ? normalizeMeetingUrl(groupUrlRaw) : null;
 
   // A student studying 2-3 buổi/tuần is entered as multiple weekly slots
   // in one submission — each becomes its own `classes` row (one per
@@ -120,6 +130,9 @@ export async function createClassAction(
   if (!studentName || slots.length === 0) {
     return { error: "Vui lòng nhập đầy đủ thông tin lớp học" };
   }
+  if (groupUrlRaw && !groupUrl) {
+    return { error: "Link nhóm lớp chưa đúng — mở nhóm → Chia sẻ link nhóm → Sao chép rồi dán lại" };
+  }
   if (session.role === "coordinator" && !customerChannel) {
     return { error: "Chọn khách đến từ kênh nào (Fanpage, Zalo, giới thiệu…) giúp mình nhé" };
   }
@@ -150,8 +163,8 @@ export async function createClassAction(
   }
 
   const insert = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, start_date, customer_channel, customer_channel_note, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, start_date, customer_channel, customer_channel_note, messenger_url, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   );
   let firstClassId: number | null = null;
   for (const slot of slots) {
@@ -176,7 +189,8 @@ export async function createClassAction(
       // thứ thì tính luôn hôm nay) — ghi hẳn vào lớp cho ai xem cũng rõ.
       scheduleType === "fixed" ? (startDate ?? toISODate(nextOccurrence(slot.dayOfWeek))) : null,
       customerChannel,
-      customerChannelNote
+      customerChannelNote,
+      groupUrl
     );
     firstClassId ??= Number(info.lastInsertRowid);
   }
@@ -820,6 +834,45 @@ export async function setClassStageAction(
   revalidatePath("/teacher");
   revalidatePath("/teacher/schedule");
   revalidatePath("/student");
+}
+
+/**
+ * Gắn / sửa link nhóm lớp (Messenger, Zalo) — người đặt hẹn lập nhóm cho khách
+ * xong thì dán vào. Nhân viên đặt hẹn gắn được cho khách CỦA MÌNH dù chưa được
+ * cấp quyền sửa lớp, vì đây chỉ là cái link, không đụng lịch hay tiền.
+ * Gắn cho mọi buổi trong tuần của cùng khách, để buổi nào giáo viên cũng gửi
+ * điểm danh vào đúng nhóm.
+ */
+export async function setClassGroupLinkAction(classId: number, raw: string): Promise<{ error?: string }> {
+  const session = await assertRole(ADMIN_AREA_ROLES);
+  const cls = getClass(classId);
+  if (!cls) return { error: "Không tìm thấy lớp" };
+  if (!canEditClass(session, classId) && cls.coordinator_id !== session.userId) throw new ForbiddenError();
+  const value = raw.trim().slice(0, 300);
+  const url = value ? normalizeMeetingUrl(value) : null;
+  if (value && !url) return { error: "Link chưa đúng — mở nhóm → Chia sẻ link nhóm → Sao chép rồi dán lại" };
+
+  const ids = new Set(customerClassIds(classId));
+  ids.add(classId);
+  for (const r of db
+    .prepare(
+      `SELECT id FROM classes WHERE student_name = ? AND subject = ? AND status <> 'ended'
+         AND coordinator_id IS ?`
+    )
+    .all(cls.student_name, cls.subject, cls.coordinator_id ?? null) as { id: number }[])
+    ids.add(r.id);
+  const up = db.prepare("UPDATE classes SET messenger_url = ? WHERE id = ?");
+  db.transaction(() => ids.forEach((id) => up.run(url, id)))();
+  logAudit(
+    session,
+    "lop_hoc",
+    `${url ? "Gắn" : "Gỡ"} link nhóm lớp ${cls.subject} của ${cls.student_name}${url ? `: ${url}` : ""}`
+  );
+  revalidatePath("/admin/lop-cua-toi");
+  revalidatePath("/admin/tao-lop");
+  revalidatePath(`/admin/classes/${classId}`);
+  revalidatePath("/teacher");
+  return {};
 }
 
 export async function deleteClassAction(classId: number) {

@@ -10,6 +10,7 @@ import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import NewClassForm from "../classes/new-class-form";
 import { trialPrefill } from "../classes/trial-prefill";
 import ClassStatusBadge from "../classes/status-badge";
+import { GroupLinkEditor } from "@/components/group-link-editor";
 
 /**
  * Trang tạo lớp cho nhân viên đặt hẹn.
@@ -120,6 +121,11 @@ export default async function CreateClassPage({
                       </span>
                     ) : (
                       <span className="text-xs text-amber-700">chưa ghi kênh</span>
+                    )}
+                    {c.status !== "ended" && (
+                      <div className="w-full sm:max-w-md">
+                        <GroupLinkEditor classId={c.id} url={c.messenger_url ?? null} />
+                      </div>
                     )}
                     {canEdit && (
                       <span className="ml-auto flex items-center gap-2">
