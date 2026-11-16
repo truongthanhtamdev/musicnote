@@ -134,6 +134,25 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
               {LANGUAGE_LABELS[cls.language]}
               <span className="text-ink-300">·</span>
               {SOURCE_LABELS[cls.source]}
+              {cls.country && (
+                <>
+                  <span className="text-ink-300">·</span>
+                  <span>
+                    🌏 <b className="font-semibold text-ink-700">{cls.country}</b>
+                  </span>
+                </>
+              )}
+              {cls.student_phone && (
+                <>
+                  <span className="text-ink-300">·</span>
+                  <a
+                    href={`tel:${cls.student_phone.replace(/[^\d+]/g, "")}`}
+                    className="font-semibold text-navy-700 hover:underline tabular"
+                  >
+                    📞 {cls.student_phone}
+                  </a>
+                </>
+              )}
               {cls.customer_channel && (
                 <>
                   <span className="text-ink-300">·</span>

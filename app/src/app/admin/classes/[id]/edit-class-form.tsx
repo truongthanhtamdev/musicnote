@@ -1,6 +1,7 @@
 "use client";
 
 import { ChannelField } from "@/components/channel-field";
+import { CountryField } from "@/components/country-field";
 import { useActionState, useState } from "react";
 import { updateClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
@@ -169,6 +170,11 @@ export default function EditClassForm({ cls, channels = [] }: { cls: ClassRow; c
             compact
           />
         )}
+        <CountryField
+          id="cls-country"
+          defaultValue={cls.country}
+          className="rounded-xl border border-navy-200 px-3 py-2 text-sm"
+        />
         <input
           name="notes"
           defaultValue={cls.notes || ""}

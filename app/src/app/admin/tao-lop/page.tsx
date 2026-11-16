@@ -114,6 +114,21 @@ export default async function CreateClassPage({
                       {c.teacher_name ?? "chưa có giáo viên"}
                     </span>
                     <ClassStatusBadge stage={c.stage} />
+                    {c.country ? (
+                      <span className="text-xs text-ink-500">
+                        🌏 <b className="text-ink-700">{c.country}</b>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-amber-700">chưa ghi quốc gia</span>
+                    )}
+                    {c.student_phone && (
+                      <a
+                        href={`tel:${c.student_phone.replace(/[^\d+]/g, "")}`}
+                        className="text-xs font-semibold text-navy-700 hover:underline tabular"
+                      >
+                        📞 {c.student_phone}
+                      </a>
+                    )}
                     {c.customer_channel ? (
                       <span className="text-xs text-ink-500" title={c.customer_channel_note ?? undefined}>
                         Kênh: <b className="text-ink-700">{c.customer_channel}</b>

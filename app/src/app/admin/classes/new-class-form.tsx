@@ -5,6 +5,7 @@ import { createClassAction } from "@/actions/classes";
 import type { FormState } from "@/actions/teachers";
 import { SlotsField } from "@/components/slots-field";
 import { ChannelField } from "@/components/channel-field";
+import { CountryPhoneField } from "@/components/country-phone-field";
 import { Modal } from "@/components/modal";
 import { IconAlert, IconPlus } from "@/components/icons";
 import { btn, field, label } from "@/components/ui";
@@ -133,15 +134,12 @@ export default function NewClassForm({
                   className={field}
                 />
               </div>
-              <div>
-                <label className={label} htmlFor="a-phone">
-                  SĐT học viên / khách hàng
-                </label>
-                <input
-                  id="a-phone"
-                  name="student_phone"
-                  defaultValue={prefill?.phone}
+              <div className="sm:col-span-2">
+                <CountryPhoneField
+                  required={requireChannel}
+                  defaultPhone={prefill?.phone}
                   className={field}
+                  labelClass={label}
                 />
               </div>
               <div>

@@ -144,6 +144,14 @@ export default function MyClassList({ rows, canEdit = false }: { rows: Row[]; ca
               <ul className="text-xs text-ink-600 space-y-0.5 tabular">
                 <li>Đặt hẹn: {r.createdLabel}</li>
                 <li>
+                  Quốc gia:{" "}
+                  {r.country ? (
+                    <b className="text-ink-800">{r.country}</b>
+                  ) : (
+                    <span className="text-amber-700">chưa ghi — bấm Sửa lớp để ghi</span>
+                  )}
+                </li>
+                <li>
                   Kênh:{" "}
                   {r.channel ? (
                     <b className="text-ink-800">{r.channel}</b>

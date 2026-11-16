@@ -496,6 +496,8 @@ function migrate() {
   ensureColumn("users", "office_shift_pay", "INTEGER");
   ensureColumn("classes", "customer_channel", "TEXT");
   ensureColumn("classes", "customer_channel_note", "TEXT");
+  // Khách ở nước nào — nhiều khách Việt kiều học online, lệch múi giờ và đóng USD.
+  ensureColumn("classes", "country", "TEXT");
   // Hộp thư với bot riêng của quản lý / giáo vụ (TELEGRAM_STAFF_BOT_TOKEN).
   ensureColumn("users", "telegram_staff_chat_id", "TEXT");
   ensureColumn("users", "telegram_link_code", "TEXT");

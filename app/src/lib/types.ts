@@ -142,6 +142,81 @@ export interface ClassRow {
   customer_channel?: string | null;
   /** Ghi rõ thêm về kênh: bài quảng cáo nào, ai giới thiệu… */
   customer_channel_note?: string | null;
+  /** Khách đang ở nước nào (Việt Nam, Mỹ, Úc…). */
+  country?: string | null;
+}
+
+/** Các nước hay gặp, gợi ý sẵn trong ô Quốc gia (gõ nước khác vẫn được). */
+export const COUNTRIES = [
+  "Việt Nam",
+  "Mỹ",
+  "Canada",
+  "Úc",
+  "New Zealand",
+  "Anh",
+  "Đức",
+  "Pháp",
+  "Hà Lan",
+  "Bỉ",
+  "Thuỵ Sĩ",
+  "Na Uy",
+  "Thuỵ Điển",
+  "Đan Mạch",
+  "Phần Lan",
+  "Séc",
+  "Ba Lan",
+  "Nga",
+  "Nhật Bản",
+  "Hàn Quốc",
+  "Đài Loan",
+  "Singapore",
+  "Malaysia",
+  "Thái Lan",
+  "Trung Quốc",
+  "UAE",
+];
+
+const COUNTRY_ALIASES: Record<string, string> = {
+  vn: "Việt Nam", vietnam: "Việt Nam", "viet nam": "Việt Nam",
+  us: "Mỹ", usa: "Mỹ", my: "Mỹ", "hoa ky": "Mỹ", america: "Mỹ", "united states": "Mỹ",
+  au: "Úc", uc: "Úc", australia: "Úc", ca: "Canada", nz: "New Zealand",
+  uk: "Anh", england: "Anh", "united kingdom": "Anh", duc: "Đức", germany: "Đức", phap: "Pháp", france: "Pháp",
+  nhat: "Nhật Bản", japan: "Nhật Bản", han: "Hàn Quốc", korea: "Hàn Quốc", "dai loan": "Đài Loan", taiwan: "Đài Loan",
+};
+
+/** Nước bấm chọn nhanh trong form tạo lớp — còn lại chọn "Nước khác". */
+export const QUICK_COUNTRIES = ["Việt Nam", "Úc", "Mỹ", "Canada", "Singapore"];
+
+/** Mã gọi quốc tế, để SĐT khách nước ngoài lưu kèm mã — bấm gọi / Zalo / WhatsApp là đúng số. */
+export const DIAL_CODES: Record<string, string> = {
+  "Việt Nam": "+84", Mỹ: "+1", Canada: "+1", Úc: "+61", "New Zealand": "+64", Anh: "+44", Đức: "+49",
+  Pháp: "+33", "Hà Lan": "+31", Bỉ: "+32", "Thuỵ Sĩ": "+41", "Na Uy": "+47", "Thuỵ Điển": "+46",
+  "Đan Mạch": "+45", "Phần Lan": "+358", Séc: "+420", "Ba Lan": "+48", Nga: "+7", "Nhật Bản": "+81",
+  "Hàn Quốc": "+82", "Đài Loan": "+886", Singapore: "+65", Malaysia: "+60", "Thái Lan": "+66",
+  "Trung Quốc": "+86", UAE: "+971",
+};
+
+/**
+ * SĐT khách nước ngoài gõ kiểu trong nước ("0412 345 678") thì thêm mã nước
+ * ("+61 412 345 678"). Số Việt Nam, số đã có "+" hoặc nước không rõ mã thì giữ nguyên.
+ */
+export function phoneWithDialCode(phone: string, country: string | null): string {
+  const p = phone.trim();
+  const code = country ? DIAL_CODES[country] : undefined;
+  if (!p || !code || country === "Việt Nam" || p.startsWith("+")) return p;
+  if (p.startsWith("00")) return `+${p.slice(2)}`;
+  return `${code} ${p.replace(/^0+/, "")}`;
+}
+
+/** Viết thống nhất tên nước: "usa", "Hoa Kỳ" → "Mỹ"; nước lạ giữ nguyên chữ người gõ. */
+export function canonicalCountry(raw: string): string | null {
+  const v = raw.trim().replace(/\s+/g, " ").slice(0, 60);
+  if (!v) return null;
+  const key = v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().replace(/\./g, "");
+  const hit = COUNTRIES.find(
+    (c) => c.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase() === key
+  );
+  return hit ?? COUNTRY_ALIASES[key] ?? v;
 }
 
 

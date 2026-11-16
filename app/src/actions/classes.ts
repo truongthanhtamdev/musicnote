@@ -18,7 +18,16 @@ import {
   isTeacherAvailable,
   listSiblingClasses,
 } from "@/lib/queries";
-import { classStage, formatClassSchedule, type ClassRow, MANAGE_ROLES, canonicalSubject, ADMIN_AREA_ROLES } from "@/lib/types";
+import {
+  classStage,
+  formatClassSchedule,
+  type ClassRow,
+  MANAGE_ROLES,
+  canonicalSubject,
+  canonicalCountry,
+  phoneWithDialCode,
+  ADMIN_AREA_ROLES,
+} from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import { contactEmailOf, meetingLinkMail, queueMail } from "@/lib/mail";
 import {
@@ -73,7 +82,6 @@ export async function createClassAction(
   const session = await assertRole([...ADMIN_AREA_ROLES, "teacher"]);
 
   const studentName = String(formData.get("student_name") || "").trim();
-  const studentPhone = String(formData.get("student_phone") || "").trim();
   const guardianName = String(formData.get("guardian_name") || "").trim();
   const facebookUrl = normalizeFacebookUrl(String(formData.get("facebook_url") || ""));
   const level = String(formData.get("level") || "").trim();
@@ -91,6 +99,8 @@ export async function createClassAction(
   // ra khách (và ra tiền) mà đổ quảng cáo cho đúng chỗ.
   const customerChannel = String(formData.get("customer_channel") || "").trim().slice(0, 100) || null;
   const customerChannelNote = String(formData.get("customer_channel_note") || "").trim().slice(0, 200) || null;
+  const country = canonicalCountry(String(formData.get("country") || ""));
+  const studentPhone = phoneWithDialCode(String(formData.get("student_phone") || ""), country);
   // Link nhóm lớp (Messenger / Zalo): người đặt hẹn lập nhóm xong dán vào luôn.
   const groupUrlRaw = String(formData.get("messenger_url") || "").trim().slice(0, 300);
   const groupUrl = groupUrlRaw ? normalizeMeetingUrl(groupUrlRaw) : null;
@@ -136,6 +146,12 @@ export async function createClassAction(
   if (session.role === "coordinator" && !customerChannel) {
     return { error: "Chọn khách đến từ kênh nào (Fanpage, Zalo, giới thiệu…) giúp mình nhé" };
   }
+  if (session.role === "coordinator" && !country) {
+    return { error: "Điền khách đang ở nước nào (Việt Nam, Mỹ, Úc…) giúp mình nhé" };
+  }
+  if (session.role === "coordinator" && !studentPhone) {
+    return { error: "Điền số điện thoại khách để trung tâm liên hệ giúp mình nhé" };
+  }
 
   let packageId: number | null = null;
   if (packageTotalSessions) {
@@ -163,8 +179,8 @@ export async function createClassAction(
   }
 
   const insert = db.prepare(
-    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, start_date, customer_channel, customer_channel_note, messenger_url, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+    `INSERT INTO classes (student_name, student_phone, guardian_name, facebook_url, level, subject, language, source, package_id, schedule_type, day_of_week, start_time, duration_minutes, teacher_id, notes, coordinator_id, start_date, customer_channel, customer_channel_note, messenger_url, country, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
   );
   let firstClassId: number | null = null;
   for (const slot of slots) {
@@ -190,7 +206,8 @@ export async function createClassAction(
       scheduleType === "fixed" ? (startDate ?? toISODate(nextOccurrence(slot.dayOfWeek))) : null,
       customerChannel,
       customerChannelNote,
-      groupUrl
+      groupUrl,
+      country
     );
     firstClassId ??= Number(info.lastInsertRowid);
   }
@@ -435,7 +452,10 @@ export async function updateClassAction(
   const id = Number(formData.get("id"));
   const session = await assertClassEditorOrTeacher(id);
   const studentName = String(formData.get("student_name") || "").trim();
-  const studentPhone = String(formData.get("student_phone") || "").trim();
+  const studentPhone = phoneWithDialCode(
+    String(formData.get("student_phone") || ""),
+    formData.has("country") ? canonicalCountry(String(formData.get("country") || "")) : null
+  );
   const guardianName = String(formData.get("guardian_name") || "").trim();
   const facebookUrl = normalizeFacebookUrl(String(formData.get("facebook_url") || ""));
   const level = String(formData.get("level") || "").trim();
@@ -484,6 +504,12 @@ export async function updateClassAction(
     db.prepare("UPDATE classes SET customer_channel = ?, customer_channel_note = ? WHERE id = ?").run(
       String(formData.get("customer_channel") || "").trim().slice(0, 100) || null,
       String(formData.get("customer_channel_note") || "").trim().slice(0, 200) || null,
+      id
+    );
+  }
+  if (!isTeacher && formData.has("country")) {
+    db.prepare("UPDATE classes SET country = ? WHERE id = ?").run(
+      canonicalCountry(String(formData.get("country") || "")),
       id
     );
   }
