@@ -11,6 +11,7 @@ import {
   type TrialRequestStatus,
 } from "@/lib/types";
 import { StatusChip, inlineAction } from "@/components/ui";
+import { localFromSqlUtc } from "@/lib/format";
 
 const TONE: Record<TrialRequestStatus, "coral" | "amber" | "mint" | "neutral"> = {
   new: "coral",
@@ -24,8 +25,11 @@ export default function RequestRow({
   canCreateClass,
   staff,
   selfId,
+  chatId,
 }: {
   request: TrialRequestRow;
+  /** Đăng ký do AI tư vấn ghi: mở lại nguyên đoạn chat. */
+  chatId?: string;
   staff?: { id: number; name: string }[];
   selfId?: number;
   /** Quản lý tạo lớp ở trang Lớp học; nhân viên đặt hẹn ở trang Tạo lớp riêng. */
@@ -37,7 +41,11 @@ export default function RequestRow({
     <tr className={request.status === "new" ? "bg-coral-50/40" : "hover:bg-ivory-50"}>
       <td className="px-4 py-3">
         <p className="font-medium text-ink-900">{request.name}</p>
-        <p className="text-xs text-ink-400 tabular">{request.created_at.slice(8, 10)}/{request.created_at.slice(5, 7)} {request.created_at.slice(11, 16)}</p>
+        <p className="text-xs text-ink-400 tabular">
+          {/* created_at lưu giờ UTC — đổi sang giờ Việt Nam cho khớp giờ khách gửi. */}
+          {localFromSqlUtc(request.created_at).slice(8, 10)}/{localFromSqlUtc(request.created_at).slice(5, 7)}{" "}
+          {localFromSqlUtc(request.created_at).slice(11, 16)}
+        </p>
       </td>
       <td className="px-4 py-3">
         <a
@@ -72,7 +80,17 @@ export default function RequestRow({
           </StatusChip>
         ) : null}
       </td>
-      <td className="px-4 py-3 text-ink-600 text-sm max-w-[280px]">{request.note || "–"}</td>
+      <td className="px-4 py-3 text-ink-600 text-sm max-w-[280px]">
+        {request.note || "–"}
+        {chatId && (
+          <Link
+            href={`/admin/ai-chat?id=${chatId}`}
+            className="mt-1 block text-xs font-semibold text-wood-700 hover:underline"
+          >
+            💬 Xem đoạn chat với AI
+          </Link>
+        )}
+      </td>
       <td className="px-4 py-3">
         <StatusChip tone={TONE[request.status]}>
           {TRIAL_REQUEST_STATUS_LABELS[request.status]}

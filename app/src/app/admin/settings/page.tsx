@@ -12,6 +12,9 @@ import QuotaForm from "./quota-form";
 import BonusForm from "./bonus-form";
 import LeadSourcesForm from "./lead-sources-form";
 import TelegramPreview from "./telegram-preview";
+import AiKnowledgeForm from "./ai-knowledge-form";
+import { AI_KNOWLEDGE_KEY, aiChatEnabled } from "@/lib/ai-chat";
+import { getSetting } from "@/lib/queries";
 
 export default async function AdminSettingsPage() {
   await requireRole(MANAGE_ROLES);
@@ -35,6 +38,33 @@ export default async function AdminSettingsPage() {
             Khách bấm nút này để nhắn thẳng cho trung tâm. Bỏ trống ô nào thì nút đó không hiện.
           </p>
           <ContactForm contact={contact} />
+        </div>
+      </Card>
+
+      <Card padded={false}>
+        <CardHeader title="AI tư vấn trên trang chủ" />
+        <div className="p-5 space-y-3">
+          <p className="text-sm text-ink-600">
+            {aiChatEnabled() ? (
+              <>
+                <b className="text-mint-700">● Đang bật.</b> Khách bấm nút “Tư vấn &amp; đặt lịch” ở góc trang chủ để
+                hỏi; AI tư vấn theo bảng giá, môn học trên web và phần thông tin dưới đây, chốt được lịch rảnh
+                thì ghi vào <Link href="/admin/trial-requests" className="font-semibold text-wood-700 hover:underline">Đăng ký học thử</Link>{" "}
+                và báo Telegram. Xếp giáo viên vẫn do trung tâm làm.{" "}
+                <Link href="/admin/ai-chat" className="font-semibold text-wood-700 hover:underline">Xem các cuộc chat →</Link>
+              </>
+            ) : (
+              <>
+                <b className="text-amber-700">● Chưa bật</b> — cần đặt khoá <code>ANTHROPIC_API_KEY</code> trên máy chủ
+                rồi khởi động lại web.
+              </>
+            )}
+          </p>
+          <p className="text-sm text-ink-500">
+            Thông tin thêm cho AI (khuyến mãi, lịch nghỉ, câu hỏi hay gặp…). AI ưu tiên phần này nếu khác thông tin
+            trên web.
+          </p>
+          <AiKnowledgeForm value={getSetting(AI_KNOWLEDGE_KEY) || ""} />
         </div>
       </Card>
 

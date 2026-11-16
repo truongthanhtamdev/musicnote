@@ -5,6 +5,7 @@ import { TRIAL_REQUEST_STATUS_LABELS, type TrialRequestStatus, MANAGE_ROLES } fr
 import { IconBell, IconUser } from "@/components/icons";
 import { Card, EmptyState, MetricCard, PageHeader, TableShell, Th } from "@/components/ui";
 import RequestRow from "./request-row";
+import { chatIdsByTrialRequest } from "@/lib/ai-chat";
 
 export default async function TrialRequestsPage() {
   // Nhân viên đặt hẹn không còn xử lý đăng ký học thử — chỉ Quản lý trở lên.
@@ -18,6 +19,7 @@ export default async function TrialRequestsPage() {
     )
     .all() as { id: number; name: string }[];
   const requests = listTrialRequests();
+  const chatIds = chatIdsByTrialRequest();
   const counts = Object.fromEntries(
     Object.keys(TRIAL_REQUEST_STATUS_LABELS).map((status) => [
       status,
@@ -69,6 +71,7 @@ export default async function TrialRequestsPage() {
                 <RequestRow
                   key={r.id}
                   request={r}
+                  chatId={chatIds.get(r.id)}
                   canCreateClass={canManage}
                   staff={canManage ? staff : undefined}
                   selfId={session.userId}

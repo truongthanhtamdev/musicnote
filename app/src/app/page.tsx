@@ -22,6 +22,8 @@ import { ContactButtons } from "@/components/contact-buttons";
 import { PricingTabs } from "./pricing-tabs";
 import { TrialSection } from "./trial-section";
 import { ClipShowcase } from "./clip-showcase";
+import { AiChatWidget } from "./ai-chat-widget";
+import { aiChatEnabled } from "@/lib/ai-chat";
 import { listClips, HOME_CLIP_LIMIT } from "@/lib/clips";
 
 const HOME_TITLE = "Piano Guitar Đệm Hát — Học 1 kèm 1 online";
@@ -362,6 +364,8 @@ export default async function HomePage() {
           <TrialSection initialWheel={wheel} facebookUrl={contact.facebook} />
         </section>
       </main>
+
+      {aiChatEnabled() && <AiChatWidget />}
 
       <footer className="bg-white">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-7 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">

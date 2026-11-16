@@ -144,6 +144,25 @@ Gợi ý:
   > hỏi Telegram sẽ giành mất tin của nhau. Dùng `pm2 start ... -i 1` hoặc
   > một service systemd duy nhất.
 
+### AI tư vấn trên trang chủ
+
+Khung chat “Tư vấn & đặt lịch” ở góc trái trang chủ: AI (Claude) trả lời về môn học,
+học phí, cách học online, rồi hỏi tên, nước, SĐT, môn và lịch rảnh và ghi thành một
+**Đăng ký học thử** (kèm “🤖 Đặt qua AI tư vấn”), báo Telegram như khách tự điền form.
+Xếp giáo viên vẫn do trung tâm làm. Giáo vụ đọc lại các cuộc chat ở **Chat AI tư vấn**;
+thông tin thêm cho AI (khuyến mãi, lịch nghỉ…) sửa ở **Cài đặt**.
+
+Bật bằng cách thêm biến môi trường rồi khởi động lại web (không có khoá thì nút chat không hiện):
+
+```
+ANTHROPIC_API_KEY=sk-ant-...        # khoá API tạo ở platform.claude.com
+AI_CHAT_MODEL=claude-opus-5-5       # tuỳ chọn; mặc định claude-opus-5-5
+AI_CHAT_DAILY_CAP=1500              # tuỳ chọn; số lượt AI trả lời tối đa mỗi ngày
+```
+
+Mỗi IP bị giới hạn số tin nhắn (25 tin / 10 phút, 150 tin / ngày) để không ai đốt tiền API.
+Chạy thử giao diện không cần khoá: `AI_CHAT_MOCK=1 npm run dev` (trả lời theo kịch bản cố định).
+
 ## Các luồng chính
 
 - **Admin/Giáo vụ → Lớp học**: thêm lớp mới (học sinh, thứ/giờ học cố

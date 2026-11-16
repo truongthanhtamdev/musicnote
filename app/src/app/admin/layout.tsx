@@ -82,6 +82,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       badge: newTrialRequests || undefined,
     },
     {
+      href: "/admin/ai-chat",
+      label: "Chat AI tư vấn",
+      icon: <IconBell className={ICON} />,
+    },
+    {
       href: "/admin/cham-khach",
       label: "Chăm khách đóng phí",
       icon: <IconWallet className={ICON} />,

@@ -5,6 +5,7 @@ import { assertRole } from "@/lib/guard";
 import { MANAGE_ROLES } from "@/lib/types";
 import { formatVND, normalizeFacebookUrl } from "@/lib/format";
 import { CONTACT_KEYS, LATE_CHECKIN_QUOTA_KEY, setSetting } from "@/lib/queries";
+import { AI_KNOWLEDGE_KEY } from "@/lib/ai-chat";
 import { setBonusRates } from "@/lib/bonus";
 import { setLeadSources } from "@/lib/leads";
 import { logAudit } from "@/lib/audit";
@@ -118,5 +119,15 @@ export async function saveLeadSourcesAction(
   logAudit(session, "he_thong", `Cập nhật danh sách nguồn khách (${list.length} nguồn)`);
   revalidatePath("/admin/settings");
   revalidatePath("/admin/tiem-nang");
+  return { success: true };
+}
+
+/** Thông tin thêm cho AI tư vấn (khuyến mãi, lịch nghỉ lễ, câu hỏi hay gặp…) — chủ trung tâm tự sửa. */
+export async function saveAiKnowledgeAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await assertRole(MANAGE_ROLES);
+  const text = String(formData.get("ai_knowledge") || "").trim().slice(0, 6000);
+  setSetting(AI_KNOWLEDGE_KEY, text);
+  logAudit(session, "he_thong", "Sửa thông tin cho AI tư vấn");
+  revalidatePath("/admin/settings");
   return { success: true };
 }

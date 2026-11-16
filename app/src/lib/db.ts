@@ -377,6 +377,19 @@ function migrate() {
     );
     CREATE INDEX IF NOT EXISTS idx_office_checkins_user_date ON office_checkins(user_id, work_date);
 
+    -- Cuộc trò chuyện của khách với AI tư vấn trên trang chủ: lưu nguyên văn để
+    -- giáo vụ đọc lại trước khi gọi khách, và nối với đăng ký học thử AI đã ghi.
+    CREATE TABLE IF NOT EXISTS ai_chats (
+      id TEXT PRIMARY KEY,
+      transcript TEXT NOT NULL DEFAULT '[]',
+      user_turns INTEGER NOT NULL DEFAULT 0,
+      trial_request_id INTEGER REFERENCES trial_requests(id) ON DELETE SET NULL,
+      ip TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_ai_chats_updated ON ai_chats(updated_at);
+
     CREATE TABLE IF NOT EXISTS missed_dismissals (
       class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
       session_date TEXT NOT NULL,
