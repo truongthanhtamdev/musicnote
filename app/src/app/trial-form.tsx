@@ -1,5 +1,6 @@
 "use client";
 
+import { CountryPhoneField } from "@/components/country-phone-field";
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { submitTrialRequestAction, type TrialFormState } from "@/actions/trial";
@@ -166,18 +167,15 @@ export function TrialForm({
           </label>
           <input id="t-name" name="name" required maxLength={100} className={inputClass} />
         </div>
-        <div>
-          <label className={labelClass} htmlFor="t-phone">
-            Số điện thoại <span className="text-coral-500">*</span>
-          </label>
-          <input
-            id="t-phone"
-            name="phone"
-            type="tel"
+        <div className="sm:col-span-2">
+          <CountryPhoneField
             required
-            maxLength={30}
-            placeholder="VD: 0901 234 567"
+            phoneName="phone"
+            idPrefix="t"
+            countryLabel="Bạn đang ở nước nào"
+            phoneLabel="Số điện thoại"
             className={inputClass}
+            labelClass={labelClass}
           />
         </div>
         <div>

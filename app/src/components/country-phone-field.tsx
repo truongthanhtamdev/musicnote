@@ -11,16 +11,26 @@ import { COUNTRIES, DIAL_CODES, QUICK_COUNTRIES } from "@/lib/types";
 export function CountryPhoneField({
   required = false,
   defaultPhone,
+  defaultCountry,
   className,
   labelClass,
+  phoneName = "student_phone",
+  idPrefix = "a",
+  countryLabel = "Khách ở nước nào",
+  phoneLabel = "SĐT khách hàng",
 }: {
   required?: boolean;
   defaultPhone?: string;
+  defaultCountry?: string | null;
   className: string;
   labelClass: string;
+  phoneName?: string;
+  idPrefix?: string;
+  countryLabel?: string;
+  phoneLabel?: string;
 }) {
-  const [country, setCountry] = useState("");
-  const [other, setOther] = useState(false);
+  const [country, setCountry] = useState(defaultCountry ?? "");
+  const [other, setOther] = useState(!!defaultCountry && !QUICK_COUNTRIES.includes(defaultCountry));
   const code = DIAL_CODES[country];
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
@@ -31,7 +41,7 @@ export function CountryPhoneField({
     <div className="space-y-3">
       <div>
         <span className={labelClass}>
-          Khách ở nước nào{required && <span className="text-coral-500"> *</span>}
+          {countryLabel}{required && <span className="text-coral-500"> *</span>}
         </span>
         <div className="flex flex-wrap gap-2">
           {QUICK_COUNTRIES.map((c) => (
@@ -62,7 +72,7 @@ export function CountryPhoneField({
           <>
             <input
               name="country"
-              list="a-country-list"
+              list={`${idPrefix}-country-list`}
               required={required}
               autoFocus
               value={country}
@@ -73,7 +83,7 @@ export function CountryPhoneField({
               placeholder="Gõ tên nước: Đức, Nhật Bản, Anh…"
               className={`${className} mt-2`}
             />
-            <datalist id="a-country-list">
+            <datalist id={`${idPrefix}-country-list`}>
               {COUNTRIES.filter((c) => !QUICK_COUNTRIES.includes(c)).map((c) => (
                 <option key={c} value={c} />
               ))}
@@ -85,7 +95,7 @@ export function CountryPhoneField({
             name="country"
             value={country}
             required={required}
-            onChange={() => {}}
+            onChange={(e) => e.currentTarget.setCustomValidity("")}
             onInvalid={(e) => e.currentTarget.setCustomValidity("Chọn khách đang ở nước nào")}
             tabIndex={-1}
             aria-hidden
@@ -94,8 +104,8 @@ export function CountryPhoneField({
         )}
       </div>
       <div>
-        <label className={labelClass} htmlFor="a-phone">
-          SĐT khách hàng{required && <span className="text-coral-500"> *</span>}
+        <label className={labelClass} htmlFor={`${idPrefix}-phone`}>
+          {phoneLabel}{required && <span className="text-coral-500"> *</span>}
         </label>
         <div className="flex items-stretch gap-2">
           {code && (
@@ -104,12 +114,13 @@ export function CountryPhoneField({
             </span>
           )}
           <input
-            id="a-phone"
-            name="student_phone"
+            id={`${idPrefix}-phone`}
+            name={phoneName}
             type="tel"
             required={required}
             defaultValue={defaultPhone}
-            placeholder={country && country !== "Việt Nam" ? "Số của khách (Zalo / WhatsApp)" : "VD: 0901 234 567"}
+            maxLength={30}
+            placeholder={country && country !== "Việt Nam" ? "Số điện thoại (Zalo / WhatsApp)" : "VD: 0901 234 567"}
             className={`${className} min-w-0 flex-1`}
           />
         </div>

@@ -277,6 +277,8 @@ export interface TrialRequestRow {
   phone: string;
   /** Facebook/Zalo/email — cách liên hệ phụ khách tự khai. */
   contact: string | null;
+  /** Khách đang ở nước nào (tự chọn lúc đăng ký). */
+  country?: string | null;
   subject: string;
   language: ClassLanguage;
   note: string | null;

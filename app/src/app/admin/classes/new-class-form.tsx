@@ -25,6 +25,7 @@ export interface ClassPrefill {
   trialRequestId: number;
   studentName: string;
   phone: string;
+  country?: string | null;
   subject: string;
   language: string;
   note: string;
@@ -138,6 +139,7 @@ export default function NewClassForm({
                 <CountryPhoneField
                   required={requireChannel}
                   defaultPhone={prefill?.phone}
+                  defaultCountry={prefill?.country}
                   className={field}
                   labelClass={label}
                 />

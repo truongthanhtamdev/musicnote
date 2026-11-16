@@ -509,6 +509,8 @@ function migrate() {
   ensureColumn("trial_requests", "wheel_prize", "INTEGER");
   // Email khách tự điền khi đăng ký học thử — để gửi xác nhận và link học.
   ensureColumn("trial_requests", "email", "TEXT");
+  // Khách đang ở nước nào — khách tự chọn ở form đăng ký học thử.
+  ensureColumn("trial_requests", "country", "TEXT");
   // Email nhận thư của tài khoản (users.email là tên đăng nhập, thường là SĐT).
   ensureColumn("users", "contact_email", "TEXT");
   // Tăng lên mỗi khi đặt lại / đổi mật khẩu — mọi phiên đăng nhập cũ (ký với

@@ -13,6 +13,7 @@ export function trialPrefill(trialId: string | undefined): ClassPrefill | undefi
     trialRequestId: req.id,
     studentName: req.name,
     phone: req.phone,
+    country: req.country ?? null,
     subject: req.subject,
     language: req.language,
     // Ghi chú của khách và kênh liên hệ đi theo lớp luôn — giáo viên nhận lớp

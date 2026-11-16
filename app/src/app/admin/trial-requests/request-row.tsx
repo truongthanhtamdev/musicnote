@@ -46,6 +46,7 @@ export default function RequestRow({
         >
           {request.phone}
         </a>
+        {request.country && <p className="text-xs text-ink-500">🌏 {request.country}</p>}
         {request.email && (
           <a
             href={`mailto:${request.email}`}

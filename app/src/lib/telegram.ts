@@ -202,6 +202,7 @@ export function notifyNewCustomer(c: {
   contact?: string | null;
   note?: string | null;
   email?: string | null;
+  country?: string | null;
   existingStudent?: boolean;
 }) {
   if (!telegramEnabled()) return;
@@ -215,7 +216,7 @@ export function notifyNewCustomer(c: {
   const text =
     `🔔 <b>${c.existingStudent ? "Học viên đăng ký học thêm môn" : "Khách mới đăng ký học thử"}</b>\n` +
     `👤 ${escapeHtml(c.name)}\n` +
-    `📞 ${escapeHtml(c.phone)}\n` +
+    `📞 ${escapeHtml(c.phone)}${c.country ? ` · 🌏 ${escapeHtml(c.country)}` : ""}\n` +
     `🎵 ${escapeHtml(c.subject)}` +
     (c.contact ? `\n💬 ${escapeHtml(c.contact)}` : "") +
     (c.email ? `\n✉️ ${escapeHtml(c.email)}` : "") +

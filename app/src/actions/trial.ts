@@ -11,7 +11,16 @@ import { createStudentAccount } from "@/lib/student-accounts";
 import { getCenterContact, normalizeLoginPhone } from "@/lib/queries";
 import { cleanEmail, contactEmailOf, queueMail, trialBookedMail, welcomeMail } from "@/lib/mail";
 import { todayISO } from "@/lib/format";
-import { SUBJECT_SUGGESTIONS, type TrialRequestStatus, ADMIN_AREA_ROLES, canonicalSubject, DAY_LABELS, wheelPrizeNote } from "@/lib/types";
+import {
+  SUBJECT_SUGGESTIONS,
+  type TrialRequestStatus,
+  ADMIN_AREA_ROLES,
+  canonicalSubject,
+  canonicalCountry,
+  phoneWithDialCode,
+  DAY_LABELS,
+  wheelPrizeNote,
+} from "@/lib/types";
 import { DEFAULT_TRIAL_SESSIONS, readPrize, signRequest, WHEEL_COOKIE, WHEEL_REQUEST_COOKIE, wheelCookieOptions } from "@/lib/wheel";
 import type { FormState } from "./teachers";
 
@@ -45,7 +54,9 @@ export async function submitTrialRequestAction(
   formData: FormData
 ): Promise<TrialFormState> {
   const name = clean(formData, "name", MAX.name);
-  const phone = clean(formData, "phone", MAX.phone);
+  const country = canonicalCountry(clean(formData, "country", 60));
+  // Khách nước ngoài gõ số kiểu trong nước thì lưu kèm đầu số (+61, +1…).
+  const phone = phoneWithDialCode(clean(formData, "phone", MAX.phone), country).slice(0, MAX.phone);
   const contact = clean(formData, "contact", MAX.contact);
   const note = clean(formData, "note", MAX.note);
   const emailRaw = clean(formData, "email", 200);
@@ -56,6 +67,9 @@ export async function submitTrialRequestAction(
 
   if (!name || !phone) {
     return { error: "Vui lòng nhập họ tên và số điện thoại" };
+  }
+  if (formData.has("country") && !country) {
+    return { error: "Chọn giúp mình bạn đang ở nước nào nhé" };
   }
   if (!/[0-9]{8,}/.test(phone.replace(/[\s.+()-]/g, ""))) {
     return { error: "Số điện thoại chưa hợp lệ" };
@@ -73,11 +87,11 @@ export async function submitTrialRequestAction(
   const requestId = Number(
     db
       .prepare(
-        "INSERT INTO trial_requests (name, phone, contact, subject, language, note, trial_sessions, wheel_prize, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO trial_requests (name, phone, contact, subject, language, note, trial_sessions, wheel_prize, email, country) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       )
-      .run(name, phone, contact || null, subject, language, note || null, trialSessions, oldPrize, email).lastInsertRowid
+      .run(name, phone, contact || null, subject, language, note || null, trialSessions, oldPrize, email, country).lastInsertRowid
   );
-  notifyNewCustomer({ requestId, name, phone, subject, contact, note, email });
+  notifyNewCustomer({ requestId, name, phone, subject, contact, note, email, country });
   if (oldPrize) store.delete(WHEEL_COOKIE);
   // Mở khoá vòng quay cho đúng đăng ký vừa gửi.
   store.set(WHEEL_REQUEST_COOKIE, signRequest(requestId), wheelCookieOptions);
