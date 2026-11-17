@@ -57,7 +57,7 @@ function systemPrompt(): string {
   return `Bạn là trợ lý tư vấn của trung tâm "Piano Guitar Đệm Hát" — trung tâm dạy 1 kèm 1 online. Bạn nói chuyện với khách vừa vào trang web.
 
 NHIỆM VỤ
-1. Tư vấn: trả lời câu hỏi về môn học, cách học, học phí, giáo viên, lịch học. Thân thiện, ngắn gọn (2–5 câu mỗi lượt), dễ hiểu với phụ huynh.
+1. Tư vấn: trả lời câu hỏi về môn học, cách học, học phí, giáo viên, lịch học. Thân thiện, ngắn gọn (2–5 câu mỗi lượt), dễ hiểu với phụ huynh. Hỏi học phí thì nêu tên gói, số buổi và giá; chỉ kể nội dung từng gói khi khách hỏi thêm.
 2. Đặt lịch học thử: khi khách muốn học thử (hoặc sau khi tư vấn xong thì mời học thử miễn phí), hỏi dần — mỗi lượt 1–2 câu — đủ các thông tin:
    • Tên học viên (và tên phụ huynh nếu học viên là trẻ em), tuổi hoặc trình độ hiện tại
    • Môn muốn học
@@ -69,9 +69,9 @@ NHIỆM VỤ
 QUY TẮC
 - Trả lời bằng ngôn ngữ khách dùng (tiếng Việt hoặc tiếng Anh).
 - Chỉ dùng thông tin bên dưới. Không bịa giá, khuyến mãi, tên giáo viên hay giờ trống cụ thể. Điều gì không chắc thì nói trung tâm sẽ báo lại, hoặc mời khách nhắn trung tâm.
-- Không hứa giáo viên cụ thể hay chốt giờ chính xác — bạn chỉ ghi lịch rảnh, trung tâm xếp giáo viên rồi xác nhận.
+- Không hứa giáo viên cụ thể hay chốt giờ chính xác, và không nói giờ nào giáo viên "dạy được" — bạn không xem được lịch giáo viên. Bạn chỉ ghi lịch rảnh của khách, trung tâm xếp giáo viên rồi gọi xác nhận.
 - Không xin thông tin nhạy cảm (mật khẩu, số thẻ, giấy tờ).
-- Viết chữ thường, không dùng bảng hay markdown đậm/nghiêng; liệt kê thì dùng dấu "•".
+- Viết văn bản thuần, viết hoa đúng chính tả; không dùng bảng hay markdown (không **đậm**, không #); liệt kê thì dùng dấu "•".
 - Câu hỏi ngoài lề (không liên quan việc học) thì từ chối khéo và quay lại tư vấn.
 
 THÔNG TIN TRUNG TÂM
@@ -103,8 +103,11 @@ const BOOKING_TOOL: Anthropic.Beta.BetaTool = {
       ten_hoc_vien: { type: "string", description: "Tên học viên" },
       ten_phu_huynh: { ...nullableString, description: "Tên phụ huynh / người liên hệ nếu khác học viên" },
       tuoi_trinh_do: { ...nullableString, description: "Tuổi hoặc trình độ hiện tại" },
-      so_dien_thoai: { type: "string", description: "Số điện thoại / Zalo / WhatsApp, kèm đầu số nước nếu khách cho" },
-      quoc_gia: { type: "string", description: "Nước khách đang ở, VD Việt Nam, Úc, Mỹ, Canada" },
+      so_dien_thoai: {
+        type: "string",
+        description: "CHỈ số điện thoại như khách cho (VD 0412 555 888 hoặc +61 412 555 888), không thêm chữ hay ghi chú",
+      },
+      quoc_gia: { type: "string", description: "CHỈ tên nước, không ghi thành phố: Việt Nam, Úc, Mỹ, Canada, Singapore…" },
       mon_hoc: { type: "string", enum: SUBJECT_SUGGESTIONS },
       ngon_ngu: { type: "string", enum: ["vi", "en"], description: "Giáo viên dạy bằng tiếng Việt (vi) hay tiếng Anh (en)" },
       lich_ranh: {
@@ -144,8 +147,10 @@ interface BookingInput {
 export function saveAiBooking(chatId: string, raw: unknown): { ok: boolean; message: string } {
   const b = raw as Partial<BookingInput>;
   const name = String(b.ten_hoc_vien ?? "").trim().slice(0, 100);
-  const country = canonicalCountry(String(b.quoc_gia ?? ""));
-  const phone = phoneWithDialCode(String(b.so_dien_thoai ?? "").slice(0, 30), country).slice(0, 30);
+  // AI hay ghi thêm thành phố / chú thích trong ngoặc: bỏ đi rồi mới chuẩn hoá.
+  const country = canonicalCountry(String(b.quoc_gia ?? "").replace(/\(.*?\)/g, "").split(/[,–-]/)[0]);
+  const phoneRaw = String(b.so_dien_thoai ?? "").match(/\+?\d[\d\s().-]{6,}\d/)?.[0] ?? "";
+  const phone = phoneWithDialCode(phoneRaw.slice(0, 30), country).slice(0, 30);
   const subject = SUBJECT_SUGGESTIONS.includes(String(b.mon_hoc)) ? String(b.mon_hoc) : null;
   const times = String(b.lich_ranh ?? "").trim().slice(0, 300);
   if (!name || !subject || !times || !/\d{6,}/.test(phone.replace(/\D/g, ""))) {
