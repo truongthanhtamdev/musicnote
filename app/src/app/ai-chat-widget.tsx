@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Logo } from "@/components/logo";
 
 type Turn = { role: "user" | "assistant"; text: string };
 
@@ -97,14 +98,31 @@ export function AiChatWidget() {
   return (
     <>
       {!open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          // Góc trái: góc phải đã có nút Messenger / Zalo của trung tâm.
-          className="fixed bottom-4 left-4 z-40 inline-flex items-center gap-2 rounded-full bg-navy-950 hover:bg-navy-900 px-4 py-3 text-sm font-semibold text-white shadow-lg"
-        >
-          <span className="text-lg leading-none">💬</span> Tư vấn &amp; đặt lịch
-        </button>
+        // Góc trái: góc phải đã có nút Messenger / Zalo của trung tâm. Avatar to,
+        // có vòng sáng nhấp nháy và lời chào để khách để ý mà bấm vào.
+        <div className="fixed bottom-4 left-4 z-40 flex items-end gap-2">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Chat với trợ lý tư vấn"
+            className="relative shrink-0 rounded-full"
+          >
+            <span className="absolute inset-0 rounded-full bg-coral-500/60 animate-ping" aria-hidden />
+            <span className="relative flex h-16 w-16 sm:h-[72px] sm:w-[72px] items-center justify-center rounded-full border-4 border-white bg-navy-950 shadow-xl">
+              <Logo className="h-9 sm:h-10" />
+            </span>
+            <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full border-2 border-white bg-mint-500" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            // Chừa chỗ cho nút Messenger / Facebook ở góc phải trên điện thoại.
+            className="mb-2 max-w-[calc(100vw-10.5rem)] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-left shadow-lg ring-1 ring-navy-100"
+          >
+            <span className="block text-sm font-bold text-ink-900">Tư vấn &amp; đặt lịch học thử</span>
+            <span className="block text-xs text-ink-500">Trả lời ngay 💬</span>
+          </button>
+        </div>
       )}
       {open && (
         <div
@@ -113,7 +131,10 @@ export function AiChatWidget() {
           className="fixed z-50 inset-x-0 bottom-0 h-[85dvh] sm:inset-x-auto sm:bottom-4 sm:left-4 sm:h-[600px] sm:max-h-[calc(100dvh-2rem)] sm:w-[380px] flex flex-col rounded-t-2xl sm:rounded-2xl border border-navy-100 bg-white shadow-2xl"
         >
           <div className="flex items-center gap-3 rounded-t-2xl bg-navy-950 px-4 py-3 text-white">
-            <span className="text-xl">🎵</span>
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white/80 bg-navy-900">
+              <Logo className="h-7" />
+              <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-navy-950 bg-mint-500" />
+            </span>
             <div className="min-w-0 flex-1">
               <p className="font-semibold leading-tight">Trợ lý tư vấn</p>
               <p className="text-xs text-navy-200">Trả lời ngay · đặt lịch học thử miễn phí</p>

@@ -26,6 +26,7 @@ export interface ClassPrefill {
   studentName: string;
   phone: string;
   country?: string | null;
+  facebook?: string | null;
   subject: string;
   language: string;
   note: string;
@@ -167,6 +168,7 @@ export default function NewClassForm({
                 <input
                   id="a-facebook"
                   name="facebook_url"
+                  defaultValue={prefill?.facebook ?? undefined}
                   placeholder="Link hoặc tên tài khoản Facebook"
                   className={field}
                 />

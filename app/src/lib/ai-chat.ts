@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { db } from "./db";
-import { formatVND, todayISO } from "./format";
+import { formatVND, normalizeFacebookUrl, todayISO } from "./format";
+import { cleanEmail } from "./mail";
 import { getCenterContact, getSetting } from "./queries";
 import { notifyNewCustomer } from "./telegram";
 import { DAY_LABELS, PRICING, SUBJECT_SUGGESTIONS, canonicalCountry, phoneWithDialCode } from "./types";
@@ -62,6 +63,7 @@ NHIỆM VỤ
    • Tên học viên (và tên phụ huynh nếu học viên là trẻ em), tuổi hoặc trình độ hiện tại
    • Môn muốn học
    • Đang ở nước nào (để tính múi giờ) và số điện thoại / Zalo / WhatsApp
+   • Link Facebook của khách (để trung tâm thêm vào nhóm lớp) và Gmail / email (để gửi lịch và link vào học). Hướng dẫn lấy link Facebook nếu khách không biết: mở trang cá nhân → bấm "..." → "Sao chép liên kết". Chỉ bỏ trống mục nào khi khách nói không có hoặc không muốn cho.
    • Các khung giờ rảnh trong tuần (theo giờ nơi khách ở; nếu khách ở nước ngoài, quy đổi sang giờ Việt Nam và hỏi lại cho chắc)
    • Muốn giáo viên dạy bằng tiếng Việt hay tiếng Anh
    Đủ thông tin thì tóm tắt lại cho khách xác nhận, khách đồng ý thì gọi công cụ ghi_lich_hoc_thu. Ghi xong báo khách: trung tâm sẽ xếp giáo viên và liên hệ xác nhận giờ học thử sớm nhất.
@@ -70,6 +72,7 @@ QUY TẮC
 - Trả lời bằng ngôn ngữ khách dùng (tiếng Việt hoặc tiếng Anh).
 - Chỉ dùng thông tin bên dưới. Không bịa giá, khuyến mãi, tên giáo viên hay giờ trống cụ thể. Điều gì không chắc thì nói trung tâm sẽ báo lại, hoặc mời khách nhắn trung tâm.
 - Không hứa giáo viên cụ thể hay chốt giờ chính xác, và không nói giờ nào giáo viên "dạy được" — bạn không xem được lịch giáo viên. Bạn chỉ ghi lịch rảnh của khách, trung tâm xếp giáo viên rồi gọi xác nhận.
+- Câu nào khách bỏ qua 2 lần thì thôi, đừng hỏi lại (trừ SĐT và lịch rảnh) — ghi vào ghi chú để trung tâm hỏi sau.
 - Không xin thông tin nhạy cảm (mật khẩu, số thẻ, giấy tờ).
 - Viết văn bản thuần, viết hoa đúng chính tả; không dùng bảng hay markdown (không **đậm**, không #); liệt kê thì dùng dấu "•".
 - Câu hỏi ngoài lề (không liên quan việc học) thì từ chối khéo và quay lại tư vấn.
@@ -107,6 +110,8 @@ const BOOKING_TOOL: Anthropic.Beta.BetaTool = {
         type: "string",
         description: "CHỈ số điện thoại như khách cho (VD 0412 555 888 hoặc +61 412 555 888), không thêm chữ hay ghi chú",
       },
+      facebook: { ...nullableString, description: "Link hoặc tên tài khoản Facebook của khách; null nếu khách không có / không cho" },
+      email: { ...nullableString, description: "Gmail / email của khách; null nếu khách không có / không cho" },
       quoc_gia: { type: "string", description: "CHỈ tên nước, không ghi thành phố: Việt Nam, Úc, Mỹ, Canada, Singapore…" },
       mon_hoc: { type: "string", enum: SUBJECT_SUGGESTIONS },
       ngon_ngu: { type: "string", enum: ["vi", "en"], description: "Giáo viên dạy bằng tiếng Việt (vi) hay tiếng Anh (en)" },
@@ -121,6 +126,8 @@ const BOOKING_TOOL: Anthropic.Beta.BetaTool = {
       "ten_phu_huynh",
       "tuoi_trinh_do",
       "so_dien_thoai",
+      "facebook",
+      "email",
       "quoc_gia",
       "mon_hoc",
       "ngon_ngu",
@@ -136,6 +143,8 @@ interface BookingInput {
   ten_phu_huynh: string | null;
   tuoi_trinh_do: string | null;
   so_dien_thoai: string;
+  facebook: string | null;
+  email: string | null;
   quoc_gia: string;
   mon_hoc: string;
   ngon_ngu: "vi" | "en";
@@ -165,7 +174,12 @@ export function saveAiBooking(chatId: string, raw: unknown): { ok: boolean; mess
     .filter(Boolean)
     .join(" · ")
     .slice(0, 500);
-  const contact = b.ten_phu_huynh ? `Phụ huynh: ${String(b.ten_phu_huynh).slice(0, 100)}` : null;
+  const facebook = b.facebook ? normalizeFacebookUrl(String(b.facebook).slice(0, 300)) : null;
+  const email = cleanEmail(b.email);
+  const contact =
+    [b.ten_phu_huynh ? `Phụ huynh: ${String(b.ten_phu_huynh).slice(0, 100)}` : null, facebook ? `FB: ${facebook}` : null]
+      .filter(Boolean)
+      .join(" · ") || null;
   const language = b.ngon_ngu === "en" ? "en" : "vi";
 
   const existing = db.prepare("SELECT trial_request_id AS id FROM ai_chats WHERE id = ?").get(chatId) as
@@ -173,20 +187,20 @@ export function saveAiBooking(chatId: string, raw: unknown): { ok: boolean; mess
     | undefined;
   if (existing?.id && db.prepare("SELECT 1 FROM trial_requests WHERE id = ?").get(existing.id)) {
     db.prepare(
-      "UPDATE trial_requests SET name = ?, phone = ?, contact = ?, subject = ?, language = ?, note = ?, country = ? WHERE id = ?"
-    ).run(name, phone, contact, subject, language, note, country, existing.id);
+      "UPDATE trial_requests SET name = ?, phone = ?, contact = ?, subject = ?, language = ?, note = ?, country = ?, email = ? WHERE id = ?"
+    ).run(name, phone, contact, subject, language, note, country, email, existing.id);
     return { ok: true, message: "Đã cập nhật đăng ký học thử của khách." };
   }
 
   const requestId = Number(
     db
       .prepare(
-        "INSERT INTO trial_requests (name, phone, contact, subject, language, note, country) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO trial_requests (name, phone, contact, subject, language, note, country, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
       )
-      .run(name, phone, contact, subject, language, note, country).lastInsertRowid
+      .run(name, phone, contact, subject, language, note, country, email).lastInsertRowid
   );
   db.prepare("UPDATE ai_chats SET trial_request_id = ? WHERE id = ?").run(requestId, chatId);
-  notifyNewCustomer({ requestId, name, phone, subject, contact, note, country });
+  notifyNewCustomer({ requestId, name, phone, subject, contact, note, country, email });
   return { ok: true, message: "Đã ghi đăng ký học thử. Trung tâm sẽ xếp giáo viên và liên hệ khách xác nhận giờ." };
 }
 

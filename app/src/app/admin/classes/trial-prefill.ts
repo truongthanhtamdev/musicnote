@@ -14,6 +14,8 @@ export function trialPrefill(trialId: string | undefined): ClassPrefill | undefi
     studentName: req.name,
     phone: req.phone,
     country: req.country ?? null,
+    // Đăng ký từ AI tư vấn ghi Facebook khách trong ô liên hệ ("FB: link").
+    facebook: req.contact?.match(/FB: (\S+)/)?.[1] ?? null,
     subject: req.subject,
     language: req.language,
     // Ghi chú của khách và kênh liên hệ đi theo lớp luôn — giáo viên nhận lớp
