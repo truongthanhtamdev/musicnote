@@ -2,16 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/logo";
+import { IconChat } from "@/components/icons";
+import { TrackedLink } from "@/components/tracked-link";
 
 type Turn = { role: "user" | "assistant"; text: string };
 
 const STORE_KEY = "pgdh-ai-chat";
+const SEEN_KEY = "pgdh-ai-chat-seen";
 const GREETING: Turn = {
   role: "assistant",
   text:
-    "Chào bạn 👋 Mình là trợ lý tư vấn của Piano Guitar Đệm Hát. Bạn muốn tìm hiểu môn nào, hay đặt lịch học thử miễn phí? Hỏi mình về học phí, cách học online, giáo viên… đều được nhé!",
+    "Chào bạn 👋 Bạn muốn tìm hiểu môn nào, hay đặt lịch học thử miễn phí ạ? Hỏi về học phí, cách học online, giáo viên… đều được nhé!",
 };
-const SUGGESTIONS = ["Học phí bao nhiêu?", "Học online như thế nào?", "Đặt lịch học thử miễn phí"];
+const SUGGESTIONS = ["Học phí bao nhiêu?", "Học thử miễn phí", "Học online thế nào?"];
 
 const ERRORS: Record<string, string> = {
   slow: "Bạn nhắn hơi nhanh, đợi một chút rồi gửi lại giúp mình nhé.",
@@ -29,8 +32,12 @@ function newId() {
  * Khung chat AI tư vấn ở góc trang chủ. Hội thoại lưu trong trình duyệt (khách
  * đóng trang mở lại vẫn còn); máy chủ cũng lưu một bản để giáo vụ đọc lại.
  */
-export function AiChatWidget() {
+export function AiChatWidget({ messenger, zalo }: { messenger: string | null; zalo: string | null }) {
   const [open, setOpen] = useState(false);
+  const [menu, setMenu] = useState(false);
+  // Chấm đỏ "1" tắt hẳn sau lần đầu khách mở chat; nút nhún nhẹ sau vài giây cho khách để ý.
+  const [seen, setSeen] = useState(true);
+  const [nudge, setNudge] = useState(false);
   const [chatId, setChatId] = useState<string>("");
   const [turns, setTurns] = useState<Turn[]>([GREETING]);
   const [input, setInput] = useState("");
@@ -47,8 +54,28 @@ export function AiChatWidget() {
     /* eslint-disable react-hooks/set-state-in-effect */
     setChatId(saved?.chatId || newId());
     if (saved?.turns?.length) setTurns(saved.turns);
+    try {
+      setSeen(localStorage.getItem(SEEN_KEY) === "1");
+    } catch {
+      setSeen(false);
+    }
     /* eslint-enable react-hooks/set-state-in-effect */
+    const on = setTimeout(() => setNudge(true), 4000);
+    const off = setTimeout(() => setNudge(false), 6500);
+    return () => {
+      clearTimeout(on);
+      clearTimeout(off);
+    };
   }, []);
+
+  function openChat() {
+    setMenu(false);
+    setOpen(true);
+    setSeen(true);
+    try {
+      localStorage.setItem(SEEN_KEY, "1");
+    } catch {}
+  }
 
   useEffect(() => {
     if (!chatId) return;
@@ -98,37 +125,100 @@ export function AiChatWidget() {
   return (
     <>
       {!open && (
-        // Góc trái: góc phải đã có nút Messenger / Zalo của trung tâm. Avatar to,
-        // có vòng sáng nhấp nháy và lời chào để khách để ý mà bấm vào.
-        <div className="fixed bottom-4 left-4 z-40 flex items-end gap-2">
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label="Chat với trợ lý tư vấn"
-            className="relative shrink-0 rounded-full"
-          >
-            <span className="absolute inset-0 rounded-full bg-coral-500/60 animate-ping" aria-hidden />
-            <span className="relative flex h-16 w-16 sm:h-[72px] sm:w-[72px] items-center justify-center rounded-full border-4 border-white bg-navy-950 shadow-xl">
-              <Logo className="h-9 sm:h-10" />
-            </span>
-            <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full border-2 border-white bg-mint-500" aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            // Chừa chỗ cho nút Messenger / Facebook ở góc phải trên điện thoại.
-            className="mb-2 max-w-[calc(100vw-10.5rem)] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-left shadow-lg ring-1 ring-navy-100"
-          >
-            <span className="block text-sm font-bold text-ink-900">Tư vấn &amp; đặt lịch học thử</span>
-            <span className="block text-xs text-ink-500">Trả lời ngay 💬</span>
-          </button>
-        </div>
+        // Một nút liên hệ duy nhất ở góc phải (thay cho cụm nút Messenger / Zalo
+        // rời): bấm vào bung ra "Chat với trợ lý" trên cùng, rồi Messenger, Zalo.
+        <>
+          {menu && (
+            <button
+              type="button"
+              aria-label="Đóng"
+              onClick={() => setMenu(false)}
+              className="fixed inset-0 z-40 bg-navy-950/30"
+            />
+          )}
+          <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2.5">
+            {menu && (
+              <>
+                <button
+                  type="button"
+                  onClick={openChat}
+                  className="flex items-center gap-2.5 rounded-2xl bg-white py-2.5 pl-2.5 pr-4 text-left shadow-xl"
+                >
+                  <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white bg-navy-950 shadow">
+                    <Logo className="h-6" />
+                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-mint-500" />
+                  </span>
+                  <span>
+                    <span className="block text-[15px] font-bold text-ink-900">Chat với trợ lý</span>
+                    <span className="block text-xs font-semibold text-mint-600">Trả lời ngay · tư vấn &amp; đặt lịch</span>
+                  </span>
+                </button>
+                {messenger && (
+                  <TrackedLink
+                    href={messenger}
+                    event="nhan_messenger"
+                    className="flex items-center gap-2.5 rounded-2xl bg-white py-2.5 pl-2.5 pr-4 text-sm font-semibold text-ink-900 shadow-xl"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#00B2FF] to-[#A033FF] text-white">
+                      <IconChat className="h-5 w-5" />
+                    </span>
+                    Nhắn Messenger
+                  </TrackedLink>
+                )}
+                {zalo && (
+                  <TrackedLink
+                    href={`https://zalo.me/${zalo}`}
+                    event="nhan_zalo"
+                    className="flex items-center gap-2.5 rounded-2xl bg-white py-2.5 pl-2.5 pr-4 text-sm font-semibold text-ink-900 shadow-xl"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0068ff] text-[10px] font-extrabold text-white">
+                      Zalo
+                    </span>
+                    Nhắn Zalo
+                  </TrackedLink>
+                )}
+              </>
+            )}
+            <div className="flex items-center gap-2.5">
+              {!menu && (
+                <button
+                  type="button"
+                  onClick={() => setMenu(true)}
+                  className="rounded-2xl bg-white px-3 py-2 text-left shadow-lg ring-1 ring-navy-100"
+                >
+                  <span className="block text-sm font-bold text-ink-900">Chat với trợ lý</span>
+                  <span className="block text-[11px] font-semibold text-mint-600">● Đang trực · trả lời ngay</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setMenu((m) => !m)}
+                aria-label={menu ? "Đóng" : "Liên hệ trung tâm"}
+                aria-expanded={menu}
+                className={`relative flex h-16 w-16 items-center justify-center rounded-full bg-coral-600 text-white shadow-xl shadow-coral-600/40 hover:bg-coral-700 ${
+                  nudge && !menu ? "animate-bounce" : ""
+                }`}
+              >
+                {menu ? (
+                  <span className="text-3xl leading-none">✕</span>
+                ) : (
+                  <IconChat className="h-8 w-8" />
+                )}
+                {!menu && !seen && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-red-600 text-xs font-extrabold">
+                    1
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </>
       )}
       {open && (
         <div
           role="dialog"
           aria-label="Trợ lý tư vấn"
-          className="fixed z-50 inset-x-0 bottom-0 h-[85dvh] sm:inset-x-auto sm:bottom-4 sm:left-4 sm:h-[600px] sm:max-h-[calc(100dvh-2rem)] sm:w-[380px] flex flex-col rounded-t-2xl sm:rounded-2xl border border-navy-100 bg-white shadow-2xl"
+          className="fixed z-50 inset-x-0 bottom-0 h-[85dvh] sm:inset-x-auto sm:bottom-4 sm:right-4 sm:h-[600px] sm:max-h-[calc(100dvh-2rem)] sm:w-[380px] flex flex-col rounded-t-2xl sm:rounded-2xl border border-navy-100 bg-white shadow-2xl"
         >
           <div className="flex items-center gap-3 rounded-t-2xl bg-navy-950 px-4 py-3 text-white">
             <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white/80 bg-navy-900">
@@ -137,7 +227,7 @@ export function AiChatWidget() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="font-semibold leading-tight">Trợ lý tư vấn</p>
-              <p className="text-xs text-navy-200">Trả lời ngay · đặt lịch học thử miễn phí</p>
+              <p className="text-xs text-mint-300">● Đang trực · trả lời ngay</p>
             </div>
             <button type="button" onClick={reset} className="text-xs text-navy-200 hover:text-white underline">
               Cuộc chat mới
@@ -220,7 +310,7 @@ export function AiChatWidget() {
               Gửi
             </button>
           </form>
-          <p className="px-4 pb-2 text-[11px] text-ink-400">Trợ lý AI có thể nhầm — giáo vụ sẽ gọi xác nhận lại lịch học.</p>
+          <p className="px-4 pb-2 text-[11px] text-ink-400">Giáo vụ sẽ gọi xác nhận lại lịch học.</p>
         </div>
       )}
     </>

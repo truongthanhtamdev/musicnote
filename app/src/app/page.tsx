@@ -24,6 +24,7 @@ import { TrialSection } from "./trial-section";
 import { ClipShowcase } from "./clip-showcase";
 import { AiChatWidget } from "./ai-chat-widget";
 import { aiChatEnabled } from "@/lib/ai-chat";
+import { messengerUrl } from "@/lib/facebook-links";
 import { listClips, HOME_CLIP_LIMIT } from "@/lib/clips";
 
 const HOME_TITLE = "Piano Guitar Đệm Hát — Học 1 kèm 1 online";
@@ -365,8 +366,6 @@ export default async function HomePage() {
         </section>
       </main>
 
-      {aiChatEnabled() && <AiChatWidget />}
-
       <footer className="bg-white">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-7 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
           <span>© {new Date().getFullYear()} Piano Guitar Đệm Hát</span>
@@ -376,7 +375,12 @@ export default async function HomePage() {
         </div>
       </footer>
 
-      <ContactButtons variant="floating" />
+      {/* Có trợ lý thì gom chung một nút liên hệ (trợ lý + Messenger + Zalo); chưa bật thì giữ cụm nút cũ. */}
+      {aiChatEnabled() ? (
+        <AiChatWidget messenger={messengerUrl(contact.facebook)} zalo={contact.zalo} />
+      ) : (
+        <ContactButtons variant="floating" />
+      )}
     </div>
   );
 }
