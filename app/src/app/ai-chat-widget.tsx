@@ -9,10 +9,25 @@ type Turn = { role: "user" | "assistant"; text: string };
 
 const STORE_KEY = "pgdh-ai-chat";
 const SEEN_KEY = "pgdh-ai-chat-seen";
+/** Trong một lần vào web: "closed" = khách bấm ✕ hoặc đã mở chat (thôi chào); "hello" = đã chào. */
+const TEASER_KEY = "pgdh-ai-teaser";
+const PRICING_KEY = "pgdh-ai-teaser-pricing";
+
+/** Lời chào tự hiện: chào lần đầu / khách cũ quay lại / đáp khi khách muốn tự xem / nhắc ở phần học phí. */
+type Teaser = "hello" | "back" | "browse" | "pricing";
+
+function session(key: string, value?: string): string | null {
+  try {
+    if (value !== undefined) sessionStorage.setItem(key, value);
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
 const GREETING: Turn = {
   role: "assistant",
   text:
-    "Chào bạn 👋 Bạn muốn tìm hiểu môn nào, hay đặt lịch học thử miễn phí ạ? Hỏi về học phí, cách học online, giáo viên… đều được nhé!",
+    "Chào anh/chị 👋 Em là trợ lý tư vấn của Piano Guitar Đệm Hát. Em có thể báo học phí, lịch học và đặt lịch học thử miễn phí cho anh/chị ngay. Hoặc anh/chị cứ xem website một vòng, cần gì em hỗ trợ liền nhé!",
 };
 const SUGGESTIONS = ["Học phí bao nhiêu?", "Học thử miễn phí", "Học online thế nào?"];
 
@@ -44,6 +59,12 @@ export function AiChatWidget({ messenger, zalo }: { messenger: string | null; za
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const [teaser, setTeaser] = useState<Teaser | null>(null);
+  // Đọc trong setTimeout / IntersectionObserver nên cần bản mới nhất, không lấy theo lúc tạo hàm.
+  const busyRef = useRef(false);
+  useEffect(() => {
+    busyRef.current = open || menu;
+  }, [open, menu]);
 
   useEffect(() => {
     let saved: { chatId?: string; turns?: Turn[] } | null = null;
@@ -62,13 +83,51 @@ export function AiChatWidget({ messenger, zalo }: { messenger: string | null; za
     /* eslint-enable react-hooks/set-state-in-effect */
     const on = setTimeout(() => setNudge(true), 4000);
     const off = setTimeout(() => setNudge(false), 6500);
+
+    // Vào trang khoảng 5 giây thì trợ lý chào (mỗi lần vào web chỉ một lần).
+    const returning = !!saved?.turns?.some((t) => t.role === "user");
+    const hello = setTimeout(() => {
+      if (busyRef.current || session(TEASER_KEY)) return;
+      session(TEASER_KEY, "hello");
+      setTeaser(returning ? "back" : "hello");
+    }, 5000);
+
+    // Khách đã được chào, kéo tới bảng học phí (đang cân nhắc) thì hỏi lại đúng một lần.
+    const pricing = document.getElementById("hoc-phi");
+    const observer =
+      pricing && "IntersectionObserver" in window
+        ? new IntersectionObserver(
+            (entries) => {
+              if (!entries.some((e) => e.isIntersecting)) return;
+              if (busyRef.current || session(TEASER_KEY) !== "hello" || session(PRICING_KEY)) return;
+              session(PRICING_KEY, "1");
+              setTeaser("pricing");
+            },
+            { threshold: 0.3 }
+          )
+        : null;
+    if (pricing) observer?.observe(pricing);
     return () => {
       clearTimeout(on);
       clearTimeout(off);
+      clearTimeout(hello);
+      observer?.disconnect();
     };
   }, []);
 
+  /** Khách bấm ✕ hoặc đã mở chat: thôi chào / nhắc trong lần vào web này. */
+  function stopTeasing() {
+    session(TEASER_KEY, "closed");
+    setTeaser(null);
+  }
+
+  function browseFirst() {
+    setTeaser("browse");
+    setTimeout(() => setTeaser((t) => (t === "browse" ? null : t)), 4000);
+  }
+
   function openChat() {
+    stopTeasing();
     setMenu(false);
     setOpen(true);
     setSeen(true);
@@ -116,6 +175,11 @@ export function AiChatWidget({ messenger, zalo }: { messenger: string | null; za
     }
   }
 
+  function openAndAsk(text: string) {
+    openChat();
+    void send(text);
+  }
+
   function reset() {
     setChatId(newId());
     setTurns([GREETING]);
@@ -134,6 +198,15 @@ export function AiChatWidget({ messenger, zalo }: { messenger: string | null; za
               aria-label="Đóng"
               onClick={() => setMenu(false)}
               className="fixed inset-0 z-40 bg-navy-950/30"
+            />
+          )}
+          {teaser && !menu && (
+            <TeaserBubble
+              kind={teaser}
+              onClose={stopTeasing}
+              onChat={openChat}
+              onBrowse={browseFirst}
+              onAsk={openAndAsk}
             />
           )}
           <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2.5">
@@ -180,7 +253,7 @@ export function AiChatWidget({ messenger, zalo }: { messenger: string | null; za
               </>
             )}
             <div className="flex items-center gap-2.5">
-              {!menu && (
+              {!menu && !teaser && (
                 <button
                   type="button"
                   onClick={() => setMenu(true)}
@@ -314,5 +387,86 @@ export function AiChatWidget({ messenger, zalo }: { messenger: string | null; za
         </div>
       )}
     </>
+  );
+}
+
+const TEASER_TEXT: Record<Teaser, string> = {
+  hello: GREETING.text,
+  back: "Chào anh/chị, mừng anh/chị quay lại 👋 Mình chat tiếp nhé? Cần em báo học phí hay đặt lịch học thử cứ nói em ạ.",
+  browse: "Dạ vâng ạ, anh/chị cứ thoải mái xem nhé 😊 Cần gì bấm nút chat bên dưới là em tư vấn ngay!",
+  pricing: "Anh/chị đang xem học phí ạ? Em tư vấn gói phù hợp với độ tuổi, trình độ và mục tiêu học cho mình nhé.",
+};
+
+/** Khung lời chào nổi ngay trên nút chat. */
+function TeaserBubble({
+  kind,
+  onClose,
+  onChat,
+  onBrowse,
+  onAsk,
+}: {
+  kind: Teaser;
+  onClose: () => void;
+  onChat: () => void;
+  onBrowse: () => void;
+  onAsk: (text: string) => void;
+}) {
+  return (
+    <div
+      role="status"
+      className="fixed bottom-24 right-4 z-40 w-[min(360px,calc(100vw-2rem))] rounded-[20px] rounded-br-md border border-navy-100 bg-white p-3.5 shadow-2xl"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Tắt lời chào"
+        className="absolute right-2.5 top-2 rounded-lg px-1.5 text-lg leading-none text-ink-400 hover:bg-ivory-100"
+      >
+        ✕
+      </button>
+      <div className="mb-2 flex items-center gap-2.5">
+        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-navy-950 shadow">
+          <Logo className="h-6" />
+          <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-mint-500" />
+        </span>
+        <span className="leading-tight">
+          <span className="block text-sm font-bold text-ink-900">Trợ lý tư vấn</span>
+          <span className="block text-[11px] font-semibold text-mint-600">● Đang trực</span>
+        </span>
+      </div>
+      <p className="pr-2 text-sm leading-relaxed text-ink-800">{TEASER_TEXT[kind]}</p>
+      {(kind === "hello" || kind === "back") && (
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={onChat}
+            className="flex-1 rounded-xl bg-coral-600 px-2 py-2.5 text-sm font-bold text-white hover:bg-coral-700"
+          >
+            {kind === "back" ? "Chat tiếp" : "Tư vấn cho tôi"}
+          </button>
+          <button
+            type="button"
+            onClick={onBrowse}
+            className="flex-1 rounded-xl border border-navy-200 px-2 py-2.5 text-sm font-semibold text-ink-600 hover:bg-ivory-50"
+          >
+            Để tôi xem web trước
+          </button>
+        </div>
+      )}
+      {kind === "pricing" && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {["Có ạ, tư vấn giúp tôi", "Nên chọn gói nào?"].map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onAsk(t)}
+              className="rounded-full border border-wood-300 bg-white px-3 py-1.5 text-xs font-semibold text-wood-700 hover:bg-wood-50"
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
